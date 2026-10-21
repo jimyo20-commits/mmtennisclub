@@ -51,3 +51,8 @@ npx netlify-cli deploy --prod --build
 - 동시에 여러 명이 입력해도 **서로 다른 칸**(각자의 투표, 서로 다른 경기 기록 등)은 모두 보존됩니다.
   같은 칸을 동시에 고치면 마지막에 저장한 쪽이 남습니다.
 - 사용량: 접속 중인 화면이 20초마다 서버를 한 번 확인합니다. 인원이 많으면 Netlify 무료 한도를 확인해 보세요.
+
+## GitHub 수동 백업
+운영자가 홈 탭의 "지금 백업"을 누르면 현재 데이터가 이 저장소의 `backups` 브랜치(`backups/backup-날짜_시간.json`)에 저장됩니다.
+- Netlify → Site configuration → Environment variables 에 `GITHUB_TOKEN`(이 저장소 Contents: Read and write 권한의 fine-grained 토큰)을 추가해야 동작합니다.
+- 전화번호 가운데 4자리는 `0000`으로 바꾸고, 비밀번호·사진은 제외합니다.

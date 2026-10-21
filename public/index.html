@@ -517,7 +517,14 @@ const bkDate=ts=>{const d=new Date(ts),p=n=>String(n).padStart(2,"0");return `${
 function makeBackup(auto){const l=bkList();l.unshift({ts:Date.now(),auto:!!auto,d:JSON.stringify(S)});while(l.length>5)l.pop();
   while(!bkWrite(l)&&l.length>1)l.pop();
   if(!bkList().length||bkList()[0].ts!==l[0].ts){if(!auto)alert("저장 공간이 부족해 백업하지 못했습니다. '내보내기'로 글을 복사해 보관해 주세요.");return false}
-  if(!auto)render();return true}
+  if(!auto){render();ghBackup()}return true}
+function ghBackup(){ /* 수동 백업 → GitHub (서버가 없는 미리보기에서는 조용히 건너뜀) */
+  if(typeof fetch!=="function"||typeof location==="undefined"||!/^https?:/.test(location.protocol))return;
+  fetch("/api/github-backup",{method:"POST"}).then(r=>r.json().then(j=>({s:r.status,j}))).then(({s,j})=>{
+    if(j&&j.ok)alert("GitHub에도 백업했습니다.\n"+j.file);
+    else if(s===501)alert("이 기기에 백업했습니다.\nGitHub 백업은 아직 설정되지 않았습니다. (Netlify 환경변수 GITHUB_TOKEN 필요)");
+    else if(s===429)alert("GitHub 백업은 잠시 후 다시 눌러 주세요.");
+    else if(s!==404)alert("이 기기에 백업했지만 GitHub 백업에는 실패했습니다.")}).catch(()=>{})}
 function restoreBackup(i){const l=bkList();if(!l[i]||!confirm(bkDate(l[i].ts)+" 백업으로 복원할까요?\n현재 데이터는 덮어써집니다."))return;
   try{makeBackup(true);const cur=bkList();const src=l[i].d;localStorage.setItem(KEY,src);localStorage.setItem(KEY+"-push","1");if(typeof location!=="undefined")location.reload()}catch(e){alert("복원하지 못했습니다.")}}
 function delBackup(i){const l=bkList();l.splice(i,1);bkWrite(l);render()}
