@@ -56,3 +56,8 @@ npx netlify-cli deploy --prod --build
 운영자가 홈 탭의 "지금 백업"을 누르면 현재 데이터가 이 저장소의 `backups` 브랜치(`backups/backup-날짜_시간.json`)에 저장됩니다.
 - Netlify → Site configuration → Environment variables 에 `GITHUB_TOKEN`(이 저장소 Contents: Read and write 권한의 fine-grained 토큰)을 추가해야 동작합니다.
 - 전화번호 가운데 4자리는 `0000`으로 바꾸고, 비밀번호·사진은 제외합니다.
+
+## 주간 자동 백업
+매주 월요일 00:00(한국시간)에 운영자 접속과 상관없이 서버가 자동 백업합니다 (`netlify/functions/weekly-backup.mjs`).
+- Netlify 저장소에 `weekly-날짜` 스냅샷 (최근 26주 보관)
+- `GITHUB_TOKEN`이 있으면 GitHub `backups` 브랜치에도 저장

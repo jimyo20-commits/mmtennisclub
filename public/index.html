@@ -521,6 +521,7 @@ function avgPanel(){
   const avg=pairs?(games/pairs).toFixed(1):null;
   return `<div class="panel" style="text-align:center"><h2>1일 1명당 평균 경기수</h2>${avg?`<div style="font-size:30px;font-weight:900">${avg}<span style="font-size:15px;font-weight:700"> 경기</span></div><small style="color:var(--muted)">경기한 ${ds.length}일 · 하루 평균 ${(pairs/ds.length).toFixed(1)}명 참여 기준</small>`:`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`}
 let bkAuto=false;
+const lastMonday=()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()};   // 이번 주 월요일 00:00
 function bkList(){try{return JSON.parse(localStorage.getItem(KEY+"-bk")||"[]")}catch(e){return[]}}
 function bkWrite(l){try{localStorage.setItem(KEY+"-bk",JSON.stringify(l));return true}catch(e){return false}}
 const bkDate=ts=>{const d=new Date(ts),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
@@ -544,7 +545,7 @@ function importBk(){const t=$("#bkt"),v=(t.value||"").trim();let o;try{o=JSON.pa
   if(!confirm("붙여넣은 백업으로 복원할까요?\n현재 데이터는 덮어써집니다."))return;
   try{makeBackup(true);localStorage.setItem(KEY,v);localStorage.setItem(KEY+"-push","1");if(typeof location!=="undefined")location.reload()}catch(e){alert("복원하지 못했습니다.")}}
 function bkPanel(){const l=bkList();
-  return `<div class="panel"><h2>백업 / 복원 (운영자)</h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">이 기기에 저장된 데이터를 백업합니다. 운영자가 앱을 열면 하루 1번 자동 백업됩니다. (최근 5개 보관)</p><button class="btn" onclick="makeBackup(false)">지금 백업</button>${l.length?`<ul class="list" style="margin-top:8px">${l.map((b,i)=>`<li style="padding:8px 0"><div class="grow">${b.auto?"자동 백업":"수동 백업"}<small>${bkDate(b.ts)}</small></div><button class="btn ghost" style="flex:none" onclick="restoreBackup(${i})">복원</button><button class="btn ghost" style="flex:none" onclick="delBackup(${i})">삭제</button></li>`).join("")}</ul>`:`<p class="empty">저장된 백업이 없습니다.</p>`}<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b style="font-size:13px">다른 기기로 옮기기</b><p style="margin:4px 0 8px;font-size:12px;color:var(--muted)">"내보내기"를 누르면 아래 칸에 백업 글이 생깁니다. 복사해서 다른 기기의 같은 칸에 붙여넣고 "가져오기"를 누르세요.</p><textarea id="bkt" rows="3" style="width:100%" placeholder="백업 글"></textarea><div class="row" style="margin-top:8px"><button class="btn off" onclick="exportBk()">내보내기</button><button class="btn off" onclick="importBk()">가져오기</button></div></div></div>`}
+  return `<div class="panel"><h2>백업 / 복원 (운영자)</h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">이 기기에 저장된 데이터를 백업합니다. 매주 월요일에 자동 백업됩니다. (서버가 운영자 접속과 상관없이 백업하고, 이 기기에는 월요일 이후 처음 열 때 백업됩니다.) (최근 5개 보관)</p><button class="btn" onclick="makeBackup(false)">지금 백업</button>${l.length?`<ul class="list" style="margin-top:8px">${l.map((b,i)=>`<li style="padding:8px 0"><div class="grow">${b.auto?"자동 백업":"수동 백업"}<small>${bkDate(b.ts)}</small></div><button class="btn ghost" style="flex:none" onclick="restoreBackup(${i})">복원</button><button class="btn ghost" style="flex:none" onclick="delBackup(${i})">삭제</button></li>`).join("")}</ul>`:`<p class="empty">저장된 백업이 없습니다.</p>`}<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b style="font-size:13px">다른 기기로 옮기기</b><p style="margin:4px 0 8px;font-size:12px;color:var(--muted)">"내보내기"를 누르면 아래 칸에 백업 글이 생깁니다. 복사해서 다른 기기의 같은 칸에 붙여넣고 "가져오기"를 누르세요.</p><textarea id="bkt" rows="3" style="width:100%" placeholder="백업 글"></textarea><div class="row" style="margin-top:8px"><button class="btn off" onclick="exportBk()">내보내기</button><button class="btn off" onclick="importBk()">가져오기</button></div></div></div>`}
 function shopPanel(){
   const m=S.members.find(x=>x.id===me);if(!m)return"";
   const pts=attPts(m);const mine=[...S.purchases].filter(x=>x.by===me).reverse();
@@ -601,7 +602,7 @@ function render(){
   else if(tipModal>=0)$("#modal").innerHTML=tipView();
   const ns=document.querySelector(".sheet");if(ns)ns.scrollTop=st;
   setSyncStatus();
-  if(!bkAuto&&isAdmin()){bkAuto=true;const l=bkList();if(!l.length||new Date(l[0].ts).toDateString()!==new Date().toDateString()){if(makeBackup(true))render()}}
+  if(!bkAuto&&isAdmin()){bkAuto=true;const l=bkList();if(!l.length||l[0].ts<lastMonday()){if(makeBackup(true))render()}}
 }
 
 /* ===== 여러 사람이 함께 쓰는 공유 데이터 동기화 (Netlify Functions + Blobs) =====

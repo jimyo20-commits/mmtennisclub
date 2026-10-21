@@ -65,9 +65,9 @@ const kstDate = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 1
 async function snapshot(store, state, name) {
   try {
     await store.setJSON("backup/" + name, state, { onlyIfNew: true });
-    const { blobs } = await store.list({ prefix: "backup/" });
+    const { blobs } = await store.list({ prefix: "backup/before-restore-" });
     const keys = blobs.map((b) => b.key).sort();
-    for (const k of keys.slice(0, Math.max(0, keys.length - 30))) await store.delete(k);
+    for (const k of keys.slice(0, Math.max(0, keys.length - 20))) await store.delete(k);
   } catch (_) {}
 }
 
@@ -114,7 +114,6 @@ export default async (req) => {
         await new Promise((r) => setTimeout(r, 20 + Math.random() * 80 * (attempt + 1)));
         continue;
       }
-      await snapshot(store, state, kstDate());
       return json({ ok: true, rev: next.rev, state });
     }
     return json({ ok: false, error: "busy" }, 503);

@@ -32,21 +32,17 @@ export function sanitize(state) {
 const kst = () => new Date(Date.now() + 9 * 3600e3).toISOString().replace("T", "_").slice(0, 19).replace(/:/g, "-");
 let last = 0;
 
-export default async (req) => {
-  if (req.method !== "POST") return json({ ok: false }, 405);
+// 현재 공유 데이터를 GitHub backups 브랜치에 저장 (결과: {ok, ...})
+export async function backupToGithub(store, label = "수동 백업") {
   const token = process.env.GITHUB_TOKEN;
-  if (!token) return json({ ok: false, error: "no_token" }, 501);
-  if (Date.now() - last < 15000) return json({ ok: false, error: "too_fast" }, 429);
-  last = Date.now();
+  if (!token) return { ok: false, status: 501, error: "no_token" };
   const repo = process.env.GITHUB_REPO || "jimyo20-commits/mmtennisclub";
   const gh = (path, init = {}) => fetch(`https://api.github.com/repos/${repo}${path}`, {
     ...init,
     headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "moomyung-backup", "content-type": "application/json" },
   });
-
-  const store = getStore({ name: "moomyung", consistency: "strong" });
   const cur = await store.get(KEY, { type: "json", consistency: "strong" });
-  if (!cur || !cur.state) return json({ ok: false, error: "empty" }, 404);
+  if (!cur || !cur.state) return { ok: false, status: 404, error: "empty" };
 
   // backups 브랜치가 없으면 기본 브랜치에서 만듭니다 (이 브랜치는 Netlify 사이트 배포에 쓰이지 않음)
   let r = await gh(`/git/ref/heads/${BRANCH}`);
@@ -54,14 +50,24 @@ export default async (req) => {
     const repoInfo = await (await gh("")).json();
     const base = await (await gh(`/git/ref/heads/${repoInfo.default_branch || "main"}`)).json();
     r = await gh("/git/refs", { method: "POST", body: JSON.stringify({ ref: `refs/heads/${BRANCH}`, sha: base.object.sha }) });
-    if (!r.ok) return json({ ok: false, error: "branch", detail: r.status }, 502);
-  } else if (!r.ok) return json({ ok: false, error: "github", detail: r.status }, 502);
+    if (!r.ok) return { ok: false, status: 502, error: "branch", detail: r.status };
+  } else if (!r.ok) return { ok: false, status: 502, error: "github", detail: r.status };
 
   const name = `backups/backup-${kst()}.json`;
   const content = Buffer.from(JSON.stringify(sanitize(cur.state), null, 1), "utf8").toString("base64");
-  const put = await gh(`/contents/${name}`, { method: "PUT", body: JSON.stringify({ message: `수동 백업 ${name.slice(15, 34)}`, content, branch: BRANCH }) });
-  if (!put.ok) return json({ ok: false, error: "put", detail: put.status }, 502);
-  return json({ ok: true, file: name, branch: BRANCH });
+  const put = await gh(`/contents/${name}`, { method: "PUT", body: JSON.stringify({ message: `${label} ${name.slice(15, 34)}`, content, branch: BRANCH }) });
+  if (!put.ok) return { ok: false, status: 502, error: "put", detail: put.status };
+  return { ok: true, status: 200, file: name, branch: BRANCH };
+}
+
+export default async (req) => {
+  if (req.method !== "POST") return json({ ok: false }, 405);
+  if (Date.now() - last < 15000) return json({ ok: false, error: "too_fast" }, 429);
+  last = Date.now();
+  const store = getStore({ name: "moomyung", consistency: "strong" });
+  const r = await backupToGithub(store, "수동 백업");
+  const { status, ...body } = r;
+  return json(body, status);
 };
 
 export const config = { path: "/api/github-backup" };
