@@ -363,7 +363,7 @@ function recoPanel(){
     if(key(games[0])===key(games[1]))games[1]=splits(wins[best.b].g)[1]}
   const pl=m=>`<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0">${av(m,22)}<span>${nameR(m)}</span><small style="color:var(--muted)">${shown(m)}</small></span>`;
   const rows=games.map((g,i)=>{const d=Math.round(g.diff*100);
-    return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b>추천 ${i+1}게임</b><span class="tag ${d<=5?"ok":""}">${d<=5?"박빙":"전력 차 "+d+"%p"}</span></div><div style="font-size:13px;line-height:1.7"><b>A팀</b> ${g.A.map(pl).join("")}<br><b>B팀</b> ${g.B.map(pl).join("")}</div></li>`}).join("");
+    return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b>추천 ${i+1}게임</b><span class="tag ${d<=5?"ok":""}">${d<=5?"박빙":"전력 차 "+d+"%p"}</span></div><div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;line-height:1.7">${[["A팀",g.A],["B팀",g.B]].map(t=>`<div style="flex:1 1 140px;border:1.5px solid var(--line);border-radius:10px;padding:6px 10px"><b style="display:block;font-size:12px;color:var(--muted)">${t[0]}</b>${t[1].map(pl).join("")}</div>`).join("")}</div></li>`}).join("");
   return wrap(`<ul class="list">${rows}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승률이 비슷한 참석자끼리 묶고, 두 팀 전력이 비슷하도록 나눴어요. (기록이 적은 사람은 50% 쪽으로 보정)</p>`)}
 function offPanel(){
   const rows=OFFICES.filter(o=>o!=="운영자").map(o=>{const ms=S.members.filter(m=>m.role===o);
