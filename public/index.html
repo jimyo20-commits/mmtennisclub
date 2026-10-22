@@ -303,7 +303,8 @@ function savePhone(id){const m=S.members.find(x=>x.id===id);const e=document.get
   m.phone=v;phoneEditId=null;save();render()}
 function loginView(){return `<div class="panel" style="max-width:420px;margin:10px auto"><h2>로그인</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>비밀번호 <span style="font-weight:400">(처음에는 전화번호 뒷 4자리)</span><input id="lgp" type="password" inputmode="numeric" maxlength="8" autocomplete="off" onkeydown="if(event.key==='Enter')login()"></label><button class="btn" onclick="login()">로그인</button></div><div id="lgc"></div><p id="lge" style="color:var(--bad);min-height:22px;margin:10px 0 0"></p><p class="empty" style="margin:0">운영자(윤준식)는 처음 한 번, 사용할 4자리를 입력하고 <a href="#" onclick="adminSetup();return false">여기</a>를 눌러 등록하세요.</p></div>`}
 function pick(id){me=id;voter=id;tab="home";showVote=true;try{localStorage.setItem(KEY+"-user",me)}catch(e){}render()}
-function login(){const ent=$("#lgp").value.trim();
+async function login(){const ent=$("#lgp").value.trim();
+  if(typeof SYNC!=="undefined"&&SYNC.on){$("#lge").textContent="확인 중…";try{await syncPull()}catch(e){}$("#lge").textContent=""}   // 다른 기기에서 바꾼 비밀번호도 바로 적용되도록 최신 데이터를 먼저 받아옵니다
   if(!/^\d{4,8}$/.test(ent)){$("#lge").textContent="비밀번호(숫자 4~8자리)를 입력하세요.";return}
   const hits=S.members.filter(m=>pwOf(m)===ent);
   if(!hits.length){$("#lge").textContent="일치하는 회원이 없습니다. 번호가 등록되지 않았다면 운영자에게 문의하세요.";return}
