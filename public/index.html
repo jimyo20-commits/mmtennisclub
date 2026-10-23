@@ -380,6 +380,17 @@ function anGameCard(g,showPid){
   const del=anDelId===g.id?`<span style="display:flex;gap:4px;align-items:center;font-size:11px"><span style="color:var(--bad);font-weight:700">삭제할까요?</span><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anDel('${g.id}')">확인</button><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anAskDel(null)">취소</button></span>`:`<span style="display:flex;gap:4px"><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anEdit('${g.id}')">수정</button><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anAskDel('${g.id}')">삭제</button></span>`;
   return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(g.date||"")} <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-weight:400;color:var(--muted);font-size:13px">${esc(g.court||"")}</span></b>${anCan(g)?del:""}</div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;margin-top:4px"><thead><tr style="color:var(--muted)"><th style="text-align:left;font-weight:400">선수</th><th style="font-weight:400">1st</th><th style="font-weight:400">2nd</th><th style="font-weight:400">Win</th><th style="font-weight:400">UEr</th><th style="font-weight:400">승리기여도</th></tr></thead><tbody>${tb}</tbody></table></div>${g.note?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(g.note)}</div>`:""}</li>`}
+let anListOpen=false;
+function toggleAnList(){anListOpen=!anListOpen;anDelId=null;render()}
+/* 운영자: 업로드된 경기 목록에서 골라 삭제 (2단계 확인) */
+function anManageView(){
+  const gs=[...(S.analysis||[])].filter(g=>g.rows).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const nm=r=>r.name||((S.members.find(m=>m.id===r.pid)||{}).name)||"?";
+  const body=anListOpen?(gs.length?`<ul class="list" style="margin-top:6px">${gs.map(g=>{
+    const del=anDelId===g.id?`<span style="flex:none;display:flex;gap:4px;align-items:center;font-size:11px"><span style="color:var(--bad);font-weight:700">삭제할까요?</span><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anDel('${g.id}')">확인</button><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anAskDel(null)">취소</button></span>`:`<button class="btn ghost del" style="flex:none;padding:3px 8px;font-size:11px" onclick="anAskDel('${g.id}')">삭제</button>`;
+    return `<li style="padding:8px 0"><div class="grow" style="min-width:0"><b style="font-size:13px">${esc(g.date||"")}</b> <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-size:12px;color:var(--muted)">${esc(g.court||"")}</span><small>${g.rows.map(r=>esc(nm(r))).join(", ")}</small></div>${del}</li>`}).join("")}</ul>`:`<p class="empty" style="margin:8px 0 0">업로드된 경기가 없어요.</p>`):"";
+  return `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn ghost" style="width:100%" onclick="toggleAnList()">📋 업로드된 경기 관리 (${gs.length}) ${anListOpen?"▲":"▼"}</button>${body}</div>`;
+}
 function anView(){
   anImportSample();anFillSampleC();
   const flat=anFlat();
@@ -388,7 +399,7 @@ function anView(){
   const mine=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||""));
   const st=anStats(mine);
   const cnt=id=>flat.filter(e=>e.pid===id).length;
-  const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}`:""}</div>`;
+  const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}${anManageView()}`:""}</div>`;
   const form=anForm?anFormView(sel):"";
   if(!mine.length)return (isAdmin()?head+form:anRank(flat)+head+form)+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다.${isAdmin()?' 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.':""}</p></div>`+(isAdmin()?anRank(flat):"")+anGuide();
   const cm=mine.filter(e=>e.hasC);
