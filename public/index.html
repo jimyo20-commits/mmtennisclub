@@ -564,7 +564,8 @@ function anComment(list,s){
 function cmtHtml(l1,l2){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
-  list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
+  // 서브 득점(A·Sp)은 W 합계에 포함되므로 W 줄로 옮겨 표시 (svp 기록만; 서브 줄에는 F·D만 남김)
+  list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);if(e.svp){const s0=e.sv||{};add(w,{A:s0.A,Sp:s0.Sp});add(sv,{F:s0.F,D:s0.D})}else add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
   const ORD=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"];
   const chip=(k,v,st)=>`<span style="font-size:10px;padding:1px 5px;flex:none;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${v}</span>`;
   const svRow=()=>{const g=["A","Sp"].filter(k=>sv[k]).map(k=>chip(k,sv[k],["#8fc7a6","#0b3a1f"])),r=["F","D"].filter(k=>sv[k]).map(k=>chip(k,sv[k],k==="D"?["#e69a9a","#6a0a0a"]:["#eeb872","#6b3500"]));
