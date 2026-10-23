@@ -165,8 +165,8 @@ const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
-const AN_SAMPLE_C={"윤정호":{"Fs":5,"Bs":2,"V":4,"R":1,"Sp":3,"F":3,"D":1},"이동혁":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2,"F":3,"Sp":1},"장태석":{"V":2,"R":4,"Fs":8,"F":5},"이응택":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1,"F":3,"Sp":1}};
-function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name);if(!r.c&&AN_SAMPLE_C[nm]){r.c=AN_SAMPLE_C[nm];ch=true}});if(ch)save()}
+const AN_SAMPLE_C={"윤정호":{"c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}});if(ch)save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
@@ -178,7 +178,7 @@ function anImportSample(){
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length);
-    out.push({g,pid:r.pid,name:r.name||"",c:r.c||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
+    out.push({g,pid:r.pid,name:r.name||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -240,9 +240,44 @@ function anParseDate(v,fname){
   return today();
 }
 const anRatio=v=>{const m=String(v==null?"":v).match(/(\d+)\s*\/\s*(\d+)/);return m?[+m[1],+m[2]]:[0,0]};
-/* 점 단위 기록(코드가 칸마다 적힌 부분)을 선수별 코드 횟수로 집계. 서브 칸(Sp/F/D)은 서브권 순서를 1st 서브 시도 횟수와 맞춰 찾아 서버에게 배정 */
-function anParsePoints(aoa,rows){
-  const txt=v=>String(v==null?"":v).trim();
+/* ===== 엑셀 셀 색 읽기 (녹색=Winning shot, 주황색=Unforced error) : 외부 라이브러리 없이 xlsx(zip)에서 직접 읽음 ===== */
+async function anUnzip(buf){
+  const u8=new Uint8Array(buf),dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+  let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error("zip");
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={},td=new TextDecoder();
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+    const name=td.decode(u8.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    if(!/^xl\/(styles\.xml|worksheets\/sheet\d+\.xml)$/.test(name))continue;
+    const ls=off+30+dv.getUint16(off+26,true)+dv.getUint16(off+28,true),raw=u8.subarray(ls,ls+csz);
+    let data=raw;
+    if(meth===8){const ds=new DecompressionStream("deflate-raw");const w=ds.writable.getWriter();w.write(raw);w.close();data=new Uint8Array(await new Response(ds.readable).arrayBuffer())}
+    out[name]=td.decode(data);
+  }
+  return out;
+}
+const anAttrs=t=>{const o={};String(t).replace(/([\w:]+)="([^"]*)"/g,(m,k,v)=>{o[k]=v;return m});return o};
+/* 시트 번호(1부터) → { "B10": "theme:6:0.4", ... } 채워진 셀의 색 키 */
+async function anFills(buf,sheetNo){
+  const z=await anUnzip(buf),st=z["xl/styles.xml"],sh=z["xl/worksheets/sheet"+sheetNo+".xml"];
+  if(!st||!sh)return {};
+  const fb=(st.match(/<fills[^>]*>([\s\S]*?)<\/fills>/)||[])[1]||"";
+  const fills=(fb.match(/<fill>[\s\S]*?<\/fill>|<fill\/>/g)||[]).map(f=>{
+    const pf=anAttrs((f.match(/<patternFill[^>]*>/)||[""])[0]);if(!pf.patternType||pf.patternType==="none")return "";
+    const fg=(f.match(/<fgColor[^>]*\/?>/)||[""])[0],a=anAttrs(fg);
+    return a.rgb?"rgb:"+a.rgb:a.theme!==undefined?"theme:"+a.theme+":"+(a.tint?(+a.tint).toFixed(2):"0"):a.indexed!==undefined?"idx:"+a.indexed:""});
+  const xb=(st.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/)||[])[1]||"";
+  const xfs=(xb.match(/<xf\b[^>]*>/g)||[]).map(x=>{const a=anAttrs(x);return fills[+a.fillId]||""});
+  const map={};(sh.match(/<c\b[^>]*>/g)||[]).forEach(c=>{const a=anAttrs(c);if(a.r&&a.s!==undefined&&xfs[+a.s])map[a.r]=xfs[+a.s]});
+  return map;
+}
+const anColL=c=>{let s="";c++;while(c>0){const m=(c-1)%26;s=String.fromCharCode(65+m)+s;c=Math.floor((c-1)/26)}return s};
+/* 점 단위 기록(코드가 칸마다 적힌 부분)을 선수별로 집계. 칸 색: 요약표의 Winning/Unforced 머리글과 같은 색이면 각각 Winning shot/Unforced error.
+   서브 칸(Sp/F/D)은 서브권 순서를 1st 서브 시도 횟수와 맞춰 찾아 서버에게 배정 */
+function anParsePoints(aoa,rows,opt){
+  const txt=v=>String(v==null?"":v).trim();opt=opt||{};
   let hr=-1,sc=-1;
   for(let r=0;r<Math.min(aoa.length,40)&&hr<0;r++)for(let c=0;c<(aoa[r]||[]).length;c++)if(txt(aoa[r][c]).toLowerCase()==="serve"&&txt((aoa[r]||[])[c-1])&&txt((aoa[r]||[])[c+1])){hr=r;sc=c;break}
   if(hr<0)return null;
@@ -253,18 +288,20 @@ function anParsePoints(aoa,rows){
   const starts=[];for(let r=hr+1;r<=last;r++)if(typeof (aoa[r]||[])[0]==="number")starts.push(r);
   if(!starts.length)return null;
   const segs=starts.map((s,i)=>[s,(i+1<starts.length?starts[i+1]:last+1)]);
-  const out={};names.forEach(n=>out[n]={});
-  const add=(n,k)=>{if(k&&out[n])out[n][k]=(out[n][k]||0)+1};
-  segs.forEach(([s,e])=>{for(let r=s;r<e;r++)pcols.forEach((c,i)=>add(names[i],txt((aoa[r]||[])[c])))});
-  // 서브 칸 배정
+  const codes={},sv={},wu={};names.forEach(n=>{codes[n]={};sv[n]={};wu[n]={w:{},u:{}}});
+  const inc=(o,k)=>{o[k]=(o[k]||0)+1};
+  segs.forEach(([s,e])=>{for(let r=s;r<e;r++)pcols.forEach((c,i)=>{
+    const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
+    if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
+      if(col&&col===opt.wKey)inc(wu[names[i]].w,k);else if(col&&col===opt.uKey)inc(wu[names[i]].u,k)}})});
   const attempts={};rows.forEach(r=>{attempts[r.name]=r.s1[1]});
   const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
   const ok=perms(names).find(p=>{const t={};segs.forEach(([s,e],g)=>{t[p[g%p.length]]=(t[p[g%p.length]]||0)+(e-s)});return names.every(n=>(t[n]||0)===attempts[n])});
-  if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++)add(ok[g%ok.length],txt((aoa[r]||[])[sc]))});
-  return {codes:out,serve:!!ok};
+  if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[ok[g%ok.length]],k)}});
+  return {codes,sv,wu,serve:!!ok};
 }
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
-function anParseSheet(aoa,fname){
+function anParseSheet(aoa,fname,opt){
   const txt=v=>String(v==null?"":v).trim();
   let sr=-1,sc=-1;
   for(let r=0;r<Math.min(aoa.length,30)&&sr<0;r++)for(let c=0;c<(aoa[r]||[]).length;c++)if(txt(aoa[r][c])==="요약"){sr=r;sc=c;break}
@@ -277,16 +314,25 @@ function anParseSheet(aoa,fname){
   for(let r=sr+1;r<aoa.length;r++){const nm=txt((aoa[r]||[])[sc]);if(!nm||/^(vs|serve)$/i.test(nm))break;
     rows.push({name:nm,s1:anRatio(aoa[r][c1]),s2:anRatio(aoa[r][c2]),W:anNum(aoa[r][cw]),U:anNum(aoa[r][cu])})}
   if(!rows.length)return null;
-  try{const pp=anParsePoints(aoa,rows);if(pp)rows.forEach(r=>{if(pp.codes[r.name]&&Object.keys(pp.codes[r.name]).length)r.c=pp.codes[r.name]})}catch(e){}
+  try{
+    opt=opt||{};let wKey="",uKey="";
+    if(opt.fills){const kk=c=>opt.fills[anColL(c+(opt.c0||0))+(sr+(opt.r0||0)+1)]||"";wKey=kk(cw);uKey=kk(cu)}
+    const pp=anParsePoints(aoa,rows,{...opt,wKey,uKey});
+    if(pp)rows.forEach(r=>{
+      if(pp.codes[r.name]&&Object.keys(pp.codes[r.name]).length)r.c=pp.codes[r.name];
+      if(pp.sv[r.name]&&Object.keys(pp.sv[r.name]).length)r.sv=pp.sv[r.name];
+      const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
+      if(x&&wKey&&uKey&&(r.W||r.U)&&anCsum(x.w)===r.W&&anCsum(x.u)===r.U){r.w=x.w;r.u=x.u}})
+  }catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
   return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
 }
 function anAddGame(g,by){
-  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;return o});
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
   const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
-  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}});if(up){anUpd=true}return false}
+  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}});if(up){anUpd=true}return false}
   if(!S.analysis)S.analysis=[];
   S.analysis.push({id:uid(),by,...rec});return true;
 }
@@ -298,8 +344,10 @@ async function anUpload(inp){
   let added=0,dup=0;const bad=[];
   for(const f of files){
     try{
-      const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});let g=null;
-      for(const n of wb.SheetNames){g=anParseSheet(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}),f.name);if(g)break}
+      const buf=await f.arrayBuffer(),wb=XLSX.read(buf,{type:"array"});let g=null;
+      for(let i=0;i<wb.SheetNames.length&&!g;i++){const ws=wb.Sheets[wb.SheetNames[i]];let opt={};
+        try{const rg=XLSX.utils.decode_range(ws["!ref"]||"A1");opt={fills:await anFills(buf,i+1),r0:rg.s.r,c0:rg.s.c}}catch(e){}
+        g=anParseSheet(XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null}),f.name,opt)}
       if(!g)bad.push(f.name);else if(anAddGame(g,me))added++;else dup++;
     }catch(e){bad.push(f.name)}
   }
@@ -332,6 +380,7 @@ function anView(){
   if(!mine.length)return (isAdmin()?head+form:anRank(flat)+head+form)+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다.${isAdmin()?' 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.':""}</p></div>`+(isAdmin()?anRank(flat):"")+anGuide();
   const cm=mine.filter(e=>e.hasC);
   const code=(k,c)=>cm.reduce((t,e)=>t+(+(e[k]||{})[c]||0),0);
+  const svc=c=>mine.reduce((t,e)=>t+(+(e.sv||{})[c]||0),0);
   const tips=[];let bars="";
   if(cm.length){
     const maxW=Math.max(1,...AN_W.map(([c])=>code("w",c))),maxU=Math.max(1,...AN_U.map(([c])=>code("u",c)));
@@ -339,7 +388,7 @@ function anView(){
     const bw=AN_W.map(([c,l])=>[c,l,code("w",c)]).sort((a,b)=>b[2]-a[2])[0],bu=AN_U.map(([c,l])=>[c,l,code("u",c)]).sort((a,b)=>b[2]-a[2])[0];
     if(bw&&bw[2])tips.push(`강점: <b>${bw[1]}</b> 득점이 가장 많아요 (${bw[2]}점)`);
     if(bu&&bu[2])tips.push(`보완: <b>${bu[1]}</b> 범실이 가장 많아요 (${bu[2]}회)`);
-    bars=`<div class="panel"><h2>샷별 득점 / 범실 <span style="font-size:11px;font-weight:400;color:var(--muted)">(코드 상세가 있는 ${cm.length}경기 기준)</span></h2><div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--court)">■</span> Winning &nbsp; <span style="color:var(--bad)">■</span> Unforced</div>${shots.map(([c,l,w,u])=>`<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0;font-size:13px"><span><b>${c}</b> <span style="color:var(--muted);font-size:11px">${l}</span></span><span>${anBar(w,maxW,"var(--court)")} <small>${w}</small><br>${anBar(u,maxU,"var(--bad)")} <small>${u}</small></span></div>`).join("")}<div style="margin-top:8px;font-size:13px;line-height:1.8">${["A","Sp"].map(c=>`<span class="tag ok">${AN_W.find(x=>x[0]===c)[1]} ${code("w",c)}</span> `).join("")}${["F","D"].map(c=>`<span class="tag no">${AN_U.find(x=>x[0]===c)[1]} ${code("u",c)}</span> `).join("")}</div></div>`;
+    bars=`<div class="panel"><h2>샷별 득점 / 범실 <span style="font-size:11px;font-weight:400;color:var(--muted)">(코드 상세가 있는 ${cm.length}경기 기준)</span></h2><div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--court)">■</span> Winning &nbsp; <span style="color:#e07b00">■</span> Unforced</div>${shots.map(([c,l,w,u])=>`<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0;font-size:13px"><span><b>${c}</b> <span style="color:var(--muted);font-size:11px">${l}</span></span><span>${anBar(w,maxW,"var(--court)")} <small>${w}</small><br>${anBar(u,maxU,"#e07b00")} <small>${u}</small></span></div>`).join("")}<div style="margin-top:8px;font-size:13px;line-height:1.8">${["A","Sp"].map(c=>`<span class="tag ok">${AN_W.find(x=>x[0]===c)[1]} ${code("w",c)+svc(c)}</span> `).join("")}${["F","D"].map(c=>`<span class="tag" style="background:#ffe8cc;color:#b45f00">${AN_U.find(x=>x[0]===c)[1]} ${code("u",c)+svc(c)}</span> `).join("")}</div></div>`;
   }
   if(st.p1!==null&&st.p1<60)tips.push(`1st 서브 성공률 ${st.p1}% — 60% 이상을 목표로 해보세요`);
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
@@ -358,9 +407,11 @@ function anGuide(){
   return guide.replace(/<\/div>$/,codes+"</div>");
 }
 function anCodeChips(list){
-  const t={};list.forEach(e=>{[e.c,e.hasC?e.w:null,e.hasC?e.u:null].forEach(o=>{if(o)for(const k in o)t[k]=(t[k]||0)+(+o[k]||0)})});
-  const ks=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"].filter(k=>t[k]);
-  return ks.length?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">${ks.map(k=>`<span class="tag" style="font-size:10px;padding:1px 6px">${k} <b>${t[k]}</b></span>`).join("")}</div>`:"";
+  const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
+  list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
+  const ORD=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"];
+  const grp=(t,lab,st)=>{const ks=ORD.filter(k=>t[k]);return ks.length?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center"><span style="font-size:10px;font-weight:800;min-width:44px;color:${st[1]}">${lab}</span>${ks.map(k=>`<span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${t[k]}</span>`).join("")}</div>`:""};
+  return grp(w,"W shot",["#dff3e6","#1d6b43"])+grp(u,"U error",["#ffe8cc","#b45f00"])+grp(o,"코드",["var(--bg)","var(--muted)"])+grp(sv,"서브",["var(--bg)","var(--muted)"]);
 }
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
