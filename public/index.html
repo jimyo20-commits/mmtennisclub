@@ -169,20 +169,20 @@ const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
-const AN_SAMPLE_C={"윤정호":{"ph":{"e":[3,3],"m":[0,4],"l":[0,2]},"sq":"UUUWWWUUUUUU","c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"ph":{"e":[2,3],"m":[3,4],"l":[0,2]},"sq":"UWUUWWWWUUUUUU","c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"sq":"WUUUUUUUUWWWUU","c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"ph":{"e":[0,2],"m":[4,0],"l":[0,1]},"sq":"UUWWWWU","c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
-function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&d.ph&&!r.ph){r.ph=d.ph;ch=true}if(d&&d.sq&&!r.sq){r.sq=d.sq;ch=true}});if(ch&&isAdmin())save()}
+const AN_SAMPLE_C={"윤정호":{"ph":{"e":[4,3],"m":[1,5],"l":[1,2]},"sq":"UWUUWWWWUUUUUUWU","c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"ph":{"e":[3,3],"m":[3,4],"l":[0,2]},"sq":"UWUUWWWWWUUUUUU","c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"sq":"WUUUUUUUUWWWUU","c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"ph":{"e":[0,2],"m":[5,0],"l":[0,1]},"sq":"UUWWWWWU","c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&!r.svp){r.ph=d.ph;r.sq=d.sq;r.svp=1;ch=true}});if(ch&&isAdmin())save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
   const row=(n,s1,s2,W,U)=>({...id(n),s1,s2,W,U});
   if(!S.analysis)S.analysis=[];
-  if(!S.analysis.some(g=>g.id==="x-0324"))S.analysis.push({id:"x-0324",by:me,date:"2026-03-24",type:"친선",court:"CRAY",note:"엑셀 기록 (3.24)",rows:[row("윤정호",[19,23],[3,4],3,9),row("이동혁",[8,11],[3,3],5,9),row("장태석",[7,12],[5,5],4,10),row("이응택",[10,13],[3,3],4,3)]});
+  if(!S.analysis.some(g=>g.id==="x-0324"||(g.date==="2026-03-24"&&String(g.court||"").toUpperCase()==="CRAY")))S.analysis.push({id:"x-0324",by:me,date:"2026-03-24",type:"친선",court:"CRAY",note:"엑셀 기록 (3.24)",rows:[row("윤정호",[19,23],[3,4],6,10),row("이동혁",[8,11],[3,3],6,9),row("장태석",[7,12],[5,5],4,10),row("이응택",[10,13],[3,3],5,3)]});
   S.imports.an0324=1;save();
 }
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
-  rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length);
-    out.push({g,pid:r.pid,name:r.name||"",ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
+  rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
+    out.push({g,pid:r.pid,name:r.name||"",ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -302,13 +302,16 @@ function anParsePoints(aoa,rows,opt){
   const segs=starts.map((s,i)=>[s,(i+1<starts.length?starts[i+1]:last+1)]);
   const codes={},sv={},wu={},ph={},sq={};names.forEach(n=>{sq[n]="";codes[n]={};sv[n]={};wu[n]={w:{},u:{}};ph[n]={e:[0,0],m:[0,0],l:[0,0]}});
   const inc=(o,k)=>{o[k]=(o[k]||0)+1};
-  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l";for(let r=s;r<e;r++)pcols.forEach((c,i)=>{
-    const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
-    if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
-      if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W"}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U"}}})});
   const attempts={};rows.forEach(r=>{attempts[r.name]=r.s1[1]});
   const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
   const ok=perms(names).find(p=>{const t={};segs.forEach(([s,e],g)=>{t[p[g%p.length]]=(t[p[g%p.length]]||0)+(e-s)});return names.every(n=>(t[n]||0)===attempts[n])});
+  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv=ok?ok[gi%ok.length]:null;for(let r=s;r<e;r++){
+    // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
+    const sk=txt((aoa[r]||[])[sc]);if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W"}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U"}}
+    pcols.forEach((c,i)=>{
+    const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
+    if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
+      if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W"}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U"}}})}});
   if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[ok[g%ok.length]],k)}});
   return {codes,sv,wu,ph,sq,serve:!!ok};
 }
@@ -334,17 +337,22 @@ function anParseSheet(aoa,fname,opt){
       if(pp.codes[r.name]&&Object.keys(pp.codes[r.name]).length)r.c=pp.codes[r.name];
       if(pp.sv[r.name]&&Object.keys(pp.sv[r.name]).length)r.sv=pp.sv[r.name];
       const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
-      if(x&&wKey&&uKey&&(r.W||r.U)&&anCsum(x.w)===r.W&&anCsum(x.u)===r.U){r.w=x.w;r.u=x.u;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}})
+      const sv_=pp.sv[r.name]||{},sW=pp.serve?(sv_.A||0)+(sv_.Sp||0):0,sU=pp.serve?(sv_.D||0):0;
+      if(x&&wKey&&uKey&&(r.W||r.U)){const cw=anCsum(x.w),cu=anCsum(x.u);
+        if(pp.serve&&cw+sW===r.W&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
+        else if(cw===r.W&&cu===r.U){r.w=x.w;r.u=x.u}}})
   }catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
   return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
 }
 function anAddGame(g,by){
-  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;return o});
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.svp)o.svp=1;if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
   const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
-  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}});if(up){anUpd=true}return false}
+  if(ex){const key=r=>r.pid||r.name,sg=l=>JSON.stringify((l||[]).map(r=>[key(r),r.W,r.U,!!r.svp]).sort());
+    if(sg(ex.rows)!==sg(rec.rows)){ex.rows=rec.rows;ex.type=rec.type||ex.type;ex.court=rec.court||ex.court;anUpd=true;return false}  // 같은 경기를 다시 올리면 최신 엑셀로 갱신
+    let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}});if(up){anUpd=true}return false}
   if(!S.analysis)S.analysis=[];
   S.analysis.push({id:uid(),by,...rec});return true;
 }
