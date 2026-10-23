@@ -423,12 +423,12 @@ function anComment(list,s){
   list.forEach(e=>{if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
   const top=(t,L)=>{let b=null;L.forEach(([c,l])=>{if(t[c]>0&&(!b||t[c]>b[2]))b=[c,l,t[c]]});return b};
   let l1;
-  if(s.inf)l1="범실 없이 득점만 쌓은 완벽한 경기력";
+  if(s.inf)l1="범실 없이 위닝샷이 쌓여 심리적으로 안정되고 숙련도 높음";
   else if(s.contrib===null)l1="기록이 더 쌓이면 총평이 표시돼요";
-  else if(s.contrib>=100)l1="득점이 범실보다 많은 공격적인 플레이";
+  else if(s.contrib>=100)l1="위닝샷이 많아 심리적 안정감과 기술 숙련도가 높음";
   else if(s.contrib>=70)l1="득점과 범실이 균형 잡힌 안정적인 플레이";
-  else if(s.contrib>30)l1="범실이 득점보다 많아 안정감 보완이 필요";
-  else l1="범실이 득점을 크게 앞서 실수 줄이기가 우선";
+  else if(s.contrib>30)l1="범실이 득점보다 많아 다소 위축된 모습, 안정감 보완 필요";
+  else l1="범실이 몰려 심리적으로 위축된 모습, 실수 줄이기가 우선";
   const p=[],bw=top(w,AN_W),bu=top(u,AN_U);
   if(bw)p.push(bw[1]+" 득점이 강점");
   if(bu)p.push(bu[1]+(bu[0]==="F"||bu[0]==="D"?" 줄이기":" 범실 보완"));
