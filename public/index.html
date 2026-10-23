@@ -169,8 +169,8 @@ const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
-const AN_SAMPLE_C={"윤정호":{"ph":{"e":[4,3],"m":[1,5],"l":[1,2]},"sq":"UWUUWWWWUUUUUUWU","c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"ph":{"e":[3,3],"m":[3,4],"l":[0,2]},"sq":"UWUUWWWWWUUUUUU","c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"sq":"WUUUUUUUUWWWUU","c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"ph":{"e":[0,2],"m":[5,0],"l":[0,1]},"sq":"UUWWWWWU","c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
-function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&!r.svp){r.ph=d.ph;r.sq=d.sq;r.svp=1;ch=true}});if(ch&&isAdmin())save()}
+const AN_SAMPLE_C={"윤정호":{"so":1,"ph":{"e":[4,3],"m":[1,5],"l":[1,2]},"sq":"UWUUWWWWUUUUUUWU","c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"so":3,"ph":{"e":[3,3],"m":[3,4],"l":[0,2]},"sq":"UWUUWWWWWUUUUUU","c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"so":4,"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"sq":"WUUUUUUUUWWWUU","c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"so":2,"ph":{"e":[0,2],"m":[5,0],"l":[0,1]},"sq":"UUWWWWWU","c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&d.so&&!r.so){r.so=d.so;ch=true}if(d&&!r.svp){r.ph=d.ph;r.sq=d.sq;r.svp=1;ch=true}});if(ch&&isAdmin())save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
@@ -180,7 +180,7 @@ function anImportSample(){
   S.imports.an0324=1;save();
 }
 /* 앱에 미리 넣어 둔 경기 기록(코드로 배포): 운영자가 분석 탭을 열면 아직 없는 경기만 자동 추가됩니다 */
-const AN_PRESET=[{"id":"p-0316","date":"2026-03-16","type":"친선","court":"CLAY","note":"엑셀 기록 (3.16)","rows":[{"name":"김우순","s1":[9,17],"s2":[8,8],"W":12,"U":7,"c":{"Fs":2,"R":3,"O":6,"V":5,"S":1},"sv":{"F":8,"A":1,"Sp":1},"w":{"Fs":1,"O":6,"V":2,"S":1},"u":{"R":3,"Fs":1,"V":3},"svp":1,"ph":{"e":[6,2],"m":[3,4],"l":[3,1]},"sq":"WWUWWWUWUWUUUWWWWUW"},{"name":"게스트","s1":[10,11],"s2":[1,1],"W":7,"U":4,"c":{"V":1,"R":2,"L":1,"O":3,"Fs":2},"sv":{"F":1,"Sp":2},"w":{"O":3,"Fs":2},"u":{"V":1,"R":2,"L":1},"svp":1,"ph":{"e":[1,4],"m":[6,0],"l":[0,0]},"sq":"UUUUWWWWWWW"},{"name":"김태석","s1":[6,10],"s2":[4,4],"W":5,"U":8,"c":{"R":4,"V":5,"Fs":2,"O":2},"sv":{"F":4},"w":{"V":3,"O":2},"u":{"R":4,"V":2,"Fs":2},"svp":1,"ph":{"e":[2,5],"m":[3,3],"l":[0,0]},"sq":"UWUUUUWUWWWUU"},{"name":"김동현","s1":[11,12],"s2":[1,1],"W":2,"U":7,"c":{"Fs":2,"V":3,"L":2,"R":2},"sv":{"F":1},"w":{"L":1,"V":1},"u":{"Fs":2,"V":2,"R":2,"L":1},"svp":1,"ph":{"e":[0,3],"m":[2,3],"l":[0,1]},"sq":"UUUWUUWUU"}]}];
+const AN_PRESET=[{"id":"p-0316","date":"2026-03-16","type":"친선","court":"CLAY","note":"엑셀 기록 (3.16)","rows":[{"name":"김우순","so":1,"s1":[9,17],"s2":[8,8],"W":12,"U":7,"c":{"Fs":2,"R":3,"O":6,"V":5,"S":1},"sv":{"F":8,"A":1,"Sp":1},"w":{"Fs":1,"O":6,"V":2,"S":1},"u":{"R":3,"Fs":1,"V":3},"svp":1,"ph":{"e":[6,2],"m":[3,4],"l":[3,1]},"sq":"WWUWWWUWUWUUUWWWWUW"},{"name":"게스트","so":3,"s1":[10,11],"s2":[1,1],"W":7,"U":4,"c":{"V":1,"R":2,"L":1,"O":3,"Fs":2},"sv":{"F":1,"Sp":2},"w":{"O":3,"Fs":2},"u":{"V":1,"R":2,"L":1},"svp":1,"ph":{"e":[1,4],"m":[6,0],"l":[0,0]},"sq":"UUUUWWWWWWW"},{"name":"김태석","so":4,"s1":[6,10],"s2":[4,4],"W":5,"U":8,"c":{"R":4,"V":5,"Fs":2,"O":2},"sv":{"F":4},"w":{"V":3,"O":2},"u":{"R":4,"V":2,"Fs":2},"svp":1,"ph":{"e":[2,5],"m":[3,3],"l":[0,0]},"sq":"UWUUUUWUWWWUU"},{"name":"김동현","so":2,"s1":[11,12],"s2":[1,1],"W":2,"U":7,"c":{"Fs":2,"V":3,"L":2,"R":2},"sv":{"F":1},"w":{"L":1,"V":1},"u":{"Fs":2,"V":2,"R":2,"L":1},"svp":1,"ph":{"e":[0,3],"m":[2,3],"l":[0,1]},"sq":"UUUWUUWUU"}]}];
 function anImportPreset(){
   if(!isAdmin())return;if(!S.imports)S.imports={};let ch=false;
   const sig=x=>[x.date,String(x.court||"").toUpperCase(),(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
@@ -193,7 +193,7 @@ function anImportPreset(){
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
-    out.push({g,pid:r.pid,name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
+    out.push({g,pid:r.pid,name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",so:r.so||0,c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -321,6 +321,7 @@ function anParsePoints(aoa,rows,opt){
   const colSrv=([s,e])=>{if(!opt.fills||!Object.keys(hcol).length)return null;const cnt={};for(let r=s;r<e;r++){const k=opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];if(k&&hcol[k])cnt[k]=(cnt[k]||0)+1}const b=Object.keys(cnt).sort((x,y)=>cnt[y]-cnt[x])[0];return b?hcol[b]:null};
   const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
   const serveOk=srvOf.every(Boolean);
+  const so={};srvOf.forEach((n,gi)=>{if(n&&so[n]===undefined&&gi<names.length)so[n]=gi+1});
   segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv=srvOf[gi];for(let r=s;r<e;r++){
     // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
     const sk=txt((aoa[r]||[])[sc]);if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W"}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U"}}
@@ -329,7 +330,7 @@ function anParsePoints(aoa,rows,opt){
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
       if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W"}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U"}}})}});
   segs.forEach(([s,e],g)=>{const srv=srvOf[g];if(!srv)return;for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[srv],k)}});
-  return {codes,sv,wu,ph,sq,serve:serveOk};
+  return {codes,sv,wu,ph,sq,so,serve:serveOk};
 }
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
 function anParseSheet(aoa,fname,opt){
@@ -355,20 +356,20 @@ function anParseSheet(aoa,fname,opt){
       const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
       const sv_=pp.sv[r.name]||{},sW=pp.serve?(sv_.A||0)+(sv_.Sp||0):0,sU=pp.serve?(sv_.D||0):0;
       if(x&&wKey&&uKey&&(r.W||r.U)){const cw=anCsum(x.w),cu=anCsum(x.u);
-        if(pp.serve&&(cw+sW===r.W||cw+sW-(sv_.A||0)===r.W)&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
+        if(pp.serve&&(cw+sW===r.W||cw+sW-(sv_.A||0)===r.W)&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name];r.so=pp.so[r.name]||0}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
         else if(cw===r.W&&cu===r.U){r.w=x.w;r.u=x.u}}})
   }catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
   return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
 }
 function anAddGame(g,by){
-  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.svp)o.svp=1;if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;return o});
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.svp)o.svp=1;if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;if(r.so)o.so=r.so;return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
   const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
   if(ex){const key=r=>r.pid||r.name,sg=l=>JSON.stringify((l||[]).map(r=>[key(r),r.W,r.U,!!r.svp]).sort());
     if(sg(ex.rows)!==sg(rec.rows)){ex.rows=rec.rows;ex.type=rec.type||ex.type;ex.court=rec.court||ex.court;anUpd=true;return false}  // 같은 경기를 다시 올리면 최신 엑셀로 갱신
-    let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}});if(up){anUpd=true}return false}
+    let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}if(n&&n.so&&!r.so){r.so=n.so;up=true}});if(up){anUpd=true}return false}
   if(!S.analysis)S.analysis=[];
   S.analysis.push({id:uid(),by,...rec});return true;
 }
@@ -442,7 +443,7 @@ function anView(){
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
   <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
   <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">← 선수별 비교로 돌아가기</button>`;
@@ -508,6 +509,19 @@ function anCourtView(cr){
   const lab=x=>x.c===999?"∞":x.c+"%";
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">코트별 성적 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${cr.arr.map(x=>`<span class="tag"${x===cr.best?' style="outline:2px solid #14633a"':x===cr.weak&&cr.gap>=20?' style="outline:2px solid #a31919"':""}>${esc(x.k)} ${lab(x)} · ${x.n}경기</span>`).join("")}</div>${cr.gap>=20?`<p style="margin:6px 0 0;font-size:13px"><b style="color:#14633a">${esc(cr.best.k)}</b> 코트에서 강하고 <b style="color:#a31919">${esc(cr.weak.k)}</b> 코트에서 약해요</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">코트에 따른 큰 차이는 없어요</p>`}</div>`;
 }
+/* 서브 순서(게임 1→2→3→4 순으로 돌아가며 서브)별 1st 서브 확률: 기록이 충분히 모였을 때만 */
+function anSvOrder(list){
+  const g={};list.forEach(e=>{if(e.so&&e.s1&&e.s1[1]>0){const o=g[e.so]=g[e.so]||{k:e.so,n:0,i:0,t:0};o.n++;o.i+=e.s1[0];o.t+=e.s1[1]}});
+  const arr=Object.values(g).filter(x=>x.n>=2&&x.t>=8).map(x=>({...x,p:Math.round(x.i/x.t*100)})).sort((a,b)=>a.k-b.k);
+  if(arr.length<2||list.length<6)return null;
+  const s=[...arr].sort((a,b)=>b.p-a.p),best=s[0],weak=s[s.length-1];
+  return {arr,best,weak,gap:best.p-weak.p};
+}
+function anSvOrderView(o){
+  if(!o)return "";
+  const nm=k=>k+"번째 서브";
+  return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">서브 순서별 1st 서브 <span style="font-weight:400;font-size:11px;color:var(--muted)">(게임 1→2→3→4 순)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${o.arr.map(x=>`<span class="tag"${x===o.best&&o.gap>=10?' style="outline:2px solid #14633a"':x===o.weak&&o.gap>=10?' style="outline:2px solid #a31919"':""}>${x.k}번째 ${x.p}% · ${x.n}경기</span>`).join("")}</div>${o.gap>=10?`<p style="margin:6px 0 0;font-size:13px"><b style="color:#14633a">${nm(o.best.k)}</b>일 때 가장 잘 들어가고 <b style="color:#a31919">${nm(o.weak.k)}</b>일 때 가장 흔들려요 (${o.best.p}% vs ${o.weak.p}%)</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">서브 순서에 따른 큰 차이는 없어요</p>`}</div>`;
+}
 /* 선수 총평(2줄): 여러 특징 중 가장 두드러진 것만 골라 선수마다 다르게 */
 function anComment(list,s){
   const w={},u={},sv={};
@@ -543,6 +557,8 @@ function anComment(list,s){
       add(46+gap*3,head,`${pn[ph.strong]} 강세 · ${pn[ph.weak]} 약세`);
     }
   }
+  // 서브 순서(1~4번째 서브)별 1st 서브 확률: 데이터가 충분할 때만
+  const sorder=anSvOrder(list);if(sorder&&sorder.gap>=15)add(50+Math.min(20,sorder.gap/2),pick([`서브 순서를 타는 편 — ${sorder.best.k}번째 서브 ${sorder.best.p}%, ${sorder.weak.k}번째 ${sorder.weak.p}%`,`${sorder.best.k}번째 서브가 가장 안정적 (${sorder.best.p}%)`]),`${sorder.best.k}번째 서브 1st ${sorder.best.p}% vs ${sorder.weak.k}번째 ${sorder.weak.p}%`);
   // 코트
   if(cr&&cr.gap>=30)add(44+Math.min(20,cr.gap/4),null,`${cr.best.k} 코트 강세 · ${cr.weak.k} 코트 약세`);
   // 샷 편중
