@@ -523,28 +523,53 @@ function anSvOrderView(o){
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">서브 순서별 1st 서브 <span style="font-weight:400;font-size:11px;color:var(--muted)">(게임 1→2→3→4 순)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${o.arr.map(x=>`<span class="tag"${x===o.best&&o.gap>=10?' style="outline:2px solid #14633a"':x===o.weak&&o.gap>=10?' style="outline:2px solid #a31919"':""}>${x.k}번째 ${x.p}% · ${x.n}경기</span>`).join("")}</div>${o.gap>=10?`<p style="margin:6px 0 0;font-size:13px"><b style="color:#14633a">${nm(o.best.k)}</b>일 때 가장 잘 들어가고 <b style="color:#a31919">${nm(o.weak.k)}</b>일 때 가장 흔들려요 (${o.best.p}% vs ${o.weak.p}%)</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">서브 순서에 따른 큰 차이는 없어요</p>`}</div>`;
 }
 /* 선수 총평(2줄): 여러 특징 중 가장 두드러진 것만 골라 선수마다 다르게 */
-/* 상황별 한 줄 응원 문구 (총평 첫 줄의 특징에 맞춰 선택) */
+/* 상황별 한 줄 응원 문구 — 총평 첫 줄의 특징 + 선수의 주무기/약점 샷/구간/서브 특징을 함께 보고 선수마다 다르게 선택 */
 const AN_QUOTES=[
- [/더블폴트|서브가 최우선/,["서브는 내가 100% 컨트롤하는 유일한 샷, 여기부터 단단하게!","더블폴트 줄이기는 가장 빠른 실력 향상 지름길이에요","두 번째 서브는 속도보다 확신으로 넣어요"]],
- [/서브 안정이 먼저/,["첫 서브 한 개가 경기의 분위기를 바꿔요","루틴을 만들면 서브가 편해져요 — 공 튕기기, 호흡, 서브!"]],
- [/서브가 든든|1st 서브 \d+%로 경기/,["든든한 서브는 팀에게 가장 큰 선물이에요","서브가 좋은 날은 경기가 편해져요 — 이 감각 그대로!"]],
- [/서브 순서/,["서브 순서마다 컨디션이 달라요 — 흔들리는 순서에 한 번 더 호흡!","어느 순서든 같은 루틴으로 서브해 보세요"]],
- [/위축|멘탈/,["실수 다음 한 점이 진짜 실력이에요 — 바로 잊고 다음 공!","범실은 지나간 점수일 뿐, 다음 공에만 집중해요","어려울 때 크게 숨 한 번, 그리고 쉬운 공부터"]],
- [/기복|롤러코스터|흔들리면|몰아치지만|변수/,["잘 풀릴 때의 감각을 기억하고, 흔들릴 땐 쉬운 공으로 리듬 되찾기","기복을 줄이면 한 단계 올라가요 — 쉬운 공을 확실하게"]],
- [/몰아치기|안정감과 숙련도|완벽|깔끔|완성도/,["지금의 자신감 그대로 — 좋은 흐름은 스스로 만든 거예요","잘하고 있어요! 이 리듬을 다음 경기에도 가져가요"]],
- [/슬로우|초반 적응/,["워밍업 때 서브와 리턴 몇 개만 더 쳐 봐요 — 시작부터 편해져요","초반 첫 게임만 넘기면 본 실력이 나와요"]],
- [/뒷심|후반/,["후반에 한 번 더 호흡 — 마지막 게임이 승부예요","끝까지 같은 템포로, 발이 멈추지 않게!"]],
- [/초반 강세/,["시작이 좋아요 — 그 기세를 끝까지 이어 가요"]],
- [/공격 우위|믿음직/,["적극적인 플레이가 빛나요 — 쉬운 공까지 확실히 마무리해요","위닝샷이 많은 건 용기 있는 플레이의 증거예요"]],
- [/밸런스|균형/,["작은 실수 하나만 줄이면 다음 단계가 보여요","균형 잡힌 플레이, 한 가지 무기만 더하면 완성!"]],
- [/도전형|범실 관리|범실이 득점/,["도전은 멋져요 — 확률 높은 공 한 개를 더 섞어 봐요","공격과 안정 사이 균형만 찾으면 금방 올라가요"]],
- [/안정이 우선|실수 줄이기/,["쉬운 공부터 넘기는 연습이 가장 빠른 길이에요","네트 위로 한 번 더, 그것만으로도 포인트가 늘어요"]],
- [/주무기|한 방|중심의/,["확실한 주무기는 큰 재산이에요 — 다른 샷도 조금씩 함께 키워요"]],
+ [/더블폴트|서브가 최우선/,["서브는 내가 100% 컨트롤하는 유일한 샷, 여기부터 단단하게!","더블폴트 줄이기는 가장 빠른 실력 향상 지름길이에요","두 번째 서브는 속도보다 확신으로 넣어요","토스를 낮고 일정하게 — 그것만으로 서브가 달라져요","세컨드 서브는 스핀을 더해 안전하게, 자신 있게!","서브 전 호흡 한 번, 그리고 부드럽게 휘두르기","더블폴트 한 개가 사라지면 한 게임이 달라져요"]],
+ [/서브 안정이 먼저/,["첫 서브 한 개가 경기의 분위기를 바꿔요","루틴을 만들면 서브가 편해져요 — 공 튕기기, 호흡, 서브!","퍼스트 서브는 80%의 힘으로, 들어가는 게 먼저예요","서브 코스를 하나만 정해 놓고 반복해 보세요","빠른 서브보다 들어가는 서브가 포인트를 만들어요","서브 연습 한 바구니면 경기가 훨씬 편해져요"]],
+ [/서브가 든든|1st 서브 \d+%로 경기/,["든든한 서브는 팀에게 가장 큰 선물이에요","서브가 좋은 날은 경기가 편해져요 — 이 감각 그대로!","서브가 안정되니 리턴과 랠리도 여유가 생겨요","서브 게임을 지키는 힘이 승부를 만들어요","이 서브 루틴을 기억해 두세요 — 그대로가 정답!"]],
+ [/서브 순서/,["서브 순서마다 컨디션이 달라요 — 흔들리는 순서에 한 번 더 호흡!","어느 순서든 같은 루틴으로 서브해 보세요","첫 서브 게임에서 리듬을 잡으면 끝까지 이어져요","불안한 순서엔 코스를 단순하게, 들어가는 서브부터!"]],
+ [/위축|멘탈/,["실수 다음 한 점이 진짜 실력이에요 — 바로 잊고 다음 공!","범실은 지나간 점수일 뿐, 다음 공에만 집중해요","어려울 때 크게 숨 한 번, 그리고 쉬운 공부터","실수 후엔 라켓 줄을 한 번 만지고 새 점수로 시작해요","연속 실수가 나오면 크로스로 안전하게 한 개만!","괜찮아요, 다음 점수는 0:0이에요","표정 먼저 펴면 몸도 따라와요 — 웃으며 다음 공!"]],
+ [/기복|롤러코스터|흔들리면|몰아치지만|변수/,["잘 풀릴 때의 감각을 기억하고, 흔들릴 땐 쉬운 공으로 리듬 되찾기","기복을 줄이면 한 단계 올라가요 — 쉬운 공을 확실하게","좋은 날의 폼을 영상으로 남겨 두면 흔들릴 때 기준이 돼요","연속 실수 두 번이면 템포를 한 박자 늦춰요","잘 맞을 때 자신감, 안 맞을 때 단순함 — 둘 다 무기예요","리듬이 끊길 땐 발부터 다시 움직여요"]],
+ [/몰아치기|안정감과 숙련도|완벽|깔끔|완성도/,["지금의 자신감 그대로 — 좋은 흐름은 스스로 만든 거예요","잘하고 있어요! 이 리듬을 다음 경기에도 가져가요","오늘의 몸 상태와 루틴을 기억해 두세요","이 정도면 상대가 부담스러워해요 — 계속 밀어붙여요!","좋은 흐름일수록 쉬운 공에 집중하면 더 오래가요","이 컨디션, 다음 경기에도 그대로!"]],
+ [/슬로우|초반 적응/,["워밍업 때 서브와 리턴 몇 개만 더 쳐 봐요 — 시작부터 편해져요","초반 첫 게임만 넘기면 본 실력이 나와요","시작 전 스플릿스텝 연습으로 몸을 깨워 두면 좋아요","첫 게임은 안전하게 넘기고 두 번째 게임부터 치고 나가요","가벼운 조깅이나 스트레칭이 초반 흔들림을 줄여 줘요"]],
+ [/뒷심|후반/,["후반에 한 번 더 호흡 — 마지막 게임이 승부예요","끝까지 같은 템포로, 발이 멈추지 않게!","경기 중 물 한 모금과 짧은 호흡으로 체력을 아껴요","후반엔 공격보다 확률 — 안정적인 코스로 마무리해요","마지막까지 스플릿스텝을 잊지 말아요"]],
+ [/초반 강세/,["시작이 좋아요 — 그 기세를 끝까지 이어 가요","초반의 집중력을 후반에도 한 번 더 꺼내 봐요","좋은 출발입니다 — 리드할 때가 제일 조심할 때예요"]],
+ [/공격 우위|믿음직/,["적극적인 플레이가 빛나요 — 쉬운 공까지 확실히 마무리해요","위닝샷이 많은 건 용기 있는 플레이의 증거예요","공격할 땐 과감하게, 수비할 땐 침착하게 — 지금처럼!","공격 선택이 좋아요 — 한 번 더 상대 반대편으로!","득점 패턴이 확실해요 — 여기에 변화구 하나만 더하면 완벽해요"]],
+ [/밸런스|균형/,["작은 실수 하나만 줄이면 다음 단계가 보여요","균형 잡힌 플레이, 한 가지 무기만 더하면 완성!","안정감이 큰 장점이에요 — 공격 타이밍만 조금 더 가져가 봐요","득점과 실수가 팽팽해요 — 쉬운 공 한 개가 승부를 갈라요"]],
+ [/도전형|범실 관리|범실이 득점/,["도전은 멋져요 — 확률 높은 공 한 개를 더 섞어 봐요","공격과 안정 사이 균형만 찾으면 금방 올라가요","찬스볼 아닌 공은 크로스로 길게 — 그것만으로 범실이 줄어요","도전 정신은 최고예요, 이제 선택만 조금 다듬어요","범실 3개만 줄여도 승리기여도가 확 올라가요"]],
+ [/안정이 우선|실수 줄이기/,["쉬운 공부터 넘기는 연습이 가장 빠른 길이에요","네트 위로 한 번 더, 그것만으로도 포인트가 늘어요","랠리를 길게 가져가는 연습부터 시작해 봐요","공 한 개 한 개 넘기기만 해도 점수가 쌓여요","크게 치기보다 깊게 보내기 — 그것부터 해요"]],
+ [/주무기|한 방|중심의/,["확실한 주무기는 큰 재산이에요 — 다른 샷도 조금씩 함께 키워요","주무기를 살리려면 그 공이 올 때까지 랠리를 길게!","무기가 확실하니 상대가 대비해요 — 코스를 섞어 보세요"]],
 ];
-function anQuote(head,hs){
-  for(const [re,list] of AN_QUOTES){if(re.test(head))return list[hs%list.length]}
-  return "";
+/* 선수의 약점 샷(범실 최다) / 주무기 샷(득점 최다)별 한 줄 팁 */
+const AN_TIP_U={Fs:["포핸드는 준비 자세를 빨리, 접촉점을 앞에 두면 범실이 줄어요","포핸드 스윙을 끝까지 팔로스루 — 짧게 끊기면 네트에 걸려요","포핸드는 크로스 방향이 가장 안전해요"],Bs:["백핸드는 몸을 옆으로 충분히 돌려 준비해요","백핸드는 무리하지 말고 슬라이스로 안전하게 넘겨도 좋아요","백핸드는 접촉점을 몸 앞에서!"],V:["발리는 휘두르지 말고 라켓면만 세워서 '밀어 주기'","발리는 무릎을 낮추고 라켓을 눈앞에 유지해요","발리 범실은 준비 속도 문제 — 스플릿스텝 후 바로 앞으로!"],O:["스매싱은 끝까지 공을 보고 라켓을 위로 쭉!","스매싱은 힘보다 위치 — 발을 먼저 옮겨요","스매싱은 70% 힘이면 충분해요"],P:["패싱샷은 낮고 깊게 — 욕심 내지 말고 발 앞으로 보내요","패싱은 상대 발 쪽으로 낮게 보내는 것이 가장 효과적이에요"],L:["로브는 높이가 생명 — 상대 머리 위를 확실히 넘겨요","로브는 라켓을 아래에서 위로 부드럽게 올려 줘요"],R:["리턴은 큰 스윙보다 짧은 스윙으로 코트 안에 넣어요","리턴은 스플릿스텝 타이밍이 전부 — 서브가 칠 때 점프!","리턴은 상대 서브가 어디든 일단 깊게 넘기는 게 첫 목표예요"],S:["쇼트볼은 발을 먼저 옮기고 가볍게 처리해요","짧은 공은 서두르지 말고 자세부터 잡아요"]};
+const AN_TIP_W={Fs:["포핸드 위닝이 강점이에요 — 코스 변화를 하나 더 해 봐요","포핸드가 무기예요, 리듬을 타면 더 위력이 커져요"],Bs:["백핸드가 무기라니 대단해요 — 자신 있게 계속!"],V:["네트 플레이가 강점이에요 — 전위 포지션을 더 활용해요","발리 감각이 좋아요, 기회가 오면 과감히 앞으로!"],O:["스매싱이 시원해요 — 로브가 올라오면 기다렸다는 듯이!","스매싱 마무리가 확실해요, 자신감 그대로!"],P:["패싱 감각이 훌륭해요 — 상대가 네트로 올 때 노려봐요"],L:["로브를 잘 쓰는 센스가 있어요 — 상대 위치를 읽는 눈이 좋아요"],R:["리턴이 강점이에요 — 상대 서브를 압박해 봐요"],S:["짧은 공 처리가 좋아요 — 찬스볼 마무리가 확실해요"]};
+function anQuote(head,hs,ctx){
+  ctx=ctx||{};const pool=[];
+  for(const [re,list] of AN_QUOTES){if(re.test(head)){list.forEach(x=>pool.push(x));break}}
+  const a=[],add=l=>(l||[]).forEach(x=>a.push(x));
+  if(ctx.bu)add(AN_TIP_U[ctx.bu[0]]);
+  if(ctx.bw)add(AN_TIP_W[ctx.bw[0]]);
+  const ph=ctx.ph;
+  if(ph&&ph.weak==="e")a.push("경기 전 가벼운 워밍업으로 초반 감각을 미리 깨워 두세요");
+  if(ph&&ph.weak==="m")a.push("중반에 집중이 흐트러지기 쉬워요 — 체인지엔드 때 호흡 정리!");
+  if(ph&&ph.weak==="l")a.push("후반 체력 관리가 열쇠 — 평소 조금 더 길게 랠리 연습해요");
+  if(ph&&ph.strong==="m")a.push("중반 집중력이 좋아요 — 이 감각을 초반에도 가져와요");
+  if(ctx.p1!=null&&ctx.p1>=72)a.push("서브가 팀에 큰 힘이 돼요 — 파트너와 전략도 함께 짜 봐요");
+  if(ctx.D>=1)a.push("더블폴트가 나왔을 땐 다음 서브 토스를 한 번 더 천천히");
+  // 상황 문구(2/3)와 샷·구간별 개인 맞춤 팁(1/3)을 섞어 선수마다 다르게
+  const all=[...pool,...a];
+  if(!all.length)return "";
+  let h=hs>>>0;h=Math.imul(h^(h>>>15),2246822519)>>>0;h=Math.imul(h^(h>>>13),3266489917)>>>0;h^=h>>>16;h>>>=0;
+  // 개인 맞춤 팁(샷·구간·서브)을 상황 문구와 번갈아 우선 선택하고, 같은 목록에서 이미 쓴 문구는 피한다
+  const mine=a.length&&(h%2===0),first=mine?a:pool,second=mine?pool:a;
+  for(const L of [first,second,all]){
+    if(!L.length)continue;
+    for(let k=0;k<L.length;k++){const x=L[(h+k)%L.length];if(!anUsedQ.has(x)){anUsedQ.add(x);return x}}
+  }
+  return all[h%all.length];
 }
+const anUsedQ=new Set();
 function anComment(list,s){
   const w={},u={},sv={};
   list.forEach(e=>{for(const k in (e.sv||{}))sv[k]=(sv[k]||0)+(+e.sv[k]||0);if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
@@ -597,7 +622,7 @@ function anComment(list,s){
   F.sort((a,b)=>b.score-a.score);
   const hf=F.find(f=>f.head)||{head:"기록을 바탕으로 한 총평",detail:null};
   const rest=F.filter(f=>f!==hf&&f.detail).slice(0,2).map(f=>f.detail);
-  return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2));
+  return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2,{bw,bu,ph,p1,D}));
 }
 function cmtHtml(l1,l2,l3){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}${l3?`<div style="color:var(--court);font-style:italic">💬 ${l3}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
@@ -615,7 +640,7 @@ function anCodeChips(list,tot){tot=tot||{};
 }
 let anMore=false;
 function toggleAnMore(){anMore=!anMore;render()}
-function anRank(flat){
+function anRank(flat){anUsedQ.clear();
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
   return `<div class="panel"><h2>선수별 비교 <span style="font-size:12px;font-weight:400;color:var(--muted)">이름을 클릭하면 자세한 내용을 볼 수 있어요</span></h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;align-items:flex-start;gap:12px${anTop&&x.m.id===anPid?';background:rgba(46,160,90,.16);border-radius:10px':''}"><div style="flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px">${i+1}</span>${av(x.m,44)}<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></div><div class="grow" style="min-width:0">${nameR(x.m)} <span class="tag" style="font-size:11px;vertical-align:middle">${x.s.n}경기</span>${anCodeChips(flat.filter(e=>e.pid===x.m.id),x.s)}${anComment(flat.filter(e=>e.pid===x.m.id),x.s)}</div></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
