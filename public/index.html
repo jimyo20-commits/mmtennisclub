@@ -221,6 +221,63 @@ function saveAnalysis(){
 }
 function anCancel(){anForm=false;anEditId=null;anErr="";render()}
 function anOpen(){anForm=true;anEditId=null;anErr="";render()}
+/* ===== 엑셀 업로드로 경기 분석 가져오기 (양식: DATE/TYPE/COURT 라벨 + '요약' 표) ===== */
+let anMsg="";
+function anLoadXlsx(){return new Promise((res,rej)=>{if(typeof XLSX!=="undefined")return res();const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>res();s.onerror=()=>rej(new Error("load"));document.head.appendChild(s)})}
+function anParseDate(v,fname){
+  const p=n=>String(n).padStart(2,"0"),y=new Date().getFullYear();let m;
+  if(typeof v==="number"){
+    if(v>20000){const d=new Date(Math.round((v-25569)*86400e3));return d.getUTCFullYear()+"-"+p(d.getUTCMonth()+1)+"-"+p(d.getUTCDate())}
+    const pt=String(v).split(".");if(+pt[0]>=1&&+pt[0]<=12&&pt[1]&&+pt[1]>=1&&+pt[1]<=31)return y+"-"+p(+pt[0])+"-"+p(+pt[1]);
+  }
+  for(const t of [typeof v==="string"?v:"",fname||""]){
+    if((m=t.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/)))return m[1]+"-"+p(+m[2])+"-"+p(+m[3]);
+    if((m=t.match(/(\d{1,2})[./-](\d{1,2})/))&&+m[1]>=1&&+m[1]<=12&&+m[2]>=1&&+m[2]<=31)return y+"-"+p(+m[1])+"-"+p(+m[2]);
+  }
+  return today();
+}
+const anRatio=v=>{const m=String(v==null?"":v).match(/(\d+)\s*\/\s*(\d+)/);return m?[+m[1],+m[2]]:[0,0]};
+/* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
+function anParseSheet(aoa,fname){
+  const txt=v=>String(v==null?"":v).trim();
+  let sr=-1,sc=-1;
+  for(let r=0;r<Math.min(aoa.length,30)&&sr<0;r++)for(let c=0;c<(aoa[r]||[]).length;c++)if(txt(aoa[r][c])==="요약"){sr=r;sc=c;break}
+  if(sr<0)return null;
+  const hdr={};(aoa[sr]||[]).forEach((v,c)=>{const t=txt(v).toLowerCase().replace(/\s+/g,"");if(t)hdr[t]=c});
+  const col=(k,d)=>hdr[k]!==undefined?hdr[k]:d;
+  const c1=col("1stserve",sc+1),c2=col("2ndserve",sc+2),cw=col("winning",sc+3),cu=col("unforced",sc+4);
+  const meta=k=>{for(let r=0;r<Math.min(aoa.length,30);r++)for(let c=0;c<(aoa[r]||[]).length;c++)if(txt(aoa[r][c]).toUpperCase()===k){for(let d=1;d<=3;d++){const v=(aoa[r]||[])[c+d];if(v!==null&&v!==undefined&&txt(v)!=="")return v}}return null};
+  const rows=[];
+  for(let r=sr+1;r<aoa.length;r++){const nm=txt((aoa[r]||[])[sc]);if(!nm||/^(vs|serve)$/i.test(nm))break;
+    rows.push({name:nm,s1:anRatio(aoa[r][c1]),s2:anRatio(aoa[r][c2]),W:anNum(aoa[r][cw]),U:anNum(aoa[r][cu])})}
+  if(!rows.length)return null;
+  const type=meta("TYPE"),court=meta("COURT");
+  return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
+}
+function anAddGame(g,by){
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name);return m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U}});
+  const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
+  const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
+  if((S.analysis||[]).some(x=>sig(x)===sig(rec)))return false;
+  if(!S.analysis)S.analysis=[];
+  S.analysis.push({id:uid(),by,...rec});return true;
+}
+async function anUpload(inp){
+  const files=[...(inp.files||[])];if(!files.length)return;
+  anMsg="엑셀을 읽는 중…";render();
+  try{await anLoadXlsx()}catch(e){anMsg="엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.";render();return}
+  let added=0,dup=0;const bad=[];
+  for(const f of files){
+    try{
+      const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});let g=null;
+      for(const n of wb.SheetNames){g=anParseSheet(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}),f.name);if(g)break}
+      if(!g)bad.push(f.name);else if(anAddGame(g,me))added++;else dup++;
+    }catch(e){bad.push(f.name)}
+  }
+  if(added){anPid=(S.analysis[S.analysis.length-1].rows.find(r=>r.pid)||{}).pid||anPid;save()}
+  anMsg=[added?`${added}경기를 가져왔습니다.`:"",dup?`이미 있는 경기 ${dup}건은 건너뛰었습니다.`:"",bad.length?`읽지 못한 파일: ${bad.join(", ")} ('요약' 표가 있는 양식인지 확인해 주세요)`:""].filter(Boolean).join(" ")||"가져온 경기가 없습니다.";
+  inp.value="";render();
+}
 function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&window.scrollTo(0,0)}
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
@@ -241,9 +298,9 @@ function anView(){
   const mine=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||""));
   const st=anStats(mine);
   const cnt=id=>flat.filter(e=>e.pid===id).length;
-  const head=`<div class="panel"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label>${anForm?"":`<button class="btn" onclick="anOpen()">+ 경기 분석 입력</button>`}</div></div>`;
+  const head=`<div class="panel"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div><div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}</div>`;
   const form=anForm?anFormView(sel):"";
-  if(!mine.length)return head+form+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다. 위의 "경기 분석 입력"으로 경기 내용을 기록해 보세요.</p></div>`+anRank(flat);
+  if(!mine.length)return head+form+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다. 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.</p></div>`+anRank(flat);
   const cm=mine.filter(e=>e.hasC);
   const code=(k,c)=>cm.reduce((t,e)=>t+(+(e[k]||{})[c]||0),0);
   const tips=[];let bars="";
