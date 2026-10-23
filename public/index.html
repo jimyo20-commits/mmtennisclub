@@ -36,6 +36,7 @@ main{padding:18px 16px 60px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .stat b{display:block;font-size:24px;font-weight:900}
 .stat span{color:var(--muted);font-size:13px}
+.stats3{grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:0}.stats3 .stat{padding:10px 4px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0}.stats3 .stat b{font-size:20px}.stats3 .stat span{font-size:11px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
 h2{font-size:17px;margin:0 0 12px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
@@ -401,8 +402,8 @@ function anView(){
   }
   if(st.p1!==null&&st.p1<60)tips.push(`1st 서브 성공률 ${st.p1}% — 60% 이상을 목표로 해보세요`);
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
-  <div class="stats"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
-  <div class="stats" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
+  <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
+  <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
@@ -436,7 +437,7 @@ function anPhaseView(p){
   const cell=([k,l,r])=>{const [w,u]=p.t[k],s={contrib:u?Math.round(w/u*100):null,inf:!u&&w>0};
     return `<div class="stat"${k===p.strong?' style="outline:2px solid #14633a"':k===p.weak?' style="outline:2px solid #a31919"':""}><b style="font-size:15px">${w+u?`<span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(s)}">${anC(s)}</span>`:"-"}</b><span>${l}<br><small style="font-size:10px">${r}</small></span><span style="font-size:11px">W ${w} · U ${u}</span></div>`};
   const msg=p.strong?`<b style="color:#14633a">${nm(p.strong)}</b>에 강하고 <b style="color:#a31919">${nm(p.weak)}</b>에 약해요`:"구간별 편차가 크지 않아요";
-  return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">구간별 분석 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도 · 초록=강세 / 빨강=약세)</span></div><div class="stats">${AN_PH.map(cell).join("")}</div><p style="margin:6px 0 0;font-size:13px">${msg}</p></div>`;
+  return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">구간별 분석 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도 · 초록=강세 / 빨강=약세)</span></div><div class="stats stats3">${AN_PH.map(cell).join("")}</div><p style="margin:6px 0 0;font-size:13px">${msg}</p></div>`;
 }
 /* 시간순(엑셀 위→아래) 흐름: 같은 종류가 3번 이상 연달아 나오면 "몰림". 범실(주황)=위축, 위닝(초록)=안정감·숙련도 */
 function anFlow(list){
