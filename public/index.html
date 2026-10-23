@@ -305,15 +305,20 @@ function anParsePoints(aoa,rows,opt){
   const attempts={};rows.forEach(r=>{attempts[r.name]=r.s1[1]});
   const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
   const ok=perms(names).find(p=>{const t={};segs.forEach(([s,e],g)=>{t[p[g%p.length]]=(t[p[g%p.length]]||0)+(e-s)});return names.every(n=>(t[n]||0)===attempts[n])});
-  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv=ok?ok[gi%ok.length]:null;for(let r=s;r<e;r++){
+  // 서브칸 배경색 = 서브를 넣는 선수의 이름칸 배경색 → 게임별 서버 판별 (색 정보가 없으면 서브권 순서 추정으로 대체)
+  const hcol={};if(opt.fills)pcols.forEach((c,i)=>{const k=opt.fills[anColL(c+(opt.c0||0))+(hr+(opt.r0||0)+1)];if(k)hcol[k]=names[i]});
+  const colSrv=([s,e])=>{if(!opt.fills||!Object.keys(hcol).length)return null;const cnt={};for(let r=s;r<e;r++){const k=opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];if(k&&hcol[k])cnt[k]=(cnt[k]||0)+1}const b=Object.keys(cnt).sort((x,y)=>cnt[y]-cnt[x])[0];return b?hcol[b]:null};
+  const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
+  const serveOk=srvOf.every(Boolean);
+  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv=srvOf[gi];for(let r=s;r<e;r++){
     // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
     const sk=txt((aoa[r]||[])[sc]);if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W"}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U"}}
     pcols.forEach((c,i)=>{
     const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
       if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W"}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U"}}})}});
-  if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[ok[g%ok.length]],k)}});
-  return {codes,sv,wu,ph,sq,serve:!!ok};
+  segs.forEach(([s,e],g)=>{const srv=srvOf[g];if(!srv)return;for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[srv],k)}});
+  return {codes,sv,wu,ph,sq,serve:serveOk};
 }
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
 function anParseSheet(aoa,fname,opt){
