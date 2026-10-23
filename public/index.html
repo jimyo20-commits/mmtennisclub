@@ -165,8 +165,8 @@ const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
-const AN_SAMPLE_C={"윤정호":{"ph":{"e":[3,3],"m":[0,4],"l":[0,2]},"c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"ph":{"e":[2,3],"m":[3,4],"l":[0,2]},"c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"ph":{"e":[0,2],"m":[4,0],"l":[0,1]},"c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
-function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&d.ph&&!r.ph){r.ph=d.ph;ch=true}});if(ch&&isAdmin())save()}
+const AN_SAMPLE_C={"윤정호":{"ph":{"e":[3,3],"m":[0,4],"l":[0,2]},"sq":"UUUWWWUUUUUU","c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"ph":{"e":[2,3],"m":[3,4],"l":[0,2]},"sq":"UWUUWWWWUUUUUU","c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"ph":{"e":[1,7],"m":[3,1],"l":[0,2]},"sq":"WUUUUUUUUWWWUU","c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"ph":{"e":[0,2],"m":[4,0],"l":[0,1]},"sq":"UUWWWWU","c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}if(d&&d.ph&&!r.ph){r.ph=d.ph;ch=true}if(d&&d.sq&&!r.sq){r.sq=d.sq;ch=true}});if(ch&&isAdmin())save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
@@ -178,7 +178,7 @@ function anImportSample(){
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length);
-    out.push({g,pid:r.pid,name:r.name||"",ph:r.ph||null,c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
+    out.push({g,pid:r.pid,name:r.name||"",ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -296,17 +296,17 @@ function anParsePoints(aoa,rows,opt){
   const starts=[];for(let r=hr+1;r<=last;r++)if(typeof (aoa[r]||[])[0]==="number")starts.push(r);
   if(!starts.length)return null;
   const segs=starts.map((s,i)=>[s,(i+1<starts.length?starts[i+1]:last+1)]);
-  const codes={},sv={},wu={},ph={};names.forEach(n=>{codes[n]={};sv[n]={};wu[n]={w:{},u:{}};ph[n]={e:[0,0],m:[0,0],l:[0,0]}});
+  const codes={},sv={},wu={},ph={},sq={};names.forEach(n=>{sq[n]="";codes[n]={};sv[n]={};wu[n]={w:{},u:{}};ph[n]={e:[0,0],m:[0,0],l:[0,0]}});
   const inc=(o,k)=>{o[k]=(o[k]||0)+1};
   segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l";for(let r=s;r<e;r++)pcols.forEach((c,i)=>{
     const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
-      if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++}}})});
+      if(col&&col===opt.wKey){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W"}else if(col&&col===opt.uKey){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U"}}})});
   const attempts={};rows.forEach(r=>{attempts[r.name]=r.s1[1]});
   const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
   const ok=perms(names).find(p=>{const t={};segs.forEach(([s,e],g)=>{t[p[g%p.length]]=(t[p[g%p.length]]||0)+(e-s)});return names.every(n=>(t[n]||0)===attempts[n])});
   if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[ok[g%ok.length]],k)}});
-  return {codes,sv,wu,ph,serve:!!ok};
+  return {codes,sv,wu,ph,sq,serve:!!ok};
 }
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
 function anParseSheet(aoa,fname,opt){
@@ -330,17 +330,17 @@ function anParseSheet(aoa,fname,opt){
       if(pp.codes[r.name]&&Object.keys(pp.codes[r.name]).length)r.c=pp.codes[r.name];
       if(pp.sv[r.name]&&Object.keys(pp.sv[r.name]).length)r.sv=pp.sv[r.name];
       const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
-      if(x&&wKey&&uKey&&(r.W||r.U)&&anCsum(x.w)===r.W&&anCsum(x.u)===r.U){r.w=x.w;r.u=x.u;r.ph=pp.ph[r.name]}})
+      if(x&&wKey&&uKey&&(r.W||r.U)&&anCsum(x.w)===r.W&&anCsum(x.u)===r.U){r.w=x.w;r.u=x.u;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}})
   }catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
   return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
 }
 function anAddGame(g,by){
-  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.ph)o.ph=r.ph;return o});
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
   const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
-  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}});if(up){anUpd=true}return false}
+  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}});if(up){anUpd=true}return false}
   if(!S.analysis)S.analysis=[];
   S.analysis.push({id:uid(),by,...rec});return true;
 }
@@ -403,7 +403,7 @@ function anView(){
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
   <div class="stats"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
   <div class="stats" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">← 선수별 비교로 돌아가기</button>`;
@@ -438,6 +438,22 @@ function anPhaseView(p){
   const msg=p.strong?`<b style="color:#14633a">${nm(p.strong)}</b>에 강하고 <b style="color:#a31919">${nm(p.weak)}</b>에 약해요`:"구간별 편차가 크지 않아요";
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">구간별 분석 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도 · 초록=강세 / 빨강=약세)</span></div><div class="stats">${AN_PH.map(cell).join("")}</div><p style="margin:6px 0 0;font-size:13px">${msg}</p></div>`;
 }
+/* 시간순(엑셀 위→아래) 흐름: 같은 종류가 3번 이상 연달아 나오면 "몰림". 범실(주황)=위축, 위닝(초록)=안정감·숙련도 */
+function anFlow(list){
+  const seqs=list.filter(x=>x.sq).map(x=>x.sq);if(!seqs.length)return null;
+  let mw=0,mu=0,cw=0,cu=0;
+  seqs.forEach(q=>{(q.match(/W+|U+/g)||[]).forEach(r=>{if(r[0]==="W"){mw=Math.max(mw,r.length);if(r.length>=3)cw++}else{mu=Math.max(mu,r.length);if(r.length>=3)cu++}})});
+  let msg="",short="";
+  if(mu>=3&&mw>=3){msg=`위닝샷이 최대 ${mw}번 연속 몰린 구간도, 범실이 최대 ${mu}번 연속 몰린 구간도 있어 흐름에 따라 기복이 커요`;short="흐름에 따라 기복이 큼 (안정감과 위축이 교차)"}
+  else if(mu>=3){msg=`주황 범실이 최대 ${mu}번 연속 몰려 심리적으로 위축된 모습이 보여요`;short=`범실이 ${mu}번 연속 몰려 심리적으로 위축된 모습`}
+  else if(mw>=3){msg=`초록 위닝샷이 최대 ${mw}번 연속 몰려 심리적 안정감과 기술 숙련도가 높아요`;short=`위닝샷이 ${mw}번 연속 몰려 안정감·숙련도 높음`}
+  return {seqs,mw,mu,cw,cu,msg,short};
+}
+function anFlowView(f){
+  if(!f)return "";
+  const dots=f.seqs.map(q=>`<div style="display:flex;flex-wrap:wrap;gap:2px;margin:3px 0">${[...q].map(c=>`<span style="width:12px;height:12px;border-radius:3px;background:${c==="W"?"#1d9a5b":"#e07b00"}"></span>`).join("")}</div>`).join("");
+  return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">경기 흐름 <span style="font-weight:400;font-size:11px;color:var(--muted)">(<span style="color:#1d9a5b">■</span> 위닝 <span style="color:#e07b00">■</span> 범실 · 왼쪽→오른쪽 시간순)</span></div>${dots}${f.msg?`<p style="margin:6px 0 0;font-size:13px">${f.msg}</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">같은 결과가 3번 이상 연달아 몰린 구간은 없어요</p>`}</div>`;
+}
 /* 선수 총평(2줄): 승리기여도 + 강점/보완 샷 + 서브 */
 function anComment(list,s){
   const w={},u={};
@@ -450,6 +466,7 @@ function anComment(list,s){
   else if(s.contrib>=70)l1="득점과 범실이 균형 잡힌 안정적인 플레이";
   else if(s.contrib>30)l1="범실이 득점보다 많아 다소 위축된 모습, 안정감 보완 필요";
   else l1="범실이 몰려 심리적으로 위축된 모습, 실수 줄이기가 우선";
+  const fl=anFlow(list);if(fl&&fl.short)l1=fl.short;
   const p=[],bw=top(w,AN_W),bu=top(u,AN_U);
   if(bw)p.push(bw[1]+" 득점이 강점");
   if(bu)p.push(bu[1]+(bu[0]==="F"||bu[0]==="D"?" 줄이기":" 범실 보완"));
