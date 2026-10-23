@@ -523,6 +523,28 @@ function anSvOrderView(o){
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">서브 순서별 1st 서브 <span style="font-weight:400;font-size:11px;color:var(--muted)">(게임 1→2→3→4 순)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${o.arr.map(x=>`<span class="tag"${x===o.best&&o.gap>=10?' style="outline:2px solid #14633a"':x===o.weak&&o.gap>=10?' style="outline:2px solid #a31919"':""}>${x.k}번째 ${x.p}% · ${x.n}경기</span>`).join("")}</div>${o.gap>=10?`<p style="margin:6px 0 0;font-size:13px"><b style="color:#14633a">${nm(o.best.k)}</b>일 때 가장 잘 들어가고 <b style="color:#a31919">${nm(o.weak.k)}</b>일 때 가장 흔들려요 (${o.best.p}% vs ${o.weak.p}%)</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">서브 순서에 따른 큰 차이는 없어요</p>`}</div>`;
 }
 /* 선수 총평(2줄): 여러 특징 중 가장 두드러진 것만 골라 선수마다 다르게 */
+/* 상황별 한 줄 응원 문구 (총평 첫 줄의 특징에 맞춰 선택) */
+const AN_QUOTES=[
+ [/더블폴트|서브가 최우선/,["서브는 내가 100% 컨트롤하는 유일한 샷, 여기부터 단단하게!","더블폴트 줄이기는 가장 빠른 실력 향상 지름길이에요","두 번째 서브는 속도보다 확신으로 넣어요"]],
+ [/서브 안정이 먼저/,["첫 서브 한 개가 경기의 분위기를 바꿔요","루틴을 만들면 서브가 편해져요 — 공 튕기기, 호흡, 서브!"]],
+ [/서브가 든든|1st 서브 \d+%로 경기/,["든든한 서브는 팀에게 가장 큰 선물이에요","서브가 좋은 날은 경기가 편해져요 — 이 감각 그대로!"]],
+ [/서브 순서/,["서브 순서마다 컨디션이 달라요 — 흔들리는 순서에 한 번 더 호흡!","어느 순서든 같은 루틴으로 서브해 보세요"]],
+ [/위축|멘탈/,["실수 다음 한 점이 진짜 실력이에요 — 바로 잊고 다음 공!","범실은 지나간 점수일 뿐, 다음 공에만 집중해요","어려울 때 크게 숨 한 번, 그리고 쉬운 공부터"]],
+ [/기복|롤러코스터|흔들리면|몰아치지만|변수/,["잘 풀릴 때의 감각을 기억하고, 흔들릴 땐 쉬운 공으로 리듬 되찾기","기복을 줄이면 한 단계 올라가요 — 쉬운 공을 확실하게"]],
+ [/몰아치기|안정감과 숙련도|완벽|깔끔|완성도/,["지금의 자신감 그대로 — 좋은 흐름은 스스로 만든 거예요","잘하고 있어요! 이 리듬을 다음 경기에도 가져가요"]],
+ [/슬로우|초반 적응/,["워밍업 때 서브와 리턴 몇 개만 더 쳐 봐요 — 시작부터 편해져요","초반 첫 게임만 넘기면 본 실력이 나와요"]],
+ [/뒷심|후반/,["후반에 한 번 더 호흡 — 마지막 게임이 승부예요","끝까지 같은 템포로, 발이 멈추지 않게!"]],
+ [/초반 강세/,["시작이 좋아요 — 그 기세를 끝까지 이어 가요"]],
+ [/공격 우위|믿음직/,["적극적인 플레이가 빛나요 — 쉬운 공까지 확실히 마무리해요","위닝샷이 많은 건 용기 있는 플레이의 증거예요"]],
+ [/밸런스|균형/,["작은 실수 하나만 줄이면 다음 단계가 보여요","균형 잡힌 플레이, 한 가지 무기만 더하면 완성!"]],
+ [/도전형|범실 관리|범실이 득점/,["도전은 멋져요 — 확률 높은 공 한 개를 더 섞어 봐요","공격과 안정 사이 균형만 찾으면 금방 올라가요"]],
+ [/안정이 우선|실수 줄이기/,["쉬운 공부터 넘기는 연습이 가장 빠른 길이에요","네트 위로 한 번 더, 그것만으로도 포인트가 늘어요"]],
+ [/주무기|한 방|중심의/,["확실한 주무기는 큰 재산이에요 — 다른 샷도 조금씩 함께 키워요"]],
+];
+function anQuote(head,hs){
+  for(const [re,list] of AN_QUOTES){if(re.test(head))return list[hs%list.length]}
+  return "";
+}
 function anComment(list,s){
   const w={},u={},sv={};
   list.forEach(e=>{for(const k in (e.sv||{}))sv[k]=(sv[k]||0)+(+e.sv[k]||0);if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
@@ -575,9 +597,9 @@ function anComment(list,s){
   F.sort((a,b)=>b.score-a.score);
   const hf=F.find(f=>f.head)||{head:"기록을 바탕으로 한 총평",detail:null};
   const rest=F.filter(f=>f!==hf&&f.detail).slice(0,2).map(f=>f.detail);
-  return cmtHtml(hf.head,rest.join(" · "));
+  return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2));
 }
-function cmtHtml(l1,l2){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`}
+function cmtHtml(l1,l2,l3){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}${l3?`<div style="color:var(--court);font-style:italic">💬 ${l3}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
   // 서브 득점(A·Sp)은 W 합계에, 더블폴트(D)는 U 합계에 포함되므로 각 줄로 옮겨 표시 (svp 기록만; 서브 줄에는 F만 남김)
