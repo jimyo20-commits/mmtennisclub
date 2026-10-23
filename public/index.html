@@ -355,7 +355,7 @@ function anParseSheet(aoa,fname,opt){
       const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
       const sv_=pp.sv[r.name]||{},sW=pp.serve?(sv_.A||0)+(sv_.Sp||0):0,sU=pp.serve?(sv_.D||0):0;
       if(x&&wKey&&uKey&&(r.W||r.U)){const cw=anCsum(x.w),cu=anCsum(x.u);
-        if(pp.serve&&cw+sW===r.W&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
+        if(pp.serve&&(cw+sW===r.W||cw+sW-(sv_.A||0)===r.W)&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name]}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
         else if(cw===r.W&&cu===r.U){r.w=x.w;r.u=x.u}}})
   }catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
