@@ -166,7 +166,7 @@ const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
 const AN_SAMPLE_C={"윤정호":{"c":{"Fs":5,"Bs":2,"V":4,"R":1},"sv":{"Sp":3,"F":3,"D":1},"w":{"V":3},"u":{"Fs":5,"Bs":2,"R":1,"V":1}},"이동혁":{"c":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2},"sv":{"F":3,"Sp":1},"w":{"O":2,"Fs":1,"V":2},"u":{"L":2,"Bs":1,"V":4,"Fs":1,"O":1}},"장태석":{"c":{"V":2,"R":4,"Fs":8},"sv":{"F":5},"w":{"V":2,"Fs":2},"u":{"R":4,"Fs":6}},"이응택":{"c":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1},"sv":{"F":3,"Sp":1},"w":{"L":1,"V":1,"P":1,"O":1},"u":{"Fs":1,"R":2}}};
-function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}});if(ch)save()}
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name),d=AN_SAMPLE_C[nm];if(d&&!r.sv&&!r.w){r.c=d.c;r.sv=d.sv;r.w=d.w;r.u=d.u;ch=true}});if(ch&&isAdmin())save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
@@ -377,7 +377,7 @@ function anGameCard(g,showPid){
   return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(g.date||"")} <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-weight:400;color:var(--muted);font-size:13px">${esc(g.court||"")}</span></b>${anCan(g)?del:""}</div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;margin-top:4px"><thead><tr style="color:var(--muted)"><th style="text-align:left;font-weight:400">선수</th><th style="font-weight:400">1st</th><th style="font-weight:400">2nd</th><th style="font-weight:400">Win</th><th style="font-weight:400">UEr</th><th style="font-weight:400">승리기여도</th></tr></thead><tbody>${tb}</tbody></table></div>${g.note?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(g.note)}</div>`:""}</li>`}
 function anView(){
-  anImportSample();if(isAdmin())anFillSampleC();
+  anImportSample();anFillSampleC();
   const flat=anFlat();
   const sel=anPid&&S.members.some(m=>m.id===anPid)?anPid:me;anPid=sel;
   const m=S.members.find(x=>x.id===sel)||{name:"-"};
