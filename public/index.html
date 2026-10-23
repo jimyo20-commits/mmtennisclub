@@ -416,10 +416,12 @@ function anCodeChips(list){
   const grp=(t,lab,st)=>{const ks=ORD.filter(k=>t[k]);return ks.length?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center"><span style="font-size:10px;font-weight:800;min-width:54px;color:${st[1]}">${lab}</span>${ks.map(k=>`<span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${t[k]}</span>`).join("")}</div>`:""};
   return grp(w,"W shot",["#dff3e6","#1d6b43"])+grp(u,"U error",["#ffe8cc","#b45f00"])+grp(o,"코드",["var(--bg)","var(--muted)"])+svRow();
 }
+let anMore=false;
+function toggleAnMore(){anMore=!anMore;render()}
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${rows.map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id))}</div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id))}</div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return anView()},
