@@ -485,6 +485,8 @@ function anComment(list,s){
   let l1;
   if(s.inf)l1=pick(["범실 없이 위닝샷만 쌓은 깔끔한 경기","실수 없이 포인트를 따낸 완성도 높은 플레이"]);
   else if(s.contrib===null)l1="기록이 더 쌓이면 총평이 표시돼요";
+  else if(sv.D>=3)l1=pick([`서브가 최우선 과제 — 더블폴트 ${sv.D}개는 가장 아쉬운 부분`,`더블폴트 ${sv.D}개로 흐름을 스스로 끊었어요 — 서브 안정부터`]);
+  else if(s.p1!==null&&s.p1<50)l1=pick([`서브 안정이 먼저 — 1st 서브 ${s.p1}%로 시작이 불안해요`,`1st 서브 ${s.p1}% — 서브 성공률이 경기를 좌우해요`]);
   else if(fl&&fl.mu>=3&&fl.mw>=3)l1=fl.mu>fl.mw+2?pick([`기복형 — 위닝 ${fl.mw}연속도 있지만 범실이 ${fl.mu}연속까지 이어져요`,`흔들리면 길게 가는 편 — 범실 ${fl.mu}연속이 아쉬워요`]):fl.mw>=fl.mu?pick([`롤러코스터형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`몰아치는 힘은 최고 — 다만 범실 ${fl.mu}연속 구간은 관리 필요`]):pick([`기복형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`잘 풀릴 땐 몰아치지만 범실 ${fl.mu}연속 구간이 변수예요`]);
   else if(fl&&fl.mu>=3)l1=pick([`위축형 — 범실이 ${fl.mu}번 연속 나올 만큼 한번 흔들리면 이어져요`,`멘탈 관리가 숙제 — 실수가 몰릴 때 심리적으로 위축되는 모습`]);
   else if(fl&&fl.mw>=3&&s.contrib>=100)l1=pick([`몰아치기형 — 흐름을 타면 위닝샷이 ${fl.mw}번 연속으로 터져요`,`안정감과 숙련도가 돋보이는 자신감 있는 플레이`]);
@@ -498,11 +500,17 @@ function anComment(list,s){
   const c=[];
   if(bw)c.push(pick([`${bw[1]} 위닝 ${bw[2]}개가 주무기`,`${bw[1]}로 가장 많이 득점(${bw[2]}점)`]));
   if(bu)c.push(pick([`${bu[1]} 범실 ${bu[2]}개가 가장 아쉬움`,`${bu[1]}${bu[0]==="F"||bu[0]==="D"?"":" 쪽"} 범실(${bu[2]}회) 보완 필요`]));
-  if(sv.D>=2)c.push(`더블폴트 ${sv.D}개 주의`);
-  else if(s.p1!==null)c.push(s.p1>=65?`1st 서브 ${s.p1}%로 안정적`:s.p1<50?`1st 서브 ${s.p1}% — 성공률 보완`:`1st 서브 ${s.p1}%`);
   if(ph&&ph.strong&&ph.weak&&(l1.indexOf(pn[ph.strong])<0))c.push(`${pn[ph.strong]} 강세 · ${pn[ph.weak]} 약세`);
   const cr=anCourt(list);if(cr&&cr.gap>=30)c.push(`${cr.best.k} 코트 강세 · ${cr.weak.k} 코트 약세`);
-  const l2=c.length>2?[c[0],c[1+(hs>>3)%(c.length-1)]].join(" · "):c.join(" · ");
+  let sp="";
+  if(s.p1!==null){
+    const d=sv.D||0,dn=d>=3?` · 더블폴트 ${d}개 최대 약점`:d>=1?` · 더블폴트 ${d}개 주의`:"";
+    sp=s.p1>=70?pick([`1st 서브 ${s.p1}% — 큰 강점`,`서브가 든든해요 (1st ${s.p1}%)`])+dn
+      :s.p1>=60?`1st 서브 ${s.p1}%로 안정적`+dn
+      :s.p1>=50?pick([`1st 서브 ${s.p1}% — 조금만 올리면 큰 도움`,`1st 서브 ${s.p1}%, 성공률 보완 필요`])+dn
+      :`1st 서브 ${s.p1}% — 성공률 향상이 최우선`+dn;
+  }else if(sv.D>=1)sp=`더블폴트 ${sv.D}개 주의`;
+  const l2=[sp,c.length?c[(hs>>3)%c.length]:""].filter(Boolean).join(" · ");
   return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`;
 }
 function anCodeChips(list,tot){tot=tot||{};
