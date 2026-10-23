@@ -192,7 +192,7 @@ const anCStyle=s=>{
   return `background:hsl(${h} 65% 85%);color:hsl(${h} 70% 22%);border-color:hsl(${h} 50% 55%)`;
 };
 const anC=s=>s.contrib!==null?s.contrib+"%":s.inf?"∞":"-";
-const anBar=(v,max,col)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${col};width:${max?Math.max(v?4:0,Math.round(v/max*100)):0}%"></span>`;
+const anBar=(v,max,col)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${col};width:${max?Math.max(v?4:0,Math.round(v/max*55)):0}%"></span>`;
 function anFormView(sel){
   const eg=anEditId&&(S.analysis||[]).find(r=>r.id===anEditId);
   const d=eg||{},rows=eg&&eg.rows?eg.rows:[];
