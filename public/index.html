@@ -183,6 +183,14 @@ function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
 }
+/* 승리기여도 색: 100% 이상 짙은 녹색 · 30% 이하 짙은 붉은색 · 사이는 붉은색→노랑→녹색 그라데이션 */
+const anCStyle=s=>{
+  if(s.inf||(s.contrib!==null&&s.contrib>=100))return "background:#14633a;color:#fff;border-color:#14633a";
+  if(s.contrib===null)return "";
+  if(s.contrib<=30)return "background:#a31919;color:#fff;border-color:#a31919";
+  const h=Math.round((s.contrib-30)/70*120);
+  return `background:hsl(${h} 65% 85%);color:hsl(${h} 70% 22%);border-color:hsl(${h} 50% 55%)`;
+};
 const anC=s=>s.contrib!==null?s.contrib+"%":s.inf?"∞":"-";
 const anBar=(v,max,col)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${col};width:${max?Math.max(v?4:0,Math.round(v/max*100)):0}%"></span>`;
 function anFormView(sel){
@@ -421,7 +429,7 @@ function toggleAnMore(){anMore=!anMore;render()}
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id))}</div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id))}</div><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return anView()},
