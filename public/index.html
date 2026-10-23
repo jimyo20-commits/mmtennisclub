@@ -473,46 +473,60 @@ function anCourtView(cr){
   const lab=x=>x.c===999?"∞":x.c+"%";
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">코트별 성적 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${cr.arr.map(x=>`<span class="tag"${x===cr.best?' style="outline:2px solid #14633a"':x===cr.weak&&cr.gap>=20?' style="outline:2px solid #a31919"':""}>${esc(x.k)} ${lab(x)} · ${x.n}경기</span>`).join("")}</div>${cr.gap>=20?`<p style="margin:6px 0 0;font-size:13px"><b style="color:#14633a">${esc(cr.best.k)}</b> 코트에서 강하고 <b style="color:#a31919">${esc(cr.weak.k)}</b> 코트에서 약해요</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">코트에 따른 큰 차이는 없어요</p>`}</div>`;
 }
-/* 선수 총평(2줄): 선수마다 가장 두드러진 특징을 골라 서로 다르게 */
+/* 선수 총평(2줄): 여러 특징 중 가장 두드러진 것만 골라 선수마다 다르게 */
 function anComment(list,s){
   const w={},u={},sv={};
   list.forEach(e=>{for(const k in (e.sv||{}))sv[k]=(sv[k]||0)+(+e.sv[k]||0);if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
   const top=(t,L)=>{let b=null;L.forEach(([c,l])=>{if(t[c]>0&&(!b||t[c]>b[2]))b=[c,l,t[c]]});return b};
-  const bw=top(w,AN_W),bu=top(u,AN_U),fl=anFlow(list),ph=anPhase(list);
+  const bw=top(w,AN_W),bu=top(u,AN_U),fl=anFlow(list),ph=anPhase(list),cr=anCourt(list);
   const key=list.map(e=>e.pid||e.name).join("")+s.W+s.U;let hs=0;for(const ch of key)hs=(hs*31+ch.charCodeAt(0))>>>0;
   const pick=a=>a[hs%a.length];
   const pn={e:"초반",m:"중반",l:"후반"};
-  let l1;
-  if(s.inf)l1=pick(["범실 없이 위닝샷만 쌓은 깔끔한 경기","실수 없이 포인트를 따낸 완성도 높은 플레이"]);
-  else if(s.contrib===null)l1="기록이 더 쌓이면 총평이 표시돼요";
-  else if(sv.D>=3)l1=pick([`서브가 최우선 과제 — 더블폴트 ${sv.D}개는 가장 아쉬운 부분`,`더블폴트 ${sv.D}개로 흐름을 스스로 끊었어요 — 서브 안정부터`]);
-  else if(s.p1!==null&&s.p1<50)l1=pick([`서브 안정이 먼저 — 1st 서브 ${s.p1}%로 시작이 불안해요`,`1st 서브 ${s.p1}% — 서브 성공률이 경기를 좌우해요`]);
-  else if(fl&&fl.mu>=3&&fl.mw>=3)l1=fl.mu>fl.mw+2?pick([`기복형 — 위닝 ${fl.mw}연속도 있지만 범실이 ${fl.mu}연속까지 이어져요`,`흔들리면 길게 가는 편 — 범실 ${fl.mu}연속이 아쉬워요`]):fl.mw>=fl.mu?pick([`롤러코스터형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`몰아치는 힘은 최고 — 다만 범실 ${fl.mu}연속 구간은 관리 필요`]):pick([`기복형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`잘 풀릴 땐 몰아치지만 범실 ${fl.mu}연속 구간이 변수예요`]);
-  else if(fl&&fl.mu>=3)l1=pick([`위축형 — 범실이 ${fl.mu}번 연속 나올 만큼 한번 흔들리면 이어져요`,`멘탈 관리가 숙제 — 실수가 몰릴 때 심리적으로 위축되는 모습`]);
-  else if(fl&&fl.mw>=3&&s.contrib>=100)l1=pick([`몰아치기형 — 흐름을 타면 위닝샷이 ${fl.mw}번 연속으로 터져요`,`안정감과 숙련도가 돋보이는 자신감 있는 플레이`]);
-  else if(ph&&ph.weak==="e"&&ph.strong&&ph.strong!=="e")l1=pick(["슬로우 스타터 — 초반엔 흔들리다 갈수록 살아나요","초반 적응이 숙제 — 몸이 풀리면 위력이 커져요"]);
-  else if(ph&&ph.weak==="l"&&ph.strong&&ph.strong!=="l")l1=pick(["뒷심 보완형 — 후반으로 갈수록 집중력이 떨어져요","후반 체력·집중력 관리가 필요해요"]);
-  else if(ph&&ph.strong==="e"&&ph.weak)l1="초반 강세형 — 시작부터 치고 나가요";
-  else if(s.contrib>=100)l1=pick(["공격 우위형 — 득점이 범실보다 많은 적극적인 플레이","위닝샷이 범실을 앞서는 믿음직한 공격수"]);
-  else if(s.contrib>=70)l1=pick(["밸런스형 — 득점과 범실이 팽팽한 안정적인 플레이","무난한 균형형 — 작은 실수만 줄이면 한 단계 올라가요"]);
-  else if(s.contrib>30)l1=pick(["도전형 — 시도는 많지만 범실이 득점보다 앞서요","범실 관리가 필요해요 — 득점 대비 실수가 많아요"]);
-  else l1=pick(["안정이 우선 — 범실이 득점을 크게 앞서요","실수 줄이기가 최우선 — 쉬운 공부터 확실하게"]);
-  const c=[];
-  if(bw)c.push(pick([`${bw[1]} 위닝 ${bw[2]}개가 주무기`,`${bw[1]}로 가장 많이 득점(${bw[2]}점)`]));
-  if(bu)c.push(pick([`${bu[1]} 범실 ${bu[2]}개가 가장 아쉬움`,`${bu[1]}${bu[0]==="F"||bu[0]==="D"?"":" 쪽"} 범실(${bu[2]}회) 보완 필요`]));
-  if(ph&&ph.strong&&ph.weak&&(l1.indexOf(pn[ph.strong])<0))c.push(`${pn[ph.strong]} 강세 · ${pn[ph.weak]} 약세`);
-  const cr=anCourt(list);if(cr&&cr.gap>=30)c.push(`${cr.best.k} 코트 강세 · ${cr.weak.k} 코트 약세`);
-  let sp="";
-  if(s.p1!==null){
-    const d=sv.D||0,dn=d>=3?` · 더블폴트 ${d}개 최대 약점`:d>=1?` · 더블폴트 ${d}개 주의`:"";
-    sp=s.p1>=70?pick([`1st 서브 ${s.p1}% — 큰 강점`,`서브가 든든해요 (1st ${s.p1}%)`])+dn
-      :s.p1>=60?`1st 서브 ${s.p1}%로 안정적`+dn
-      :s.p1>=50?pick([`1st 서브 ${s.p1}% — 조금만 올리면 큰 도움`,`1st 서브 ${s.p1}%, 성공률 보완 필요`])+dn
-      :`1st 서브 ${s.p1}% — 성공률 향상이 최우선`+dn;
-  }else if(sv.D>=1)sp=`더블폴트 ${sv.D}개 주의`;
-  const l2=[sp,c.length?c[(hs>>3)%c.length]:""].filter(Boolean).join(" · ");
-  return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`;
+  if(s.inf)return cmtHtml(pick(["범실 없이 위닝샷만 쌓은 깔끔한 경기","실수 없이 포인트를 따낸 완성도 높은 플레이"]),"");
+  if(s.contrib===null)return cmtHtml("기록이 더 쌓이면 총평이 표시돼요","");
+  const F=[],add=(score,head,detail)=>F.push({score:score+((hs>>F.length)%4),head,detail});
+  const D=sv.D||0,p1=s.p1,W=s.W,U=s.U,c=s.contrib;
+  // 서브: 1st 서브 확률과 더블폴트 (두드러질 때만)
+  if(D>=3)add(95,pick([`서브가 최우선 과제 — 더블폴트 ${D}개는 가장 아쉬운 부분`,`더블폴트 ${D}개로 흐름을 스스로 끊었어요 — 서브 안정부터`]),`더블폴트 ${D}개 최대 약점`);
+  else if(D>=1)add(30,null,`더블폴트 ${D}개 주의`);
+  if(p1!==null){
+    if(p1<50)add(62+(50-p1),pick([`서브 안정이 먼저 — 1st 서브 ${p1}%로 시작이 불안해요`,`1st 서브 ${p1}% — 서브 성공률이 경기를 좌우해요`]),`1st 서브 ${p1}% — 성공률 향상 필요`);
+    else if(p1<58)add(36,null,`1st 서브 ${p1}%, 조금만 올리면 큰 도움`);
+    else if(p1>=72)add(50+(p1-72),pick([`서브가 든든한 선수 — 1st 서브 ${p1}%`,`1st 서브 ${p1}%로 경기를 안정적으로 열어요`]),`1st 서브 ${p1}% — 큰 강점`);
+  }
+  // 흐름(몰림)
+  if(fl){
+    if(fl.mu>=3&&fl.mw>=3)add(72,fl.mu>fl.mw+2?pick([`기복형 — 위닝 ${fl.mw}연속도 있지만 범실이 ${fl.mu}연속까지 이어져요`,`흔들리면 길게 가는 편 — 범실 ${fl.mu}연속이 아쉬워요`]):fl.mw>=fl.mu?pick([`롤러코스터형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`몰아치는 힘은 최고 — 다만 범실 ${fl.mu}연속 구간은 관리 필요`]):pick([`기복형 — 위닝 ${fl.mw}연속, 범실 ${fl.mu}연속으로 흐름을 많이 타요`,`잘 풀릴 땐 몰아치지만 범실 ${fl.mu}연속 구간이 변수예요`]),`위닝 ${fl.mw}연속 · 범실 ${fl.mu}연속`);
+    else if(fl.mu>=3)add(70+fl.mu,pick([`위축형 — 범실이 ${fl.mu}번 연속 나올 만큼 한번 흔들리면 이어져요`,`멘탈 관리가 숙제 — 실수가 몰릴 때 심리적으로 위축되는 모습`]),`범실 ${fl.mu}연속`);
+    else if(fl.mw>=3&&c>=100)add(64+fl.mw,pick([`몰아치기형 — 흐름을 타면 위닝샷이 ${fl.mw}번 연속으로 터져요`,`안정감과 숙련도가 돋보이는 자신감 있는 플레이`]),`위닝 ${fl.mw}연속`);
+  }
+  // 경기 구간
+  if(ph&&ph.strong&&ph.weak){
+    const nt=k=>ph.t[k][0]-ph.t[k][1],gap=nt(ph.strong)-nt(ph.weak);
+    if(gap>=3){
+      const head=ph.weak==="e"&&ph.strong!=="e"?pick(["슬로우 스타터 — 초반엔 흔들리다 갈수록 살아나요","초반 적응이 숙제 — 몸이 풀리면 위력이 커져요"]):ph.weak==="l"&&ph.strong!=="l"?pick(["뒷심 보완형 — 후반으로 갈수록 집중력이 떨어져요","후반 체력·집중력 관리가 필요해요"]):ph.strong==="e"?"초반 강세형 — 시작부터 치고 나가요":null;
+      add(46+gap*3,head,`${pn[ph.strong]} 강세 · ${pn[ph.weak]} 약세`);
+    }
+  }
+  // 코트
+  if(cr&&cr.gap>=30)add(44+Math.min(20,cr.gap/4),null,`${cr.best.k} 코트 강세 · ${cr.weak.k} 코트 약세`);
+  // 샷 편중
+  if(bw&&W>=3&&bw[2]/W>=0.6)add(50,pick([`${bw[1]} 한 방이 무기 — 득점의 ${Math.round(bw[2]/W*100)}%가 ${bw[1]}`,`${bw[1]} 중심의 확실한 주무기형`]),`${bw[1]} 위닝 ${bw[2]}개가 주무기`);
+  if(bu&&U>=4&&bu[2]/U>=0.6)add(52,null,`${bu[1]} 범실 ${bu[2]}개에 집중 — 이것만 줄여도 달라져요`);
+  // 승리기여도 기본 성향
+  if(c>=100)add(40+Math.min(30,(c-100)/4),pick(["공격 우위형 — 득점이 범실보다 많은 적극적인 플레이","위닝샷이 범실을 앞서는 믿음직한 공격수"]),null);
+  else if(c>=70)add(22,pick(["밸런스형 — 득점과 범실이 팽팽한 안정적인 플레이","무난한 균형형 — 작은 실수만 줄이면 한 단계 올라가요"]),null);
+  else if(c>30)add(48,pick(["도전형 — 시도는 많지만 범실이 득점보다 앞서요","범실 관리가 필요해요 — 득점 대비 실수가 많아요"]),null);
+  else add(66,pick(["안정이 우선 — 범실이 득점을 크게 앞서요","실수 줄이기가 최우선 — 쉬운 공부터 확실하게"]),null);
+  // 보조: 가장 득점/범실 많은 샷
+  if(bw)add(14,null,pick([`${bw[1]}로 가장 많이 득점(${bw[2]}점)`,`${bw[1]} 위닝 ${bw[2]}개`]));
+  if(bu)add(14,null,pick([`${bu[1]} 범실이 가장 많음(${bu[2]}회)`,`${bu[1]} 범실 ${bu[2]}개 보완`]));
+  F.sort((a,b)=>b.score-a.score);
+  const hf=F.find(f=>f.head)||{head:"기록을 바탕으로 한 총평",detail:null};
+  const rest=F.filter(f=>f!==hf&&f.detail).slice(0,2).map(f=>f.detail);
+  return cmtHtml(hf.head,rest.join(" · "));
 }
+function cmtHtml(l1,l2){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
   list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
