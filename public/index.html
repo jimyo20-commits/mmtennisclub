@@ -156,49 +156,58 @@ function stats(){
   return w;
 }
 
-/* ===== 경기 분석 탭 (엑셀 양식: DATE/TYPE/COURT/VS · 1st/2nd Serve · Winning · Unforced · 승리기여도) ===== */
+/* ===== 경기 분석 탭 (엑셀 양식: DATE/TYPE/COURT · 선수별 1st/2nd Serve, Winning, Unforced, 승리기여도 = Winning ÷ Unforced) ===== */
 const AN_W=[["A","에이스"],["Sp","서브포인트"],["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["R","리턴"],["S","쇼트"]];
 const AN_U=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["R","리턴"],["S","쇼트"],["F","폴트"],["D","더블폴트"]];
 let anPid=null,anForm=false,anDelId=null,anEditId=null,anErr="";
 const anNum=v=>Math.max(0,Math.floor(+v||0));
-const anSum=(l,k)=>l.reduce((t,r)=>t+Object.values(r[k]||{}).reduce((a,b)=>a+(+b||0),0),0);
-const anCode=(l,k,c)=>l.reduce((t,r)=>t+(+(r[k]||{})[c]||0),0);
+const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
+/* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
+function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
+  const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
+  rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length);
+    out.push({g,pid:r.pid,s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
 function anStats(l){
-  const W=anSum(l,"w"),U=anSum(l,"u"),pick=(k,i)=>l.reduce((t,r)=>t+((r[k]||[])[i]||0),0);
-  const s1i=pick("s1",0),s1t=pick("s1",1),s2i=pick("s2",0),s2t=pick("s2",1);
-  return {n:l.length,W,U,net:W-U,contrib:anPct(W,W+U),p1:anPct(s1i,s1t),p2:anPct(s2i,s2t)};
+  const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
+  return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
 }
+const anC=s=>s.contrib!==null?s.contrib+"%":s.inf?"∞":"-";
 const anBar=(v,max,col)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${col};width:${max?Math.max(v?4:0,Math.round(v/max*100)):0}%"></span>`;
-function anForm_(sel){
-  const er=anEditId&&(S.analysis||[]).find(r=>r.id===anEditId);
-  const d=er||{},g=(o,c)=>(o&&o[c])||0;
-  const num=(id,v,w)=>`<input type="number" min="0" inputmode="numeric" id="${id}" value="${v}" style="padding:6px 4px;text-align:center;${w||""}">`;
-  const grid=(arr,pre,o)=>`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px">${arr.map(([c,l])=>`<label style="font-size:11px;text-align:center">${c} <span style="color:var(--muted)">${l}</span>${num(pre+c,g(o,c))}</label>`).join("")}</div>`;
-  return `<div class="panel"><h2>${er?"경기 분석 수정":"경기 분석 입력"}</h2>
-  <div class="row"><label>선수${isAdmin()?`<select id="anp">${S.members.map(m=>`<option value="${m.id}"${m.id===(er?er.pid:sel)?" selected":""}>${esc(m.name)}</option>`).join("")}</select>`:`<input value="${esc((S.members.find(m=>m.id===me)||{}).name||"")}" disabled>`}</label><label>날짜(DATE)<input type="date" id="and" value="${d.date||today()}"></label></div>
-  <div class="row" style="margin-top:8px"><label>종류(TYPE)<select id="ant"><option${d.type==="단식"?" selected":""}>단식</option><option${d.type!=="단식"?" selected":""}>복식</option></select></label><label>코트(COURT)<input id="anc" value="${esc(d.court||"")}" placeholder="예: 3번 코트"></label></div>
-  <label style="margin-top:8px">상대(VS)<input id="anv" value="${esc(d.vs||"")}" placeholder="예: 김OO·박OO 조"></label>
-  <div style="margin:12px 0 4px;font-weight:700;font-size:14px">서브 (성공 / 시도)</div>
-  <div class="row"><label>1st 성공${num("s1i",(d.s1||[])[0]||0)}</label><label>1st 시도${num("s1t",(d.s1||[])[1]||0)}</label><label>2nd 성공${num("s2i",(d.s2||[])[0]||0)}</label><label>2nd 시도${num("s2t",(d.s2||[])[1]||0)}</label></div>
-  <div style="margin:12px 0 4px;font-weight:700;font-size:14px">Winning (득점 횟수)</div>${grid(AN_W,"w_",d.w)}
-  <div style="margin:12px 0 4px;font-weight:700;font-size:14px">Unforced (범실 횟수)</div>${grid(AN_U,"u_",d.u)}
-  <label style="margin-top:12px">메모<input id="ann" value="${esc(d.note||"")}" placeholder="한 줄 메모 (선택)"></label>
-  <div class="row" style="margin-top:10px"><button class="btn" onclick="saveAnalysis()">${er?"수정 저장":"저장"}</button><button class="btn off" onclick="anCancel()">취소</button></div>
+function anFormView(sel){
+  const eg=anEditId&&(S.analysis||[]).find(r=>r.id===anEditId);
+  const d=eg||{},rows=eg&&eg.rows?eg.rows:[];
+  const num=(id,v)=>`<input type="number" min="0" inputmode="numeric" id="${id}" value="${v||0}" style="padding:6px 2px;text-align:center">`;
+  const grid=(arr,pre,o)=>`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px;margin-top:6px">${arr.map(([c,l])=>`<label style="font-size:11px;text-align:center">${c} <span style="color:var(--muted)">${l}</span>${num(pre+c,(o||{})[c])}</label>`).join("")}</div>`;
+  const pRow=i=>{const r=rows[i]||{},pid=r.pid||(i===0&&!eg?(isAdmin()?sel:me):"");
+    return `<div style="border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px"><label>선수 ${i+1}<select id="p${i}"><option value="">(선택 안 함)</option>${S.members.map(m=>`<option value="${m.id}"${m.id===pid?" selected":""}>${esc(m.name)}</option>`).join("")}</select></label>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px"><label style="font-size:11px">1st 성공${num("a"+i,(r.s1||[])[0])}</label><label style="font-size:11px">1st 시도${num("b"+i,(r.s1||[])[1])}</label><label style="font-size:11px">Winning${num("W"+i,r.hasC?0:r.W)}</label><label style="font-size:11px">2nd 성공${num("c"+i,(r.s2||[])[0])}</label><label style="font-size:11px">2nd 시도${num("d"+i,(r.s2||[])[1])}</label><label style="font-size:11px">Unforced${num("U"+i,r.hasC?0:r.U)}</label></div>
+    <details style="margin-top:6px"${r.w&&(Object.keys(r.w).length||Object.keys(r.u||{}).length)?" open":""}><summary style="font-size:12px;color:var(--muted);cursor:pointer">코드별 상세 입력 (선택 · 입력하면 Winning/Unforced가 자동 합산)</summary><div style="font-size:12px;font-weight:700;margin-top:6px">Winning</div>${grid(AN_W,"w"+i+"_",r.w)}<div style="font-size:12px;font-weight:700;margin-top:8px">Unforced</div>${grid(AN_U,"u"+i+"_",r.u)}</details></div>`};
+  return `<div class="panel"><h2>${eg?"경기 분석 수정":"경기 분석 입력"}</h2>
+  <div class="row"><label>날짜(DATE)<input type="date" id="and" value="${d.date||today()}"></label><label>종류(TYPE)<input id="ant" list="antl" value="${esc(d.type||"친선")}"><datalist id="antl"><option>친선</option><option>대회</option><option>연습</option><option>단식</option><option>복식</option></datalist></label><label>코트(COURT)<input id="anc" value="${esc(d.court||"")}" placeholder="예: CRAY"></label></div>
+  ${[0,1,2,3].map(pRow).join("")}
+  <label style="margin-top:10px">메모<input id="ann" value="${esc(d.note||"")}" placeholder="한 줄 메모 (선택)"></label>
+  <div class="row" style="margin-top:10px"><button class="btn" onclick="saveAnalysis()">${eg?"수정 저장":"저장"}</button><button class="btn off" onclick="anCancel()">취소</button></div>
   <small id="ane" style="color:var(--bad)">${anErr}</small></div>`;
 }
 function saveAnalysis(){
   const v=id=>(document.getElementById(id)||{}).value;
   const date=v("and");if(!date){anErr="날짜를 입력하세요.";render();return}
-  const pid=isAdmin()?v("anp"):me;if(!pid)return;
-  const w={},u={};AN_W.forEach(([c])=>{const n=anNum(v("w_"+c));if(n)w[c]=n});AN_U.forEach(([c])=>{const n=anNum(v("u_"+c));if(n)u[c]=n});
-  const s1=[anNum(v("s1i")),anNum(v("s1t"))],s2=[anNum(v("s2i")),anNum(v("s2t"))];
-  if(s1[0]>s1[1]||s2[0]>s2[1]){anErr="서브 성공 횟수는 시도 횟수보다 클 수 없습니다.";render();return}
-  const rec={pid,date,type:v("ant"),court:(v("anc")||"").trim(),vs:(v("anv")||"").trim(),s1,s2,w,u,note:(v("ann")||"").trim()};
+  const rows=[],seen={};
+  for(let i=0;i<4;i++){const pid=v("p"+i);if(!pid)continue;
+    if(seen[pid]){anErr="같은 선수를 두 번 고를 수 없습니다.";render();return}seen[pid]=1;
+    const w={},u={};AN_W.forEach(([c])=>{const n=anNum(v("w"+i+"_"+c));if(n)w[c]=n});AN_U.forEach(([c])=>{const n=anNum(v("u"+i+"_"+c));if(n)u[c]=n});
+    const s1=[anNum(v("a"+i)),anNum(v("b"+i))],s2=[anNum(v("c"+i)),anNum(v("d"+i))];
+    if(s1[0]>s1[1]||s2[0]>s2[1]){anErr="서브 성공 횟수는 시도 횟수보다 클 수 없습니다.";render();return}
+    const r={pid,s1,s2,W:anNum(v("W"+i)),U:anNum(v("U"+i))};
+    if(Object.keys(w).length||Object.keys(u).length){r.w=w;r.u=u;r.W=anCsum(w);r.U=anCsum(u)}
+    rows.push(r)}
+  if(!rows.length){anErr="선수를 한 명 이상 선택하세요.";render();return}
+  const rec={date,type:(v("ant")||"").trim(),court:(v("anc")||"").trim(),note:(v("ann")||"").trim(),rows};
   if(!S.analysis)S.analysis=[];
-  if(anEditId){const r=S.analysis.find(x=>x.id===anEditId);if(r)Object.assign(r,rec)}
+  if(anEditId){const g=S.analysis.find(x=>x.id===anEditId);if(g){["pid","s1","s2","w","u"].forEach(k=>delete g[k]);Object.assign(g,rec)}}
   else S.analysis.push({id:uid(),by:me,...rec});
-  anPid=pid;anForm=false;anEditId=null;anErr="";save();render();
+  anPid=rows[0].pid;anForm=false;anEditId=null;anErr="";save();render();
 }
 function anCancel(){anForm=false;anEditId=null;anErr="";render()}
 function anOpen(){anForm=true;anEditId=null;anErr="";render()}
@@ -206,38 +215,48 @@ function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&w
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
 function anPick(id){anPid=id;render()}
+const anCan=g=>isAdmin()||g.by===me||g.pid===me;
+function anGameCard(g,showPid){
+  const flat=anFlat().filter(e=>e.g===g);
+  const tb=flat.map(e=>{const m=S.members.find(x=>x.id===e.pid)||{name:"?"},s=anStats([e]);
+    return `<tr${e.pid===showPid?' style="font-weight:700"':""}><td style="text-align:left">${esc(m.name)}</td><td>${e.s1[0]}/${e.s1[1]}</td><td>${e.s2[0]}/${e.s2[1]}</td><td>${s.W}</td><td>${s.U}</td><td>${anC(s)}</td></tr>`}).join("");
+  const del=anDelId===g.id?`<span style="display:flex;gap:4px;align-items:center;font-size:11px"><span style="color:var(--bad);font-weight:700">삭제할까요?</span><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anDel('${g.id}')">확인</button><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anAskDel(null)">취소</button></span>`:`<span style="display:flex;gap:4px"><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anEdit('${g.id}')">수정</button><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anAskDel('${g.id}')">삭제</button></span>`;
+  return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(g.date||"")} <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-weight:400;color:var(--muted);font-size:13px">${esc(g.court||"")}</span></b>${anCan(g)?del:""}</div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;margin-top:4px"><thead><tr style="color:var(--muted)"><th style="text-align:left;font-weight:400">선수</th><th style="font-weight:400">1st</th><th style="font-weight:400">2nd</th><th style="font-weight:400">Win</th><th style="font-weight:400">UE</th><th style="font-weight:400">승리기여도</th></tr></thead><tbody>${tb}</tbody></table></div>${g.note?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(g.note)}</div>`:""}</li>`}
 function anView(){
-  const all=S.analysis||[];
+  const flat=anFlat();
   const sel=anPid&&S.members.some(m=>m.id===anPid)?anPid:me;anPid=sel;
   const m=S.members.find(x=>x.id===sel)||{name:"-"};
-  const mine=all.filter(r=>r.pid===sel).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const mine=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||""));
   const st=anStats(mine);
-  const head=`<div class="panel"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${all.some(r=>r.pid===x.id)?" ("+all.filter(r=>r.pid===x.id).length+"경기)":""}</option>`).join("")}</select></label>${anForm?"":`<button class="btn" onclick="anOpen()">+ 경기 분석 입력</button>`}</div></div>`;
-  const form=anForm?anForm_(sel):"";
-  if(!mine.length)return head+form+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다. 위의 "경기 분석 입력"으로 경기 내용을 기록해 보세요.</p></div>`+anRank();
-  const maxW=Math.max(1,...AN_W.map(([c])=>anCode(mine,"w",c))),maxU=Math.max(1,...AN_U.map(([c])=>anCode(mine,"u",c)));
-  const shots=["Fs","Bs","V","O","P","L","R","S"].map(c=>[c,(AN_W.find(x=>x[0]===c)||[])[1],anCode(mine,"w",c),anCode(mine,"u",c)]);
-  const bw=[...AN_W].map(([c,l])=>[c,l,anCode(mine,"w",c)]).sort((a,b)=>b[2]-a[2])[0];
-  const bu=[...AN_U].map(([c,l])=>[c,l,anCode(mine,"u",c)]).sort((a,b)=>b[2]-a[2])[0];
-  const tips=[];
-  if(bw&&bw[2])tips.push(`강점: <b>${bw[1]}</b> 득점이 가장 많아요 (${bw[2]}점)`);
-  if(bu&&bu[2])tips.push(`보완: <b>${bu[1]}</b> 범실이 가장 많아요 (${bu[2]}회)`);
+  const cnt=id=>flat.filter(e=>e.pid===id).length;
+  const head=`<div class="panel"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${S.members.map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label>${anForm?"":`<button class="btn" onclick="anOpen()">+ 경기 분석 입력</button>`}</div></div>`;
+  const form=anForm?anFormView(sel):"";
+  if(!mine.length)return head+form+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다. 위의 "경기 분석 입력"으로 경기 내용을 기록해 보세요.</p></div>`+anRank(flat);
+  const cm=mine.filter(e=>e.hasC);
+  const code=(k,c)=>cm.reduce((t,e)=>t+(+(e[k]||{})[c]||0),0);
+  const tips=[];let bars="";
+  if(cm.length){
+    const maxW=Math.max(1,...AN_W.map(([c])=>code("w",c))),maxU=Math.max(1,...AN_U.map(([c])=>code("u",c)));
+    const shots=["Fs","Bs","V","O","P","L","R","S"].map(c=>[c,(AN_W.find(x=>x[0]===c)||[])[1],code("w",c),code("u",c)]);
+    const bw=AN_W.map(([c,l])=>[c,l,code("w",c)]).sort((a,b)=>b[2]-a[2])[0],bu=AN_U.map(([c,l])=>[c,l,code("u",c)]).sort((a,b)=>b[2]-a[2])[0];
+    if(bw&&bw[2])tips.push(`강점: <b>${bw[1]}</b> 득점이 가장 많아요 (${bw[2]}점)`);
+    if(bu&&bu[2])tips.push(`보완: <b>${bu[1]}</b> 범실이 가장 많아요 (${bu[2]}회)`);
+    bars=`<div class="panel"><h2>샷별 득점 / 범실 <span style="font-size:11px;font-weight:400;color:var(--muted)">(코드 상세가 있는 ${cm.length}경기 기준)</span></h2><div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--court)">■</span> Winning &nbsp; <span style="color:var(--bad)">■</span> Unforced</div>${shots.map(([c,l,w,u])=>`<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0;font-size:13px"><span><b>${c}</b> <span style="color:var(--muted);font-size:11px">${l}</span></span><span>${anBar(w,maxW,"var(--court)")} <small>${w}</small><br>${anBar(u,maxU,"var(--bad)")} <small>${u}</small></span></div>`).join("")}<div style="margin-top:8px;font-size:13px;line-height:1.8">${["A","Sp"].map(c=>`<span class="tag ok">${AN_W.find(x=>x[0]===c)[1]} ${code("w",c)}</span> `).join("")}${["F","D"].map(c=>`<span class="tag no">${AN_U.find(x=>x[0]===c)[1]} ${code("u",c)}</span> `).join("")}</div></div>`;
+  }
   if(st.p1!==null&&st.p1<60)tips.push(`1st 서브 성공률 ${st.p1}% — 60% 이상을 목표로 해보세요`);
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
-  <div class="stats"><div class="stat"><b>${st.contrib===null?"-":st.contrib+"%"}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
+  <div class="stats"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
   <div class="stats" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ (Winning + Unforced)</p>${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
-  const bars=`<div class="panel"><h2>샷별 득점 / 범실</h2><div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--court)">■</span> Winning &nbsp; <span style="color:var(--bad)">■</span> Unforced</div>${shots.map(([c,l,w,u])=>`<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0;font-size:13px"><span><b>${c}</b> <span style="color:var(--muted);font-size:11px">${l}</span></span><span>${anBar(w,maxW,"var(--court)")} <small>${w}</small><br>${anBar(u,maxU,"var(--bad)")} <small>${u}</small></span></div>`).join("")}
-  <div style="margin-top:8px;font-size:13px;line-height:1.8">${AN_W.filter(x=>x[0]==="A"||x[0]==="Sp").map(([c,l])=>`<span class="tag ok">${l} ${anCode(mine,"w",c)}</span> `).join("")}${AN_U.filter(x=>x[0]==="F"||x[0]==="D").map(([c,l])=>`<span class="tag no">${l} ${anCode(mine,"u",c)}</span> `).join("")}</div></div>`;
-  const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${mine.map(r=>{const s=anStats([r]),can=isAdmin()||r.pid===me||r.by===me;return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(r.date||"")} <span class="tag" style="font-size:11px">${esc(r.type||"")}</span></b>${can?(anDelId===r.id?`<span style="display:flex;gap:4px;align-items:center;font-size:11px"><span style="color:var(--bad);font-weight:700">삭제할까요?</span><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anDel('${r.id}')">확인</button><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anAskDel(null)">취소</button></span>`:`<span style="display:flex;gap:4px"><button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="anEdit('${r.id}')">수정</button><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="anAskDel('${r.id}')">삭제</button></span>`):""}</div>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">${[r.court,r.vs?"VS "+r.vs:""].filter(Boolean).map(esc).join(" · ")}</div>
-  <div style="font-size:13px;margin-top:4px">Winning <b>${s.W}</b> · Unforced <b>${s.U}</b> · 승리기여도 <b>${s.contrib===null?"-":s.contrib+"%"}</b> · 1st ${s.p1===null?"-":s.p1+"%"} · 2nd ${s.p2===null?"-":s.p2+"%"}</div>${r.note?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(r.note)}</div>`:""}</li>`}).join("")}</ul></div>`;
-  return head+form+sum+bars+list+anRank();
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  const games=[...new Set(mine.map(e=>e.g))];
+  const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
+  return head+form+sum+bars+list+anRank(flat);
 }
-function anRank(){
-  const rows=S.members.map(m=>({m,s:anStats((S.analysis||[]).filter(r=>r.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>(b.s.contrib??-1)-(a.s.contrib??-1)||b.s.net-a.s.net);
+function anRank(flat){
+  const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${rows.map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W ${x.s.W} / U ${x.s.U} · 1st ${x.s.p1===null?"-":x.s.p1+"%"}</small></div><span class="tag ok">${x.s.contrib===null?"-":x.s.contrib+"%"}</span></li>`).join("")}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${rows.map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W ${x.s.W} / UE ${x.s.U} · 1st ${x.s.p1===null?"-":x.s.p1+"%"}</small></div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return anView()},
