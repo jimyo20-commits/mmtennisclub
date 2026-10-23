@@ -575,7 +575,7 @@ guests(){
   return `${form}<div class="panel"><h2>게스트 (${S.guests.length}명)</h2>${S.guests.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">${cards}</div>`:`<p class="empty">등록된 게스트가 없습니다.</p>`}</div>`;
 },
 club(){
-  return `<div class="panel" style="text-align:center"><div style="font-size:24px;font-weight:900">무명회 테니스 클럽</div><div style="color:var(--muted);font-size:13px;letter-spacing:.08em">MOOMYUNG TENNIS CLUB</div></div>
+  return `<div class="panel" style="text-align:center;padding:10px 14px"><div style="font-size:19px;font-weight:900;line-height:1.3">무명회 테니스 클럽</div><div style="color:var(--muted);font-size:11px;letter-spacing:.08em">MOOMYUNG TENNIS CLUB</div></div>
   ${awPanel()}
   ${spPanel()}
   ${tipPanel()}
