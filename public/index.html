@@ -182,7 +182,7 @@ function anImportSample(){
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
-    out.push({g,pid:r.pid,name:r.name||"",ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
+    out.push({g,pid:r.pid,name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -548,7 +548,9 @@ function anComment(list,s){
 function cmtHtml(l1,l2){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
-  list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
+  list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);
+    if(e.svp){const q=e.sv||{};if(q.A)w.A=(w.A||0)+q.A;if(q.Sp)w.Sp=(w.Sp||0)+q.Sp;if(q.D)u.D=(u.D||0)+q.D;if(q.F)sv.F=(sv.F||0)+q.F}  // 서브 득점·더블폴트는 W/U 줄에 포함
+    else add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
   const ORD=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"];
   const chip=(k,v,st)=>`<span style="font-size:10px;padding:1px 5px;flex:none;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${v}</span>`;
   const svRow=()=>{const g=["A","Sp"].filter(k=>sv[k]).map(k=>chip(k,sv[k],["#8fc7a6","#0b3a1f"])),r=["F","D"].filter(k=>sv[k]).map(k=>chip(k,sv[k],k==="D"?["#e69a9a","#6a0a0a"]:["#eeb872","#6b3500"]));
