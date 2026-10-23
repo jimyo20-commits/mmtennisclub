@@ -180,7 +180,7 @@ function anImportSample(){
   S.imports.an0324=1;save();
 }
 /* 앱에 미리 넣어 둔 경기 기록(코드로 배포): 운영자가 분석 탭을 열면 아직 없는 경기만 자동 추가됩니다 */
-const AN_PRESET=[];
+const AN_PRESET=[{"id":"p-0316","date":"2026-03-16","type":"친선","court":"CLAY","note":"엑셀 기록 (3.16)","rows":[{"name":"김우순","s1":[9,17],"s2":[8,8],"W":12,"U":7,"c":{"Fs":2,"R":3,"O":6,"V":5,"S":1},"sv":{"F":8,"A":1,"Sp":1},"w":{"Fs":1,"O":6,"V":2,"S":1},"u":{"R":3,"Fs":1,"V":3},"svp":1,"ph":{"e":[6,2],"m":[3,4],"l":[3,1]},"sq":"WWUWWWUWUWUUUWWWWUW"},{"name":"게스트","s1":[10,11],"s2":[1,1],"W":7,"U":4,"c":{"V":1,"R":2,"L":1,"O":3,"Fs":2},"sv":{"F":1,"Sp":2},"w":{"O":3,"Fs":2},"u":{"V":1,"R":2,"L":1},"svp":1,"ph":{"e":[1,4],"m":[6,0],"l":[0,0]},"sq":"UUUUWWWWWWW"},{"name":"김태석","s1":[6,10],"s2":[4,4],"W":5,"U":8,"c":{"R":4,"V":5,"Fs":2,"O":2},"sv":{"F":4},"w":{"V":3,"O":2},"u":{"R":4,"V":2,"Fs":2},"svp":1,"ph":{"e":[2,5],"m":[3,3],"l":[0,0]},"sq":"UWUUUUWUWWWUU"},{"name":"김동현","s1":[11,12],"s2":[1,1],"W":2,"U":7,"c":{"Fs":2,"V":3,"L":2,"R":2},"sv":{"F":1},"w":{"L":1,"V":1},"u":{"Fs":2,"V":2,"R":2,"L":1},"svp":1,"ph":{"e":[0,3],"m":[2,3],"l":[0,1]},"sq":"UUUWUUWUU"}]}];
 function anImportPreset(){
   if(!isAdmin())return;if(!S.imports)S.imports={};let ch=false;
   const sig=x=>[x.date,String(x.court||"").toUpperCase(),(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
