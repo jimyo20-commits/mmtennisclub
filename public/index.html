@@ -410,8 +410,8 @@ function anCodeChips(list){
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
   list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
   const ORD=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"];
-  const grp=(t,lab,st)=>{const ks=ORD.filter(k=>t[k]);return ks.length?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center"><span style="font-size:10px;font-weight:800;min-width:44px;color:${st[1]}">${lab}</span>${ks.map(k=>`<span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${t[k]}</span>`).join("")}</div>`:""};
-  return grp(w,"W shot",["#dff3e6","#1d6b43"])+grp(u,"U error",["#ffe8cc","#b45f00"])+grp(o,"코드",["var(--bg)","var(--muted)"])+grp(sv,"서브",["var(--bg)","var(--muted)"]);
+  const grp=(t,lab,st)=>{const ks=ORD.filter(k=>t[k]);return ks.length?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center"><span style="font-size:10px;font-weight:800;min-width:54px;color:${st[1]}">${lab}</span>${ks.map(k=>`<span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;background:${st[0]};color:${st[1]};border:1px solid ${st[1]}55">${k} ${t[k]}</span>`).join("")}</div>`:""};
+  return grp(w,"W shot",["#dff3e6","#1d6b43"])+grp(u,"U error",["#ffe8cc","#b45f00"])+grp(o,"코드",["var(--bg)","var(--muted)"])+grp({A:sv.A,Sp:sv.Sp},"서브 득점",["#dff3e6","#1d6b43"])+grp({F:sv.F,D:sv.D},"서브 실수",["#ffe8cc","#b45f00"]);
 }
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
