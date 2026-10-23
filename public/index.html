@@ -324,7 +324,9 @@ function anView(){
 function anGuide(){
   const gl=[["승리기여도","V","Victory 기여도 = Winning ÷ Unforced × 100%. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
   const guide=`<div class="panel"><h2>스탯 설명</h2><dl style="margin:0;font-size:13px;line-height:1.6">${gl.map(([k,ab,d])=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><dt style="flex:none;width:104px;text-align:center;font-weight:800;color:var(--court)">${k}</dt><dd style="flex:none;margin:0;min-width:46px;text-align:center"><span class="tag" style="font-weight:800">${ab}</span></dd><dd style="margin:0">${d}</dd></div>`).join("")}</dl></div>`;
-  return guide;
+  const cd=[["Fs","Forehand stroke","포핸드 스트로크"],["Bs","Backhand stroke","백핸드 스트로크"],["V","Volley","발리"],["O","Overhead","스매싱"],["P","Passing","패싱샷"],["L","Lob","로브"],["R","Return","리턴"],["S","Short","쇼트"],["A","Ace","에이스"],["Sp","Service point","서브포인트"],["F","Fault","폴트"],["D","Double fault","더블폴트"]];
+  const codes=`<h3 style="margin:16px 0 4px;font-size:15px">경기 세부 내역 코드</h3><div style="font-size:13px;line-height:1.5">${cd.map(([a,e,k])=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="tag ok" style="flex:none;width:44px;justify-content:center;text-align:center;font-weight:800">${a}</span><span><b>${e}</b> <span style="color:var(--muted)">(${k})</span></span></div>`).join("")}</div>`;
+  return guide.replace(/<\/div>$/,codes+"</div>");
 }
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
