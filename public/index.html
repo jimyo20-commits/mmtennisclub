@@ -165,6 +165,8 @@ const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
 /* 기록 → 선수별 한 줄씩 펼치기 (예전 형식의 1인 기록도 함께 처리) */
 /* 엑셀 "03.24 윤정호·이동혁 vs 장태석·이응택" 경기 기록 (1회 자동 반영, 삭제하면 다시 생기지 않음) */
+const AN_SAMPLE_C={"윤정호":{"Fs":5,"Bs":2,"V":4,"R":1,"Sp":3,"F":3,"D":1},"이동혁":{"L":2,"O":3,"Bs":1,"V":6,"Fs":2,"F":3,"Sp":1},"장태석":{"V":2,"R":4,"Fs":8,"F":5},"이응택":{"Fs":1,"R":2,"L":1,"V":1,"P":1,"O":1,"F":3,"Sp":1}};
+function anFillSampleC(){const g=(S.analysis||[]).find(x=>x.id==="x-0324");if(!g||!g.rows)return;let ch=false;g.rows.forEach(r=>{const nm=r.name||((S.members.find(m=>m.id===r.pid)||{}).name);if(!r.c&&AN_SAMPLE_C[nm]){r.c=AN_SAMPLE_C[nm];ch=true}});if(ch)save()}
 function anImportSample(){
   if(!isAdmin())return;if(!S.imports)S.imports={};if(S.imports.an0324)return;
   const id=n=>{const m=S.members.find(x=>x.name===n);return m?{pid:m.id}:{pid:"",name:n}};
@@ -176,7 +178,7 @@ function anImportSample(){
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length);
-    out.push({g,pid:r.pid,name:r.name||"",s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
+    out.push({g,pid:r.pid,name:r.name||"",c:r.c||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w):(+r.W||0),U:hasC?anCsum(u):(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
   return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
@@ -202,7 +204,7 @@ function anFormView(sel){
 function saveAnalysis(){
   const v=id=>(document.getElementById(id)||{}).value;
   const date=v("and");if(!date){anErr="날짜를 입력하세요.";render();return}
-  const rows=[],seen={};
+  const rows=[],seen={},old=anEditId?((S.analysis||[]).find(x=>x.id===anEditId)||{}).rows||[]:[];
   for(let i=0;i<4;i++){const pid=v("p"+i),nm=(v("n"+i)||"").trim();if(!pid&&!nm)continue;
     const key=pid||("n:"+nm);
     if(seen[key]){anErr="같은 선수를 두 번 고를 수 없습니다.";render();return}seen[key]=1;
@@ -211,6 +213,7 @@ function saveAnalysis(){
     if(s1[0]>s1[1]||s2[0]>s2[1]){anErr="서브 성공 횟수는 시도 횟수보다 클 수 없습니다.";render();return}
     const r={pid:pid||"",s1,s2,W:anNum(v("W"+i)),U:anNum(v("U"+i))};if(!pid)r.name=nm;
     if(Object.keys(w).length||Object.keys(u).length){r.w=w;r.u=u;r.W=anCsum(w);r.U=anCsum(u)}
+    const oc=old.find(q=>(q.pid||q.name)===(pid||nm));if(oc&&oc.c)r.c=oc.c;
     rows.push(r)}
   if(!rows.length){anErr="선수를 한 명 이상 선택하세요.";render();return}
   const rec={date,type:(v("ant")||"").trim(),court:(v("anc")||"").trim(),note:(v("ann")||"").trim(),rows};
@@ -237,6 +240,29 @@ function anParseDate(v,fname){
   return today();
 }
 const anRatio=v=>{const m=String(v==null?"":v).match(/(\d+)\s*\/\s*(\d+)/);return m?[+m[1],+m[2]]:[0,0]};
+/* 점 단위 기록(코드가 칸마다 적힌 부분)을 선수별 코드 횟수로 집계. 서브 칸(Sp/F/D)은 서브권 순서를 1st 서브 시도 횟수와 맞춰 찾아 서버에게 배정 */
+function anParsePoints(aoa,rows){
+  const txt=v=>String(v==null?"":v).trim();
+  let hr=-1,sc=-1;
+  for(let r=0;r<Math.min(aoa.length,40)&&hr<0;r++)for(let c=0;c<(aoa[r]||[]).length;c++)if(txt(aoa[r][c]).toLowerCase()==="serve"&&txt((aoa[r]||[])[c-1])&&txt((aoa[r]||[])[c+1])){hr=r;sc=c;break}
+  if(hr<0)return null;
+  const pcols=[sc-2,sc-1,sc+1,sc+2].filter(c=>c>=0&&txt(aoa[hr][c])&&!/^(vs|serve)$/i.test(txt(aoa[hr][c])));
+  const names=pcols.map(c=>txt(aoa[hr][c]));
+  const cells=r=>[...pcols,sc].map(c=>txt((aoa[r]||[])[c])).some(Boolean);
+  let last=aoa.length-1;while(last>hr&&!cells(last)&&!(typeof (aoa[last]||[])[0]==="number"))last--;
+  const starts=[];for(let r=hr+1;r<=last;r++)if(typeof (aoa[r]||[])[0]==="number")starts.push(r);
+  if(!starts.length)return null;
+  const segs=starts.map((s,i)=>[s,(i+1<starts.length?starts[i+1]:last+1)]);
+  const out={};names.forEach(n=>out[n]={});
+  const add=(n,k)=>{if(k&&out[n])out[n][k]=(out[n][k]||0)+1};
+  segs.forEach(([s,e])=>{for(let r=s;r<e;r++)pcols.forEach((c,i)=>add(names[i],txt((aoa[r]||[])[c])))});
+  // 서브 칸 배정
+  const attempts={};rows.forEach(r=>{attempts[r.name]=r.s1[1]});
+  const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
+  const ok=perms(names).find(p=>{const t={};segs.forEach(([s,e],g)=>{t[p[g%p.length]]=(t[p[g%p.length]]||0)+(e-s)});return names.every(n=>(t[n]||0)===attempts[n])});
+  if(ok)segs.forEach(([s,e],g)=>{for(let r=s;r<e;r++)add(ok[g%ok.length],txt((aoa[r]||[])[sc]))});
+  return {codes:out,serve:!!ok};
+}
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
 function anParseSheet(aoa,fname){
   const txt=v=>String(v==null?"":v).trim();
@@ -251,20 +277,23 @@ function anParseSheet(aoa,fname){
   for(let r=sr+1;r<aoa.length;r++){const nm=txt((aoa[r]||[])[sc]);if(!nm||/^(vs|serve)$/i.test(nm))break;
     rows.push({name:nm,s1:anRatio(aoa[r][c1]),s2:anRatio(aoa[r][c2]),W:anNum(aoa[r][cw]),U:anNum(aoa[r][cu])})}
   if(!rows.length)return null;
+  try{const pp=anParsePoints(aoa,rows);if(pp)rows.forEach(r=>{if(pp.codes[r.name]&&Object.keys(pp.codes[r.name]).length)r.c=pp.codes[r.name]})}catch(e){}
   const type=meta("TYPE"),court=meta("COURT");
   return {date:anParseDate(meta("DATE"),fname),type:txt(type)||"친선",court:txt(court),rows};
 }
 function anAddGame(g,by){
-  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name);return m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U}});
+  const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
-  if((S.analysis||[]).some(x=>sig(x)===sig(rec)))return false;
+  const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
+  if(ex){let up=false;(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}});if(up){anUpd=true}return false}
   if(!S.analysis)S.analysis=[];
   S.analysis.push({id:uid(),by,...rec});return true;
 }
+let anUpd=false;
 async function anUpload(inp){
   const files=[...(inp.files||[])];if(!files.length)return;
-  anMsg="엑셀을 읽는 중…";render();
+  anUpd=false;anMsg="엑셀을 읽는 중…";render();
   try{await anLoadXlsx()}catch(e){anMsg="엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.";render();return}
   let added=0,dup=0;const bad=[];
   for(const f of files){
@@ -274,8 +303,8 @@ async function anUpload(inp){
       if(!g)bad.push(f.name);else if(anAddGame(g,me))added++;else dup++;
     }catch(e){bad.push(f.name)}
   }
-  if(added){anPid=(S.analysis[S.analysis.length-1].rows.find(r=>r.pid)||{}).pid||anPid;save()}
-  anMsg=[added?`${added}경기를 가져왔습니다.`:"",dup?`이미 있는 경기 ${dup}건은 건너뛰었습니다.`:"",bad.length?`읽지 못한 파일: ${bad.join(", ")} ('요약' 표가 있는 양식인지 확인해 주세요)`:""].filter(Boolean).join(" ")||"가져온 경기가 없습니다.";
+  if(added||anUpd){anPid=(added?(S.analysis[S.analysis.length-1].rows.find(r=>r.pid)||{}).pid:null)||anPid;save()}
+  anMsg=[added?`${added}경기를 가져왔습니다.`:"",anUpd?"이미 있는 경기에 코드 집계를 추가했습니다.":"",dup&&!anUpd?`이미 있는 경기 ${dup}건은 건너뛰었습니다.`:"",bad.length?`읽지 못한 파일: ${bad.join(", ")} ('요약' 표가 있는 양식인지 확인해 주세요)`:""].filter(Boolean).join(" ")||"가져온 경기가 없습니다.";
   inp.value="";render();
 }
 function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&window.scrollTo(0,0)}
@@ -291,7 +320,7 @@ function anGameCard(g,showPid){
   return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(g.date||"")} <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-weight:400;color:var(--muted);font-size:13px">${esc(g.court||"")}</span></b>${anCan(g)?del:""}</div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;margin-top:4px"><thead><tr style="color:var(--muted)"><th style="text-align:left;font-weight:400">선수</th><th style="font-weight:400">1st</th><th style="font-weight:400">2nd</th><th style="font-weight:400">Win</th><th style="font-weight:400">UEr</th><th style="font-weight:400">승리기여도</th></tr></thead><tbody>${tb}</tbody></table></div>${g.note?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(g.note)}</div>`:""}</li>`}
 function anView(){
-  anImportSample();
+  anImportSample();if(isAdmin())anFillSampleC();
   const flat=anFlat();
   const sel=anPid&&S.members.some(m=>m.id===anPid)?anPid:me;anPid=sel;
   const m=S.members.find(x=>x.id===sel)||{name:"-"};
@@ -328,10 +357,15 @@ function anGuide(){
   const codes=`<h3 style="margin:16px 0 4px;font-size:15px">경기 세부 내역 코드</h3><div style="font-size:13px;line-height:1.5">${cd.map(([a,e,k])=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="tag ok" style="flex:none;width:44px;justify-content:center;text-align:center;font-weight:800">${a}</span><span><b>${e}</b> <span style="color:var(--muted)">(${k})</span></span></div>`).join("")}</div>`;
   return guide.replace(/<\/div>$/,codes+"</div>");
 }
+function anCodeChips(list){
+  const t={};list.forEach(e=>{[e.c,e.hasC?e.w:null,e.hasC?e.u:null].forEach(o=>{if(o)for(const k in o)t[k]=(t[k]||0)+(+o[k]||0)})});
+  const ks=["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"].filter(k=>t[k]);
+  return ks.length?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">${ks.map(k=>`<span class="tag" style="font-size:10px;padding:1px 6px">${k} <b>${t[k]}</b></span>`).join("")}</div>`:"";
+}
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${rows.map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small></div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${rows.map((x,i)=>`<li role="button" tabindex="0" style="cursor:pointer" onclick="anPick('${x.m.id}')"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · W shot ${x.s.W} · U error ${x.s.U} · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id))}</div><span class="tag ok">${anC(x.s)}</span></li>`).join("")}</ul><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return anView()},
