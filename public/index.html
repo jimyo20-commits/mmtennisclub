@@ -188,7 +188,7 @@ const anCStyle=s=>{
   if(s.inf||(s.contrib!==null&&s.contrib>=100))return "background:#14633a;color:#fff;border-color:#14633a";
   if(s.contrib===null)return "";
   if(s.contrib<=30)return "background:#a31919;color:#fff;border-color:#a31919";
-  const h=Math.round((s.contrib-30)/70*120);
+  const h=Math.round(Math.min(1,(s.contrib-30)/40)*120);
   return `background:hsl(${h} 65% 85%);color:hsl(${h} 70% 22%);border-color:hsl(${h} 50% 55%)`;
 };
 const anC=s=>s.contrib!==null?s.contrib+"%":s.inf?"∞":"-";
