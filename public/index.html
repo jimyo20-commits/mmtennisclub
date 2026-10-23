@@ -159,7 +159,7 @@ function stats(){
 /* ===== 경기 분석 탭 (엑셀 양식: DATE/TYPE/COURT · 선수별 1st/2nd Serve, Winning, Unforced, 승리기여도 = Winning ÷ Unforced) ===== */
 const AN_W=[["A","에이스"],["Sp","서브포인트"],["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["R","리턴"],["S","쇼트"]];
 const AN_U=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["R","리턴"],["S","쇼트"],["F","폴트"],["D","더블폴트"]];
-let anPid=null,anForm=false,anDelId=null,anEditId=null,anErr="";
+let anTop=false,anPid=null,anForm=false,anDelId=null,anEditId=null,anErr="";
 const anNum=v=>Math.max(0,Math.floor(+v||0));
 const anCsum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const anPct=(a,b)=>b?Math.round(a/b*100):null;
@@ -366,7 +366,8 @@ async function anUpload(inp){
 function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&window.scrollTo(0,0)}
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
-function anPick(id,jump){anPid=id;render();if(jump)setTimeout(()=>{const e=document.getElementById("anDetail");if(e)e.scrollIntoView({behavior:"smooth",block:"start"})},50)}
+function anPick(id,jump){anPid=id;if(jump)anTop=true;render();if(jump)setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),50)}
+function anClose(){anTop=false;render();setTimeout(()=>window.scrollTo({top:0}),50)}
 const anCan=g=>isAdmin()||g.by===me||g.pid===me;
 function anGameCard(g,showPid){
   const flat=anFlat().filter(e=>e.g===g);
@@ -405,6 +406,8 @@ function anView(){
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
+  if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">← 선수별 비교로 돌아가기</button>`;
+    return back+sum+list+bars+(isAdmin()?head+form+anRank(flat):anRank(flat)+head+form)+anGuide()}
   return isAdmin()?head+form+sum+bars+list+anRank(flat)+anGuide():anRank(flat)+head+form+sum+bars+list+anGuide();
 }
 function anGuide(){
