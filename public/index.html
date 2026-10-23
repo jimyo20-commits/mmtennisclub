@@ -515,7 +515,7 @@ function anCodeChips(list,tot){tot=tot||{};
     return g.length||r.length||pr?`<div style="margin-top:3px;display:flex;flex-wrap:nowrap;gap:2px;align-items:center;overflow-x:auto;white-space:nowrap;scrollbar-width:none"><span style="font-size:10px;font-weight:800;flex:none;margin-right:2px;color:var(--muted)">서브</span>${pr}${g.join("")}${r.join("")}</div>`:""};
   const LB={"#0b3a1f":["#dff3e6","#1d6b43"],"#6b3500":["#ffe8cc","#b45f00"],"var(--muted)":["var(--bg)","var(--muted)"]};
   const grp=(t,lab,st,n)=>{const ks=ORD.filter(k=>t[k]);return ks.length||n?`<div style="margin-top:3px;display:flex;flex-wrap:nowrap;gap:2px;align-items:center;overflow-x:auto;white-space:nowrap;scrollbar-width:none"><span style="font-size:11px;font-weight:800;flex:none;margin-right:3px;color:${LB[st[1]][1]};white-space:nowrap;border:2px solid ${LB[st[1]][1]};border-radius:8px;padding:1px 7px;background:${LB[st[1]][0]}">${lab}${n!=null?` <span style="font-size:12px">${n}</span>`:""}</span>${ks.map(k=>{const q=k==="D"?["#e69a9a","#6a0a0a"]:st;return `<span style="font-size:10px;padding:1px 5px;flex:none;border-radius:99px;font-weight:700;background:${q[0]};color:${q[1]};border:1px solid ${q[1]}55">${k} ${t[k]}</span>`}).join("")}</div>`:""};
-  return grp(w,"Wshot",["#8fc7a6","#0b3a1f"],tot.W)+grp(u,"Uerror",["#eeb872","#6b3500"],tot.U)+grp(o,"코드",["var(--bg)","var(--muted)"])+svRow();
+  return grp(w,"W",["#8fc7a6","#0b3a1f"],tot.W)+grp(u,"U",["#eeb872","#6b3500"],tot.U)+grp(o,"코드",["var(--bg)","var(--muted)"])+svRow();
 }
 let anMore=false;
 function toggleAnMore(){anMore=!anMore;render()}
