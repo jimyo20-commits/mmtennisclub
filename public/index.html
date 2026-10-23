@@ -414,6 +414,25 @@ function anGuide(){
   const codes=`<h3 style="margin:16px 0 4px;font-size:15px">경기 세부 내역 코드</h3><div style="font-size:13px;line-height:1.5">${cd.map(([a,e,k])=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="tag ok" style="flex:none;width:44px;justify-content:center;text-align:center;font-weight:800">${a}</span><span><b>${e}</b> <span style="color:var(--muted)">(${k})</span></span></div>`).join("")}</div>`;
   return guide.replace(/<\/div>$/,codes+"</div>");
 }
+/* 선수 총평(2줄): 승리기여도 + 강점/보완 샷 + 서브 */
+function anComment(list,s){
+  const w={},u={};
+  list.forEach(e=>{if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
+  const top=(t,L)=>{let b=null;L.forEach(([c,l])=>{if(t[c]>0&&(!b||t[c]>b[2]))b=[c,l,t[c]]});return b};
+  let l1;
+  if(s.inf)l1="범실 없이 득점만 쌓은 완벽한 경기력";
+  else if(s.contrib===null)l1="기록이 더 쌓이면 총평이 표시돼요";
+  else if(s.contrib>=100)l1="득점이 범실보다 많은 공격적인 플레이";
+  else if(s.contrib>=70)l1="득점과 범실이 균형 잡힌 안정적인 플레이";
+  else if(s.contrib>30)l1="범실이 득점보다 많아 안정감 보완이 필요";
+  else l1="범실이 득점을 크게 앞서 실수 줄이기가 우선";
+  const p=[],bw=top(w,AN_W),bu=top(u,AN_U);
+  if(bw)p.push(bw[1]+" 득점이 강점");
+  if(bu)p.push(bu[1]+(bu[0]==="F"||bu[0]==="D"?" 줄이기":" 범실 보완"));
+  if(p.length<2&&s.p1!==null)p.push(s.p1>=65?"1st 서브 안정적":s.p1<50?"1st 서브 성공률 보완":"1st 서브 "+s.p1+"%");
+  const l2=p.slice(0,2).join(" · ");
+  return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div>${l1}</div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}</div>`;
+}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
   list.forEach(e=>{if(e.hasC){add(w,e.w);add(u,e.u);add(sv,e.sv)}else{add(o,e.c);add(sv,e.sv)}});
@@ -429,7 +448,7 @@ function toggleAnMore(){anMore=!anMore;render()}
 function anRank(flat){
   const rows=S.members.map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer${x.m.id===anPid?';background:#eaf4ee':''}"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id),x.s)}</div><span style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교</h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer${x.m.id===anPid?';background:#eaf4ee':''}"><span style="width:28px;height:28px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;flex:none;font-size:13px">${i+1}</span>${av(x.m,32)}<div class="grow">${nameR(x.m)}<small>${x.s.n}경기 · 1st S ${x.s.p1===null?"-":x.s.p1+"%"} · 2nd S ${x.s.p2===null?"-":x.s.p2+"%"}</small>${anCodeChips(flat.filter(e=>e.pid===x.m.id),x.s)}${anComment(flat.filter(e=>e.pid===x.m.id),x.s)}</div><span style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return anView()},
