@@ -179,6 +179,17 @@ function anImportSample(){
   if(!S.analysis.some(g=>g.id==="x-0324"||(g.date==="2026-03-24"&&String(g.court||"").toUpperCase()==="CRAY")))S.analysis.push({id:"x-0324",by:me,date:"2026-03-24",type:"친선",court:"CRAY",note:"엑셀 기록 (3.24)",rows:[row("윤정호",[19,23],[3,4],6,10),row("이동혁",[8,11],[3,3],6,9),row("장태석",[7,12],[5,5],4,10),row("이응택",[10,13],[3,3],5,3)]});
   S.imports.an0324=1;save();
 }
+/* 앱에 미리 넣어 둔 경기 기록(코드로 배포): 운영자가 분석 탭을 열면 아직 없는 경기만 자동 추가됩니다 */
+const AN_PRESET=[];
+function anImportPreset(){
+  if(!isAdmin())return;if(!S.imports)S.imports={};let ch=false;
+  const sig=x=>[x.date,String(x.court||"").toUpperCase(),(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
+  AN_PRESET.forEach(g=>{const k="p_"+g.id;if(S.imports[k])return;S.imports[k]=1;ch=true;
+    const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o={...r};delete o.name;if(m)o.pid=m.id;else{o.pid="";o.name=r.name}return o});
+    const rec={id:g.id,by:me,date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
+    if(!(S.analysis||[]).some(x=>x.id===g.id||sig(x)===sig(rec))){if(!S.analysis)S.analysis=[];S.analysis.push(rec)}});
+  if(ch)save();
+}
 function anFlat(){const out=[];(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
@@ -405,7 +416,7 @@ function anManageView(){
   return `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn ghost" style="width:100%" onclick="toggleAnList()">📋 업로드된 경기 관리 (${gs.length}) ${anListOpen?"▲":"▼"}</button>${body}</div>`;
 }
 function anView(){
-  anImportSample();anFillSampleC();
+  anImportSample();anImportPreset();anFillSampleC();
   const flat=anFlat();
   const sel=anPid&&S.members.some(m=>m.id===anPid)?anPid:me;anPid=sel;
   const m=S.members.find(x=>x.id===sel)||{name:"-"};
