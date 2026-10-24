@@ -1012,7 +1012,8 @@ function profView(){const m=S.members.find(x=>x.id===profileId);if(!m)return"";
   const row=(k,v)=>`<li style="padding:10px 0"><span style="color:var(--muted);width:76px;flex:none">${k}</span><div class="grow" style="text-align:right;font-weight:500">${v}</div></li>`;
   return `<div class="modal" onclick="if(event.target===this)closeProfile()"><div class="sheet"><div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn ghost" onclick="closeProfile()">닫기</button></div><div class="panel" style="padding:20px 16px"><div style="text-align:center"><div style="display:inline-block">${av(m,112)}</div><div style="font-size:22px;font-weight:900;margin-top:10px">${esc(m.name)} ${m.role?`<span class="tag ok" style="vertical-align:middle">${m.role}</span> `:""}${isNew(m)?'<span class="tag ok" style="vertical-align:middle">신입회원</span>':""}</div></div><div class="stats" style="margin:18px 0 6px"><div class="stat"><b>${rank}</b><span>순위</span></div><div class="stat"><b>${s.w}승 ${s.l}패</b><span>전적</span></div><div class="stat"><b>${n?Math.round(s.w/n*100)+"%":"-"}</b><span>승률</span></div></div><ul class="list">${row("회원자격",m.status||"-")}${row("실력",m.level||"미지정")}${row("가입일",m.joined?`${m.joined}${days>=0?` · ${days+1}일째`:""}`:"미입력")}${isAdmin()&&m.phone?row("연락처",esc(m.phone)):""}</ul></div></div></div>`}
 /* 역대 단체전 입상 내역 (운영자 입력) */
-const TEAM_DIVS=["에이스(금배)부","은배부","동배부"];
+const TEAM_DIVS=["에이스(금배)부","동호인(은배)부","동배부"];
+S.teamAwards.forEach(x=>{if(x.div==="은배부")x.div="동호인(은배)부"});
 let teamOpen=false;
 function openTeam(){teamOpen=true;render()}
 function closeTeam(){teamOpen=false;render()}
