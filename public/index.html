@@ -525,6 +525,8 @@ function anSvOrderView(o){
 /* 선수 총평(2줄): 여러 특징 중 가장 두드러진 것만 골라 선수마다 다르게 */
 /* 상황별 한 줄 응원 문구 — 총평 첫 줄의 특징 + 선수의 주무기/약점 샷/구간/서브 특징을 함께 보고 선수마다 다르게 선택 */
 const AN_QUOTES=[
+ [/베이스라이너/,["베이스라인 랠리가 강점이에요 — 깊은 크로스로 상대를 흔들어 봐요","끈질긴 랠리는 큰 무기! 찬스볼에서만 과감하게 마무리해요","베이스라인에서 코스를 섞으면 상대가 먼저 지쳐요","기본기가 탄탄한 스타일이에요 — 가끔 짧은 공엔 네트로 전진해 봐요","랠리 중 한 번쯤 드롭이나 로브로 변화를 줘 보세요"]],
+ [/발리형|네트 플레이어/,["네트 앞 감각이 좋아요 — 어프로치 샷만 안정되면 더 무서워져요","전위에서 한 발 먼저 움직이면 상대가 부담을 느껴요","발리는 짧게 밀듯이, 라켓 면을 세워서!","공격적인 네트 플레이가 매력이에요 — 로브 대비도 잊지 말아요","스매시와 발리로 마무리하는 모습, 계속 자신 있게!"]],
  [/더블폴트|서브가 최우선/,["서브는 내가 100% 컨트롤하는 유일한 샷, 여기부터 단단하게!","더블폴트 줄이기는 가장 빠른 실력 향상 지름길이에요","두 번째 서브는 속도보다 확신으로 넣어요","토스를 낮고 일정하게 — 그것만으로 서브가 달라져요","세컨드 서브는 스핀을 더해 안전하게, 자신 있게!","서브 전 호흡 한 번, 그리고 부드럽게 휘두르기","더블폴트 한 개가 사라지면 한 게임이 달라져요"]],
  [/서브 안정이 먼저/,["첫 서브 한 개가 경기의 분위기를 바꿔요","루틴을 만들면 서브가 편해져요 — 공 튕기기, 호흡, 서브!","퍼스트 서브는 80%의 힘으로, 들어가는 게 먼저예요","서브 코스를 하나만 정해 놓고 반복해 보세요","빠른 서브보다 들어가는 서브가 포인트를 만들어요","서브 연습 한 바구니면 경기가 훨씬 편해져요"]],
  [/서브가 든든|1st 서브 \d+%로 경기/,["든든한 서브는 팀에게 가장 큰 선물이에요","서브가 좋은 날은 경기가 편해져요 — 이 감각 그대로!","서브가 안정되니 리턴과 랠리도 여유가 생겨요","서브 게임을 지키는 힘이 승부를 만들어요","이 서브 루틴을 기억해 두세요 — 그대로가 정답!"]],
@@ -548,6 +550,7 @@ function anQuote(head,hs,ctx){
   ctx=ctx||{};const pool=[];
   for(const [re,list] of AN_QUOTES){if(re.test(head)){list.forEach(x=>pool.push(x));break}}
   const a=[],add=l=>(l||[]).forEach(x=>a.push(x));
+  if(ctx.sty)add(AN_QUOTES[ctx.sty==='b'?0:1][1]);
   if(ctx.bu)add(AN_TIP_U[ctx.bu[0]]);
   if(ctx.bw)add(AN_TIP_W[ctx.bw[0]]);
   const ph=ctx.ph;
@@ -596,6 +599,15 @@ function anComment(list,s){
     else if(fl.mu>=3)add(70+fl.mu,pick([`위축형 — 범실이 ${fl.mu}번 연속 나올 만큼 한번 흔들리면 이어져요`,`멘탈 관리가 숙제 — 실수가 몰릴 때 심리적으로 위축되는 모습`]),`범실 ${fl.mu}연속`);
     else if(fl.mw>=3&&c>=100)add(64+fl.mw,pick([`몰아치기형 — 흐름을 타면 위닝샷이 ${fl.mw}번 연속으로 터져요`,`안정감과 숙련도가 돋보이는 자신감 있는 플레이`]),`위닝 ${fl.mw}연속`);
   }
+  // 플레이 스타일: 경기수가 충분하고 샷 빈도가 한쪽에 뚜렷할 때 간간히 언급 (Fs·Bs=베이스라이너, O·V=발리/네트)
+  let sty=null;
+  if(list.length>=3&&hs%3!==0){
+    const cnt=k=>(w[k]||0)+(u[k]||0),base=cnt("Fs")+cnt("Bs"),net=cnt("O")+cnt("V"),tt=base+net;
+    if(tt>=15){
+      if(base/tt>=0.7)sty='b',add(46,pick([`베이스라이너형 — 포핸드·백핸드 위주로 랠리를 끌고 가요`,`랠리를 즐기는 베이스라이너 스타일`]),`베이스라이너형(스트로크 ${Math.round(base/tt*100)}%)`);
+      else if(net/tt>=0.4)sty='n',add(46,pick([`발리형 — 네트 앞에서 승부를 보는 적극적인 스타일`,`네트 플레이어형 — 오버헤드·발리를 적극 활용해요`]),`발리형(네트 샷 ${Math.round(net/tt*100)}%)`);
+    }
+  }
   // 경기 구간
   if(ph&&ph.strong&&ph.weak){
     const nt=k=>ph.t[k][0]-ph.t[k][1],gap=nt(ph.strong)-nt(ph.weak);
@@ -622,7 +634,7 @@ function anComment(list,s){
   F.sort((a,b)=>b.score-a.score);
   const hf=F.find(f=>f.head)||{head:"기록을 바탕으로 한 총평",detail:null};
   const rest=F.filter(f=>f!==hf&&f.detail).slice(0,2).map(f=>f.detail);
-  return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2,{bw,bu,ph,p1,D}));
+  return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2,{bw,bu,ph,p1,D,sty}));
 }
 function cmtHtml(l1,l2,l3){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}${l3?`<div style="color:var(--court);font-style:italic">💬 ${l3}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
