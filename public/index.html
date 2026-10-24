@@ -426,7 +426,7 @@ function anView(){
   const mine=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||""));
   const st=anStats(mine);
   const cnt=id=>flat.filter(e=>e.pid===id).length;
-  const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value)">${anAll().map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}${anManageView()}`:""}</div>`;
+  const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value,1)">${anAll().map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}${anManageView()}`:""}</div>`;
   const form=anForm?anFormView(sel):"";
   if(!mine.length)return (isAdmin()?head+form:anRank(flat)+head+form)+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다.${isAdmin()?' 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.':""}</p></div>`+(isAdmin()?anRank(flat):"")+anGuide();
   const cm=mine.filter(e=>e.hasC);
@@ -448,9 +448,10 @@ function anView(){
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
-  if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">← 선수별 비교로 돌아가기</button>`;
+  if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
     return back+sum+list+bars+(isAdmin()?head+form+anRank(flat):anRank(flat)+head+form)+anGuide()}
-  return isAdmin()?head+form+sum+bars+list+anRank(flat)+anGuide():anRank(flat)+head+form+sum+bars+list+anGuide();
+  /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
+  return isAdmin()?head+form+anRank(flat)+anGuide():anRank(flat)+head+form+anGuide();
 }
 function anGuide(){
   const gl=[["승리기여도","V","Victory 기여도 = Winning ÷ Unforced × 100%. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
