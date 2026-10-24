@@ -152,9 +152,12 @@ const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+Stri
 const sessOn=ds=>{const d0=new Date(ds+"T00:00");const d=d0.getDay();const dt=d0.getDate();const sat=d===6?dt:d===0?dt-1:0;const second=sat>=8&&sat<=14;return S.schedule.filter(s=>s.day===d).map(s=>second?{...s,start:"19:00",end:"22:00",special:1}:s)};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const mname=id=>(S.members.find(m=>m.id===id)||{name:"탈퇴 회원"}).name;
+const mname=id=>(S.members.find(m=>m.id===id)||(S.guests||[]).find(g=>g.id===id)||{name:"탈퇴 회원"}).name;
 const memberOpts=sel=>S.members.map(m=>`<option value="${m.id}"${m.id===sel?" selected":""}>${esc(m.name)}</option>`).join("");
 
+/* 경기 결과 선수 선택: 회원 + 등록 게스트 + 게스트 이름 직접 입력 */
+const matchSel=(id,sel)=>`<select id="${id}" onchange="mselCh('${id}')">${memberOpts(sel)}${(S.guests||[]).length?`<optgroup label="게스트">${S.guests.map(g=>`<option value="${g.id}"${g.id===sel?" selected":""}>${esc(g.name)} (게스트)</option>`).join("")}</optgroup>`:""}<option value="__new">＋ 게스트 이름 직접 입력</option></select><input id="${id}_n" placeholder="게스트 이름" maxlength="20" style="display:none;margin-top:4px">`;
+function mselCh(id){const s=document.getElementById(id),n=document.getElementById(id+"_n");if(!s||!n)return;n.style.display=s.value==="__new"?"block":"none";if(s.value==="__new")n.focus()}
 const teams=g=>[g.t1||[g.p1],g.t2||[g.p2]];
 const NAME_COLOR={1:"#c99a00",2:"#8a949e",3:"#b4691f"};
 function rankOf(m){const st=stats();if(!st[m.id])return 0;const pl=x=>st[x.id].w+st[x.id].l>0;if(!pl(m))return 0;const s=st[m.id];return 1+S.members.filter(x=>pl(x)&&(st[x.id].w>s.w||(st[x.id].w===s.w&&st[x.id].l<s.l))).length}
@@ -704,10 +707,10 @@ matches(){
   const ms=[...S.matches].reverse();
   const sNow=sessOn(iso(new Date())).map(s=>`${fmtT(s.start)} ~ ${fmtT(s.end)}`).join(", ")||"오늘은 경기가 없습니다";
   const formPanel=(canAddMatch()&&(!ed()||canEditMatch(ed())))?`<div class="panel"><h2>${ed()?"경기 결과 수정":"복식 경기 결과 입력"}</h2>${isAdmin()?"":`<p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">경기 시간 중에만 입력·수정할 수 있어요 (본인이 입력한 결과만 수정 가능)</p>`}<div class="row">
-    <label>A팀 선수 1<select id="p1">${memberOpts(eo(0,0))}</select></label><label>A팀 선수 2<select id="p1b">${memberOpts(eo(0,1))}</select></label>
+    <label>A팀 선수 1${matchSel("p1",eo(0,0))}</label><label>A팀 선수 2${matchSel("p1b",eo(0,1))}</label>
     <label style="max-width:90px">A팀 점수<input id="s1" type="number" min="0" value="${ed()?ed().s1:0}"></label>
     <label style="max-width:90px">B팀 점수<input id="s2" type="number" min="0" value="${ed()?ed().s2:0}"></label>
-    <label>B팀 선수 1<select id="p2">${memberOpts(eo(1,0))}</select></label><label>B팀 선수 2<select id="p2b">${memberOpts(eo(1,1))}</select></label>
+    <label>B팀 선수 1${matchSel("p2",eo(1,0))}</label><label>B팀 선수 2${matchSel("p2b",eo(1,1))}</label>
     <button class="btn" onclick="addMatch()">${ed()?"수정 저장":"결과 저장"}</button>${ed()?`<button class="btn off" onclick="editMatchId=null;render()">취소</button>`:""}</div></div>`:`<div class="panel"><h2>복식 경기 결과 입력</h2><p style="margin:0;color:var(--muted)">경기 시간에만 입력할 수 있어요. 경기 시간 외에는 운영자만 입력·수정할 수 있습니다.<br><small>오늘 경기 시간: ${sNow}</small></p></div>`;
   return `${formPanel}
   <div class="panel"><h2>최근 경기</h2>${ms.length?`<ul class="list">${ms.slice(0,15).map(g=>`<li><div class="grow">${teams(g)[0].map(id=>esc(mname(id))).join("·")} vs ${teams(g)[1].map(id=>esc(mname(id))).join("·")}<small>${g.date}</small></div><span class="score">${g.s1} : ${g.s2}</span>${canEditMatch(g)?`<button class="btn ghost" onclick="editMatch('${g.id}')">수정</button>`:""}</li>`).join("")}</ul>`:`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`;
@@ -796,7 +799,8 @@ function book(t,c){const m=$("#bm").value;if(!m){alert("먼저 회원을 추가�
   S.bookings.push({id:uid(),date:S.date,time:t,court:c,member:m});save();render()}
 function cancelBooking(id){S.bookings=S.bookings.filter(b=>b.id!==id);save();render()}
 function addMatch(){const g0=ed();if(g0?!canEditMatch(g0):!canAddMatch()){alert("경기 시간에만 입력할 수 있습니다. (경기 시간 외에는 운영자만 가능)");editMatchId=null;render();return}
-  const t1=[$("#p1").value,$("#p1b").value],t2=[$("#p2").value,$("#p2b").value],s1=+$("#s1").value,s2=+$("#s2").value;
+  const resolve=id=>{const v=$("#"+id).value;if(v!=="__new")return v;const nm=($("#"+id+"_n").value||"").trim();if(!nm)return "";const m=S.members.find(x=>x.name===nm);if(m)return m.id;let g=S.guests.find(x=>x.name===nm);if(!g){g={id:uid(),name:nm,photo:"",age:"",region:"",level:"",club:""};S.guests.push(g)}return g.id};
+  const t1=[resolve("p1"),resolve("p1b")],t2=[resolve("p2"),resolve("p2b")],s1=+$("#s1").value,s2=+$("#s2").value;
   if([...t1,...t2].some(x=>!x)||new Set([...t1,...t2]).size!==4){alert("복식 경기는 서로 다른 선수 4명을 선택해야 합니다.");return}
   if(s1===s2){alert("점수가 같으면 승패를 기록할 수 없습니다.");return}
   const g=ed();if(g){Object.assign(g,{t1,t2,s1,s2});delete g.p1;delete g.p2;editMatchId=null}else S.matches.push({id:uid(),date:today(),by:me,t1,t2,s1,s2});save();render()}
