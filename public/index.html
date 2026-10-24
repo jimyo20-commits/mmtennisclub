@@ -719,7 +719,7 @@ guests(){
 club(){
   return `<div class="panel" style="text-align:center;padding:10px 14px"><div style="font-size:19px;font-weight:900;line-height:1.3">무명회 테니스 클럽</div><div style="color:var(--muted);font-size:11px;letter-spacing:.08em">MOOMYUNG TENNIS CLUB</div></div>
   ${awPanel()}
-  ${spPanel()}
+  ${isGuest()?"":spPanel()}
   ${tipPanel()}
   ${shopPanel()}
   ${avgPanel()}`;
