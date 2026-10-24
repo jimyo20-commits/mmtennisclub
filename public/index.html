@@ -138,6 +138,8 @@ if(!seeded){
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}syncKick()};
 let me=null;try{me=localStorage.getItem(KEY+"-user")}catch(e){}
+/* 게스트 로그인: 회원이 아닌 등록 게스트(전화번호 뒷 4자리)는 분석 탭만 볼 수 있음 */
+const isGuest=()=>!!me&&!S.members.some(m=>m.id===me)&&(S.guests||[]).some(g=>g.id===me);
 const isAdmin=()=>{const u=S.members.find(m=>m.id===me);return !!u&&(u.name==="윤준식"||u.admin)};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const DAYS=["일","월","화","수","목","금","토"];
@@ -429,7 +431,7 @@ function anView(){
   const cnt=id=>flat.filter(e=>e.pid===id).length;
   const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value,1)">${anAll().map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}${anManageView()}`:""}</div>`;
   const form=anForm?anFormView(sel):"";
-  if(!mine.length)return (isAdmin()?head+form:anRank(flat)+head+form)+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다.${isAdmin()?' 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.':""}</p></div>`+(isAdmin()?anRank(flat):"")+anGuide();
+  if(!mine.length)return (isAdmin()?(isGuest()?"":head+form):anRank(flat)+(isGuest()?"":head+form))+`<div class="panel"><p class="empty">${esc(m.name)} 님의 분석 기록이 아직 없습니다.${isAdmin()?' 위의 "엑셀 업로드"로 경기 분석 파일을 올려 주세요.':""}</p></div>`+(isAdmin()?anRank(flat):"")+anGuide();
   const cm=mine.filter(e=>e.hasC);
   const code=(k,c)=>cm.reduce((t,e)=>t+(+(e[k]||{})[c]||0),0);
   const svc=c=>mine.reduce((t,e)=>t+(+(e.sv||{})[c]||0),0);
@@ -450,9 +452,9 @@ function anView(){
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
-    return back+sum+list+bars+(isAdmin()?head+form+anRank(flat):anRank(flat)+head+form)+anGuide()}
+    return back+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
   /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
-  return isAdmin()?head+form+anRank(flat)+anGuide():anRank(flat)+head+form+anGuide();
+  return isAdmin()?(isGuest()?"":head+form)+anRank(flat)+anGuide():anRank(flat)+(isGuest()?"":head+form)+anGuide();
 }
 function anGuide(){
   const gl=[["승리기여도","V","Victory 기여도 = Winning ÷ Unforced × 100%. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
@@ -709,7 +711,7 @@ matches(){
 },
 guests(){
   const ad=isAdmin();const eg=S.guests.find(x=>x.id===editGuestId)||{};
-  const form=ad?`<div class="panel"><h2>${eg.id?"게스트 정보 수정":"게스트 추가"}</h2><div class="row"><label>이름<input id="gn" placeholder="게스트 이름" value="${esc(eg.name||"")}"></label><label>나이<input id="ga" type="number" min="1" max="120" inputmode="numeric" placeholder="예: 52" value="${eg.age||""}"></label></div><div class="row" style="margin-top:8px"><label>지역<input id="gr" placeholder="예: 범어동" value="${esc(eg.region||"")}"></label><label>실력<select id="gl"><option value="">미지정</option>${LEVELS.map(l=>`<option${eg.level===l?" selected":""}>${l}</option>`).join("")}</select></label></div><div class="row" style="margin-top:8px"><label>소속클럽<input id="gc" placeholder="예: 수성클럽" value="${esc(eg.club||"")}"></label><label>사진${eg.id?" (바꿀 때만 선택)":""}<input id="gp" type="file" accept="image/*"></label></div><div class="row" style="margin-top:10px"><button class="btn" onclick="addGuest()">${eg.id?"수정 저장":"게스트 추가"}</button>${eg.id?`<button class="btn off" onclick="editGuestId=null;render()">취소</button>`:""}</div><p id="gne" style="color:var(--bad);margin:8px 0 0;min-height:20px"></p></div>`:"";
+  const form=ad?`<div class="panel"><h2>${eg.id?"게스트 정보 수정":"게스트 추가"}</h2><div class="row"><label>이름<input id="gn" placeholder="게스트 이름" value="${esc(eg.name||"")}"></label><label>나이<input id="ga" type="number" min="1" max="120" inputmode="numeric" placeholder="예: 52" value="${eg.age||""}"></label></div><div class="row" style="margin-top:8px"><label>지역<input id="gr" placeholder="예: 범어동" value="${esc(eg.region||"")}"></label><label>실력<select id="gl"><option value="">미지정</option>${LEVELS.map(l=>`<option${eg.level===l?" selected":""}>${l}</option>`).join("")}</select></label></div><div class="row" style="margin-top:8px"><label>소속클럽<input id="gc" placeholder="예: 수성클럽" value="${esc(eg.club||"")}"></label><label>사진${eg.id?" (바꿀 때만 선택)":""}<input id="gp" type="file" accept="image/*"></label></div><div class="row" style="margin-top:8px"><label>전화번호 뒷 4자리 <span style="font-weight:400;color:var(--muted)">(게스트 로그인 비밀번호)</span><input id="gph" inputmode="numeric" maxlength="4" placeholder="예: 1234" value="${esc(lastDigits(eg.phone))}"></label></div><div class="row" style="margin-top:10px"><button class="btn" onclick="addGuest()">${eg.id?"수정 저장":"게스트 추가"}</button>${eg.id?`<button class="btn off" onclick="editGuestId=null;render()">취소</button>`:""}</div><p id="gne" style="color:var(--bad);margin:8px 0 0;min-height:20px"></p></div>`:"";
   const cards=S.guests.map(g=>{const ar=[g.age?g.age+"세":"",g.region||""].filter(Boolean).map(esc).join(" · ");
     return `<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center"><label title="${ad?"사진 변경":""}" style="display:inline-block;flex:none;min-width:0;${ad?"cursor:pointer":""}">${ad?`<input type="file" accept="image/*" hidden onchange="setGuestPhoto('${g.id}',this)">`:""}${gav(g,96)}</label><div style="font-size:17px;font-weight:900;margin-top:8px;word-break:keep-all">${esc(g.name)}</div>${ar?`<div style="font-size:13px;color:var(--muted);margin-top:2px">${ar}</div>`:""}<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${g.level?`<span class="tag ok">${esc(g.level)}</span>`:""}${g.club?`<span class="tag">${esc(g.club)}</span>`:""}</div>${ad?`<div style="margin-top:8px;display:flex;gap:6px;justify-content:center"><button class="btn ghost" style="padding:4px 12px" onclick="editGuest('${g.id}')">수정</button><button class="btn ghost del" style="padding:4px 12px" onclick="delGuest('${g.id}')">삭제</button></div>`:""}</div>`}).join("");
   return `${form}<div class="panel"><h2>게스트 (${S.guests.length}명)</h2>${S.guests.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">${cards}</div>`:`<p class="empty">등록된 게스트가 없습니다.</p>`}</div>`;
@@ -816,14 +818,14 @@ function savePhone(id){const m=S.members.find(x=>x.id===id);const e=document.get
   if(v&&lastDigits(v).length<4){const er=document.getElementById("phe");if(er)er.textContent="끝 4자리를 모두 입력하세요. (가운데 4자리는 입력하지 않습니다)";return}
   m.phone=v;phoneEditId=null;save();render()}
 function loginView(){return `<div class="panel" style="max-width:420px;margin:10px auto"><h2>로그인</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>비밀번호 <span style="font-weight:400">(처음에는 전화번호 뒷 4자리)</span><input id="lgp" type="password" inputmode="numeric" maxlength="8" autocomplete="off" onkeydown="if(event.key==='Enter')login()"></label><button class="btn" onclick="login()">로그인</button></div><div id="lgc"></div><p id="lge" style="color:var(--bad);min-height:22px;margin:10px 0 0"></p><p class="empty" style="margin:0">운영자(윤준식)는 처음 한 번, 사용할 4자리를 입력하고 <a href="#" onclick="adminSetup();return false">여기</a>를 눌러 등록하세요.</p></div>`}
-function pick(id){me=id;voter=id;tab="home";showVote=true;try{localStorage.setItem(KEY+"-user",me)}catch(e){}render()}
+function pick(id){me=id;voter=id;const gu=isGuest();tab=gu?"analysis":"home";showVote=!gu;try{localStorage.setItem(KEY+"-user",me)}catch(e){}render()}
 async function login(){const ent=$("#lgp").value.trim();
   if(typeof SYNC!=="undefined"&&SYNC.on){$("#lge").textContent="확인 중…";try{await syncPull()}catch(e){}$("#lge").textContent=""}   // 다른 기기에서 바꾼 비밀번호도 바로 적용되도록 최신 데이터를 먼저 받아옵니다
   if(!/^\d{4,8}$/.test(ent)){$("#lge").textContent="비밀번호(숫자 4~8자리)를 입력하세요.";return}
-  const hits=S.members.filter(m=>pwOf(m)===ent);
+  const hits=[...S.members.filter(m=>pwOf(m)===ent),...(S.guests||[]).filter(g=>pwOf(g)===ent).map(g=>({...g,guestTag:1}))];
   if(!hits.length){$("#lge").textContent="일치하는 회원이 없습니다. 번호가 등록되지 않았다면 운영자에게 문의하세요.";return}
   if(hits.length===1){pick(hits[0].id);return}
-  $("#lge").textContent="";$("#lgc").innerHTML=`<p style="margin:12px 0 6px">본인을 선택하세요.</p>`+hits.map(m=>`<button class="btn off" style="margin:0 6px 6px 0" onclick="pick('${m.id}')">${esc(m.name)}</button>`).join("")}
+  $("#lge").textContent="";$("#lgc").innerHTML=`<p style="margin:12px 0 6px">본인을 선택하세요.</p>`+hits.map(m=>`<button class="btn off" style="margin:0 6px 6px 0" onclick="pick('${m.id}')">${esc(m.name)}${m.guestTag?" (게스트)":""}</button>`).join("")}
 function adminSetup(){const ent=$("#lgp").value.trim();const a=S.members.find(m=>m.name==="윤준식");
   if(!a||!/^\d{4}$/.test(ent)){$("#lge").textContent="먼저 사용할 4자리 숫자를 입력창에 쓰고 눌러주세요.";return}
   if(a.phone){$("#lge").textContent="이미 등록되어 있습니다. 4자리를 입력하고 로그인하세요.";return}
@@ -974,7 +976,8 @@ function readPhoto(f,cb){const rd=new FileReader();rd.onload=()=>{const im=new I
 let editGuestId=null;
 function editGuest(id){editGuestId=id;render();window.scrollTo(0,0)}
 function addGuest(){const name=$("#gn").value.trim();if(!name){$("#gne").textContent="이름을 입력하세요.";return}
-  const info={name,age:+$("#ga").value||"",region:$("#gr").value.trim(),level:$("#gl").value,club:$("#gc").value.trim()};
+  const ph=($("#gph").value||"").replace(/\D/g,"");if(ph&&ph.length!==4){$("#gne").textContent="전화번호는 뒷 4자리 숫자만 입력하세요.";return}
+  const info={name,age:+$("#ga").value||"",region:$("#gr").value.trim(),level:$("#gl").value,club:$("#gc").value.trim(),phone:ph?fmtPh4(ph):""};
   const f=$("#gp").files&&$("#gp").files[0];
   const done=photo=>{const g=S.guests.find(x=>x.id===editGuestId);if(g){Object.assign(g,info);if(photo)g.photo=photo;editGuestId=null}else S.guests.push({id:uid(),photo:photo||"",...info});save();render()};
   if(f)readPhoto(f,done);else done("")}
@@ -1120,11 +1123,11 @@ function navUpd(){const n=document.getElementById("nav"),b=document.getElementBy
   b.style.display=n.scrollWidth-n.clientWidth-n.scrollLeft>4?"flex":"none";a.style.display=n.scrollLeft>4?"flex":"none"}
 function navMore(d){const n=document.getElementById("nav");if(n)n.scrollBy({left:(d||1)*Math.max(120,n.clientWidth*.6),behavior:"smooth"})}
 function render(){
-  const u=S.members.find(m=>m.id===me);
-  $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u?"":"none";$("#who").innerHTML=u?`${esc(u.name)}님 <button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button><button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
+  const u=S.members.find(m=>m.id===me)||(isGuest()?(S.guests||[]).find(g=>g.id===me):null);
+  $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u&&!isGuest()?"":"none";$("#who").innerHTML=u?`${esc(u.name)}님${isGuest()?" (게스트)":""} ${isGuest()?"":`<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button>`}<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
   if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML="";return}
-  const tabs=TABS.filter(([k])=>isAdmin()||!["members","dues"].includes(k));
-  if(!tabs.some(([k])=>k===tab))tab="home";
+  const tabs=isGuest()?TABS.filter(([k])=>k==="analysis"):TABS.filter(([k])=>isAdmin()||!["members","dues"].includes(k));
+  if(!tabs.some(([k])=>k===tab))tab=tabs[0][0];
   $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
   setTimeout(navUpd,0);
   $("#view").innerHTML=V[tab]();
