@@ -168,14 +168,19 @@ const teams=g=>[g.t1||[g.p1],g.t2||[g.p2]];
 const NAME_COLOR={1:"#c99a00",2:"#8a949e",3:"#b4691f"};
 function rankOf(m){const st=stats();if(!st[m.id])return 0;const pl=x=>st[x.id].w+st[x.id].l>0;if(!pl(m))return 0;const s=st[m.id];return 1+S.members.filter(x=>pl(x)&&(st[x.id].w>s.w||(st[x.id].w===s.w&&st[x.id].l<s.l))).length}
 function nameR(m){const r=rankOf(m);return NAME_COLOR[r]?`<span style="color:${NAME_COLOR[r]}">${esc(m.name)}</span>`:esc(m.name)}
-/* 랭킹 기준: 승점(승 3 · 무 1 · 패 0, 시간 종료 미완료 경기는 이기던 팀 1 · 동점 0, 당일 추천게임은 2배: 승 6 · 무 2) 순, 동률이면 승률(무승부 제외) 순 */
+/* 랭킹 기준: 승점(승 5 · 무 3 · 패 1, 시간 종료 미완료 경기는 이기던 팀 2 · 동점 각 1 · 패 0, 당일 추천게임은 2배: 승 10 · 무 6 · 패 2) 순, 동률이면 승률(무승부 제외) 순 */
 /* 출석률 70% 이하는 부족한 %만큼 승점 차감(예: 출석률 10% → 60% 차감). s.f = 남는 비율 */
-const gpts=s=>Math.round((s.w*3+s.d+(s.x||0))*(s.f==null?1:s.f)),gRate=s=>s.w+s.l?s.w/(s.w+s.l):0;
+const gpts=s=>Math.round((s.w*5+s.d*3+s.l+(s.x||0))*(s.f==null?1:s.f)),gRate=s=>s.w+s.l?s.w/(s.w+s.l):0;
 const rkBetter=(x,y)=>gpts(x)>gpts(y)||(gpts(x)===gpts(y)&&gRate(x)>gRate(y));
 const rkCmp=(x,y)=>(gpts(y)-gpts(x))||(gRate(y)-gRate(x))||(y.w-x.w);
 function stats(){
   const w={};S.members.forEach(m=>w[m.id]={w:0,l:0,d:0,x:0});
-  S.matches.forEach(g=>{if(g.partial&&g.s1+g.s2<=4)return;const [A,B]=teams(g);const bx=g.bonus;if(g.s1===g.s2){A.concat(B).forEach(id=>{if(w[id]){w[id].d++;if(g.partial)w[id].x-=1;else if(bx)w[id].x+=1}});return}const a=g.s1>g.s2;const wx=g.partial?(bx?-1:-2):(bx?3:0);A.forEach(id=>{if(w[id]){a?w[id].w++:w[id].l++;if(a)w[id].x+=wx}});B.forEach(id=>{if(w[id]){a?w[id].l++:w[id].w++;if(!a)w[id].x+=wx}})});
+  /* x = 기본(승5·무3·패1)에서 더하거나 빼는 값. 시간 종료: 승2·무1·패0, 추천 ×2: 승10·무6·패2(시간 종료+추천 승4·무2·패0) */
+  S.matches.forEach(g=>{if(g.partial&&g.s1+g.s2<=4)return;const [A,B]=teams(g);const bx=g.bonus,pt=g.partial;
+    const dx=pt?(bx?-1:-2):(bx?3:0),wx=pt?(bx?-1:-3):(bx?5:0),lx=pt?-1:(bx?1:0);
+    const give=(ids,k,add)=>ids.forEach(id=>{if(w[id]){w[id][k]++;w[id].x+=add}});
+    if(g.s1===g.s2){give(A.concat(B),"d",dx);return}
+    const a=g.s1>g.s2;give(A,a?"w":"l",a?wx:lx);give(B,a?"l":"w",a?lx:wx)});
   S.members.forEach(m=>{const a=attRate(m);if(a){w[m.id].pc=a.pct;if(a.pct<70)w[m.id].f=(30+a.pct)/100}});
   return w;
 }
@@ -723,7 +728,7 @@ matches(){
     <label style="max-width:90px">A팀 점수<input id="s1" type="number" min="0" value="${ed()?ed().s1:0}"></label>
     <label style="max-width:90px">B팀 점수<input id="s2" type="number" min="0" value="${ed()?ed().s2:0}"></label>
     <label>B팀 선수 1${matchSel("p2",eo(1,0))}</label><label>B팀 선수 2${matchSel("p2b",eo(1,1))}</label>
-    <label style="flex-basis:100%;display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4"><input type="checkbox" id="pt" style="width:auto;margin-top:2px"${ed()&&ed().partial?" checked":""}><span>시간 종료로 끝까지 못한 경기<br><small style="color:var(--muted)">이기고 있던 팀 1점, 동점이면 점수 없음<br>양쪽 점수 합이 4게임 이하면 노게임(기록 안 남음)</small></span></label>
+    <label style="flex-basis:100%;display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4"><input type="checkbox" id="pt" style="width:auto;margin-top:2px"${ed()&&ed().partial?" checked":""}><span>시간 종료로 끝까지 못한 경기<br><small style="color:var(--muted)">이기고 있던 팀 2점, 동점이면 각 1점<br>양쪽 점수 합이 4게임 이하면 노게임(기록 안 남음)</small></span></label>
     <button class="btn" onclick="addMatch()">${ed()?"수정 저장":"결과 저장"}</button>${ed()?`<button class="btn off" onclick="editMatchId=null;render()">취소</button>`:""}</div></div>`:`<div class="panel"><h2>복식 경기 결과 입력</h2><p style="margin:0;color:var(--muted)">경기 시간에만 입력할 수 있어요. 경기 시간 외에는 운영자만 입력·수정할 수 있습니다.<br><small>오늘 경기 시간: ${sNow}</small></p></div>`;
   return `${isGuest()?"":formPanel}
   <div class="panel"><h2>최근 경기</h2>${ms.length?mGroups(ms).map((d,i)=>`<details${i===0?" open":""} style="border-top:${i?"1px solid var(--line)":"0"};padding:6px 0"><summary style="cursor:pointer;font-weight:800;padding:6px 0">${fmtMD(d.date)} <span class="tag" style="font-size:11px;vertical-align:middle">${d.list.length}경기</span></summary><ul class="list">${d.list.map(g=>{const my=teams(g).flat().includes(me);return `<li style="gap:6px;${my?'background:rgba(46,160,90,.18);box-shadow:inset 4px 0 0 #2ea05a;border-radius:8px;padding-left:12px;font-weight:700':""}"><div class="grow" style="font-size:13px;min-width:0"><span style="white-space:nowrap">${teams(g)[0].map(id=>esc(mname(id))).join("·")}</span> <span style="white-space:nowrap">vs ${teams(g)[1].map(id=>esc(mname(id))).join("·")}</span>${g.bonus?' <span class="tag ok" style="font-size:10px;font-weight:800;vertical-align:middle">추천 ×2</span>':""}${g.partial?' <span class="tag" style="font-size:10px;font-weight:800;vertical-align:middle">시간 종료</span>':""}</div><span style="flex:none;display:flex;flex-direction:column;align-items:center;gap:3px">${my?(()=>{const dr=g.s1===g.s2,inA=teams(g)[0].includes(me),win=inA?g.s1>g.s2:g.s2>g.s1;return `<span class="tag ${dr?"":win?"ok":"no"}" style="flex:none;font-weight:800;min-width:34px;justify-content:center;text-align:center">${dr?"무":win?"승":"패"}</span>`})():g.s1===g.s2?'<span class="tag" style="flex:none">무승부</span>':""}<span class="score" style="font-size:16px">${g.s1} : ${g.s2}</span></span>${canEditMatch(g)?`<button class="btn ghost" style="padding:5px 7px;font-size:11px;flex:none" onclick="editMatch('${g.id}')">수정</button>`:""}${canEditMatch(g)?`<button class="btn ghost" style="padding:5px 7px;font-size:11px;flex:none;color:#c0392b" onclick="askDelMatch('${g.id}')">삭제</button>`:""}${isAdmin()?`<button class="btn ghost" style="padding:5px 7px;font-size:11px;flex:none" onclick="toggleBonus('${g.id}')">${g.bonus?"×2 해제":"×2 지정"}</button>`:""}</li>`}).join("")}</ul></details>`).join(""):`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`;
@@ -981,7 +986,7 @@ function recoCalc0(){
 function recoPanel(){
   const c=recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
-  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 6점 · 무 2점${voteClosed(u.ds)?" · 투표 마감으로 고정":""}</p>${b}</div>`;
+  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 6점 · 패 2점${voteClosed(u.ds)?" · 투표 마감으로 고정":""}</p>${b}</div>`;
   if(!games)return wrap(`<p class="empty">참석자가 4명 이상 모이면 승률이 비슷한 사람끼리 2게임을 추천해요.</p>`);
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${shown(m)}</small></span>`;
   const H=recoH2H();
