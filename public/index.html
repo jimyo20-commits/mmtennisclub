@@ -716,7 +716,7 @@ matches(){
   const rk=S.members.map(m=>({m,...st[m.id]})).filter(r=>r.w+r.l+r.d>0).sort(rkCmp);
   const ms=[...S.matches].reverse().filter(g=>!isGuest()||teams(g).flat().includes(me));
   const sNow=sessOn(iso(new Date())).map(s=>`${fmtT(s.start)} ~ ${fmtT(s.end)}`).join(", ")||"오늘은 경기가 없습니다";
-  const formPanel=(canAddMatch()&&(!ed()||canEditMatch(ed())))?`<div class="panel"><h2>${ed()?"경기 결과 수정":"복식 경기 결과 입력"}</h2>${isAdmin()?"":`<p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">경기 시간 중에만 입력·수정할 수 있어요 (본인이 입력한 결과만 수정 가능)</p>`}<div class="row">
+  const formPanel=(canAddMatch()&&(!ed()||canEditMatch(ed())))?`<div class="panel"><h2>${ed()?"경기 결과 수정":"복식 경기 결과 입력"}</h2><p style="margin:-6px 0 8px;font-size:12px;color:#16a34a;font-weight:700">오늘의 추천매치와 같은 조합이면 저장할 때 자동으로 승점 ×2가 적용돼요</p>${isAdmin()?"":`<p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">경기 시간 중에만 입력·수정할 수 있어요 (본인이 입력한 결과만 수정 가능)</p>`}<div class="row">
     <label>A팀 선수 1${matchSel("p1",eo(0,0))}</label><label>A팀 선수 2${matchSel("p1b",eo(0,1))}</label>
     <label style="max-width:90px">A팀 점수<input id="s1" type="number" min="0" value="${ed()?ed().s1:0}"></label>
     <label style="max-width:90px">B팀 점수<input id="s2" type="number" min="0" value="${ed()?ed().s2:0}"></label>
