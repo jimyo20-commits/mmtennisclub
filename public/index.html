@@ -1054,7 +1054,10 @@ function totalRate(m){const keys=Object.keys(S.attend).filter(k=>Object.keys(S.a
   const s=new Date(start+"T00:00");if(isNaN(s))return null;const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;
   for(let d=new Date(s);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length){tot++;if((S.attend[ds]||{})[m.id])ok++}}
   return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
-function attRate(m){if(!m.joined)return null;const j=new Date(m.joined+"T00:00");const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;for(let d=new Date(j);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length){tot++;if((S.attend[ds]||{})[m.id])ok++}}return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
+function attRate(m){if(!m.joined)return null;const j=new Date(m.joined+"T00:00");const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;for(let d=new Date(j);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length){tot++;if((S.attend[ds]||{})[m.id])ok++}}
+  /* 오늘 모임은 운영자가 출석 확인을 하는 즉시 반영(결석은 내일부터 집계) */
+  {const td=iso(n);if(new Date(m.joined+"T00:00")<=n&&sessOn(td).length&&(S.attend[td]||{})[m.id]){tot++;ok++}}
+  return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
 function newPanel(){
   const ns=S.members.filter(isNew).sort((a,b)=>b.joined.localeCompare(a.joined));
   if(!ns.length)return"";
