@@ -158,6 +158,9 @@ const memberOpts=sel=>S.members.map(m=>`<option value="${m.id}"${m.id===sel?" se
 /* 경기 결과 선수 선택: 회원 + 등록 게스트 + 게스트 이름 직접 입력 */
 const matchSel=(id,sel)=>`<select id="${id}" onchange="mselCh('${id}')">${memberOpts(sel)}${(S.guests||[]).length?`<optgroup label="게스트">${S.guests.map(g=>`<option value="${g.id}"${g.id===sel?" selected":""}>${esc(g.name)} (게스트)</option>`).join("")}</optgroup>`:""}<option value="__new">＋ 게스트 이름 직접 입력</option></select><input id="${id}_n" placeholder="게스트 이름" maxlength="20" style="display:none;margin-top:4px">`;
 function mselCh(id){const s=document.getElementById(id),n=document.getElementById(id+"_n");if(!s||!n)return;n.style.display=s.value==="__new"?"block":"none";if(s.value==="__new")n.focus()}
+/* 같은 날 경기는 하나로 묶어서 표시 (최근 날짜순) */
+const fmtMD=ds=>{const d=new Date((ds||"")+"T00:00");return isNaN(d)?esc(ds||"날짜 없음"):`${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]})`};
+function mGroups(ms){const o=[],m={};ms.forEach(g=>{const k=g.date||"";if(!m[k]){m[k]={date:k,list:[]};o.push(m[k])}m[k].list.push(g)});return o.slice(0,10)}
 const teams=g=>[g.t1||[g.p1],g.t2||[g.p2]];
 const NAME_COLOR={1:"#c99a00",2:"#8a949e",3:"#b4691f"};
 function rankOf(m){const st=stats();if(!st[m.id])return 0;const pl=x=>st[x.id].w+st[x.id].l>0;if(!pl(m))return 0;const s=st[m.id];return 1+S.members.filter(x=>pl(x)&&(st[x.id].w>s.w||(st[x.id].w===s.w&&st[x.id].l<s.l))).length}
@@ -717,7 +720,7 @@ matches(){
     <label>B팀 선수 1${matchSel("p2",eo(1,0))}</label><label>B팀 선수 2${matchSel("p2b",eo(1,1))}</label>
     <button class="btn" onclick="addMatch()">${ed()?"수정 저장":"결과 저장"}</button>${ed()?`<button class="btn off" onclick="editMatchId=null;render()">취소</button>`:""}</div></div>`:`<div class="panel"><h2>복식 경기 결과 입력</h2><p style="margin:0;color:var(--muted)">경기 시간에만 입력할 수 있어요. 경기 시간 외에는 운영자만 입력·수정할 수 있습니다.<br><small>오늘 경기 시간: ${sNow}</small></p></div>`;
   return `${formPanel}
-  <div class="panel"><h2>최근 경기</h2>${ms.length?`<ul class="list">${ms.slice(0,15).map(g=>`<li><div class="grow">${teams(g)[0].map(id=>esc(mname(id))).join("·")} vs ${teams(g)[1].map(id=>esc(mname(id))).join("·")}<small>${g.date}</small></div>${g.s1===g.s2?'<span class="tag" style="flex:none">무승부</span>':""}<span class="score">${g.s1} : ${g.s2}</span>${canEditMatch(g)?`<button class="btn ghost" onclick="editMatch('${g.id}')">수정</button>`:""}</li>`).join("")}</ul>`:`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`;
+  <div class="panel"><h2>최근 경기</h2>${ms.length?mGroups(ms).map((d,i)=>`<details${i===0?" open":""} style="border-top:${i?"1px solid var(--line)":"0"};padding:6px 0"><summary style="cursor:pointer;font-weight:800;padding:6px 0">${fmtMD(d.date)} <span class="tag" style="font-size:11px;vertical-align:middle">${d.list.length}경기</span></summary><ul class="list">${d.list.map(g=>`<li><div class="grow">${teams(g)[0].map(id=>esc(mname(id))).join("·")} vs ${teams(g)[1].map(id=>esc(mname(id))).join("·")}</div>${g.s1===g.s2?'<span class="tag" style="flex:none">무승부</span>':""}<span class="score">${g.s1} : ${g.s2}</span>${canEditMatch(g)?`<button class="btn ghost" onclick="editMatch('${g.id}')">수정</button>`:""}</li>`).join("")}</ul></details>`).join(""):`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`;
 },
 guests(){
   const ad=isAdmin();const eg=S.guests.find(x=>x.id===editGuestId)||{};
