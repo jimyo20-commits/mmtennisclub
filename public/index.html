@@ -1314,7 +1314,7 @@ document.addEventListener("focusout",()=>{if(SYNC.pendingRender){SYNC.pendingRen
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPull()});
 window.addEventListener("focus",()=>syncPull());
 window.addEventListener("online",()=>{syncKick();syncPull()});
-setInterval(syncPull,20000);
+setInterval(syncPull,10000);
 const boot=()=>{showVote=!!S.members.find(m=>m.id===me);render();setSyncStatus()};
 $("#view").innerHTML='<p class="empty" style="padding:40px 0;text-align:center">불러오는 중…</p>';
 syncInit().catch(()=>false).then(boot);
