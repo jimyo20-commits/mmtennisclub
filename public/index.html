@@ -913,7 +913,7 @@ function recoCalc(){
 function recoPanel(){
   const c=recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
-  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span class="tag ok" style="font-size:11px;font-weight:800;vertical-align:middle;margin-left:4px">승점이 2배로 적용됩니다</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 6점 · 무 2점</p>${b}</div>`;
+  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 6점 · 무 2점</p>${b}</div>`;
   if(!games)return wrap(`<p class="empty">참석자가 4명 이상 모이면 승률이 비슷한 사람끼리 2게임을 추천해요.</p>`);
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${shown(m)}</small></span>`;
   const rows=games.map((g,i)=>{const d=Math.round(g.diff*100);
