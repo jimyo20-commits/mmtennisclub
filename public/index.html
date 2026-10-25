@@ -711,7 +711,7 @@ courts(){
 matches(){
   const st=stats();
   const rk=S.members.map(m=>({m,...st[m.id]})).filter(r=>r.w+r.l+r.d>0).sort(rkCmp);
-  const ms=[...S.matches].reverse();
+  const ms=[...S.matches].reverse().filter(g=>!isGuest()||teams(g).flat().includes(me));
   const sNow=sessOn(iso(new Date())).map(s=>`${fmtT(s.start)} ~ ${fmtT(s.end)}`).join(", ")||"오늘은 경기가 없습니다";
   const formPanel=(canAddMatch()&&(!ed()||canEditMatch(ed())))?`<div class="panel"><h2>${ed()?"경기 결과 수정":"복식 경기 결과 입력"}</h2>${isAdmin()?"":`<p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">경기 시간 중에만 입력·수정할 수 있어요 (본인이 입력한 결과만 수정 가능)</p>`}<div class="row">
     <label>A팀 선수 1${matchSel("p1",eo(0,0))}</label><label>A팀 선수 2${matchSel("p1b",eo(0,1))}</label>
@@ -719,7 +719,7 @@ matches(){
     <label style="max-width:90px">B팀 점수<input id="s2" type="number" min="0" value="${ed()?ed().s2:0}"></label>
     <label>B팀 선수 1${matchSel("p2",eo(1,0))}</label><label>B팀 선수 2${matchSel("p2b",eo(1,1))}</label>
     <button class="btn" onclick="addMatch()">${ed()?"수정 저장":"결과 저장"}</button>${ed()?`<button class="btn off" onclick="editMatchId=null;render()">취소</button>`:""}</div></div>`:`<div class="panel"><h2>복식 경기 결과 입력</h2><p style="margin:0;color:var(--muted)">경기 시간에만 입력할 수 있어요. 경기 시간 외에는 운영자만 입력·수정할 수 있습니다.<br><small>오늘 경기 시간: ${sNow}</small></p></div>`;
-  return `${formPanel}
+  return `${isGuest()?"":formPanel}
   <div class="panel"><h2>최근 경기</h2>${ms.length?mGroups(ms).map((d,i)=>`<details${i===0?" open":""} style="border-top:${i?"1px solid var(--line)":"0"};padding:6px 0"><summary style="cursor:pointer;font-weight:800;padding:6px 0">${fmtMD(d.date)} <span class="tag" style="font-size:11px;vertical-align:middle">${d.list.length}경기</span></summary><ul class="list">${d.list.map(g=>{const my=teams(g).flat().includes(me);return `<li${my?' style="background:rgba(46,160,90,.18);box-shadow:inset 4px 0 0 #2ea05a;border-radius:8px;padding-left:12px;font-weight:700"':""}><div class="grow">${teams(g)[0].map(id=>esc(mname(id))).join("·")} vs ${teams(g)[1].map(id=>esc(mname(id))).join("·")}</div>${g.s1===g.s2?'<span class="tag" style="flex:none">무승부</span>':""}<span class="score">${g.s1} : ${g.s2}</span>${canEditMatch(g)?`<button class="btn ghost" onclick="editMatch('${g.id}')">수정</button>`:""}</li>`}).join("")}</ul></details>`).join(""):`<p class="empty">기록된 경기가 없습니다.</p>`}</div>`;
 },
 guests(){
@@ -1133,7 +1133,7 @@ function copyPurchase(id){const x=S.purchases.find(y=>y.id===id);if(!x)return;co
 function setStatus(id,v){const m=S.members.find(x=>x.id===id);if(m){m.status=v;save();render()}}
 function setLevel(id,v){const m=S.members.find(x=>x.id===id);if(m){m.level=v;save();render()}}
 const inGameTime=()=>{const n=new Date(),ds=iso(n),t=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");return sessOn(ds).some(s=>t>=s.start&&t<=s.end)};
-const canAddMatch=()=>isAdmin()||inGameTime();
+const canAddMatch=()=>!isGuest()&&(isAdmin()||inGameTime());
 const canEditMatch=g=>isAdmin()||(!!g&&g.by===me&&inGameTime());
 let lastGT=null;setInterval(()=>{const g=inGameTime();if(g!==lastGT){const first=lastGT===null;lastGT=g;if(!first&&tab==="matches")render()}},30000);
 let editMatchId=null;
@@ -1166,7 +1166,7 @@ function render(){
   const u=S.members.find(m=>m.id===me)||(isGuest()?(S.guests||[]).find(g=>g.id===me):null);
   $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u&&!isGuest()?"":"none";$("#who").innerHTML=u?`${esc(u.name)}님${isGuest()?" (게스트)":""} ${isGuest()?"":`<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button>`}<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
   if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML="";return}
-  const tabs=isGuest()?TABS.filter(([k])=>["home","club","analysis"].includes(k)):TABS.filter(([k])=>isAdmin()||!["members","dues"].includes(k));
+  const tabs=isGuest()?TABS.filter(([k])=>["home","club","matches","analysis"].includes(k)):TABS.filter(([k])=>isAdmin()||!["members","dues"].includes(k));
   if(!tabs.some(([k])=>k===tab))tab=tabs[0][0];
   $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
   setTimeout(navUpd,0);
