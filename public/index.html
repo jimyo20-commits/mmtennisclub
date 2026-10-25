@@ -111,7 +111,7 @@ const today=()=>new Date().toISOString().slice(0,10);
 const ym=()=>today().slice(0,7);
 let S={members:[],bookings:[],matches:[],fee:30000,date:today(),schedule:[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}],votes:{}};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-const SEED=[["윤준식",""],["현대성","010-2248-9686"],["안창현","010-4595-0601"],["김상호","010-2961-4410"],["황병석",""],["김경민",""],["김민혜",""],["김우순","010-2171-8238"],["김태석",""],["김현지",""],["나훈철",""],["박성욱",""],["박재선",""],["박창근",""],["배영선","010-6805-0201"],["배혜숙","010-2993-9686"],["손형우","010-5514-4532"],["유주원",""],["윤성원","010-4696-2966"],["윤정호","010-5126-6918"],["이권철",""],["이동혁","010-6514-3572"],["이주곤",""],["장정환","010-9550-5005"],["장태석",""],["전지희",""],["추교차",""],["허윤경","010-7414-8846"],["허종",""]];
+const SEED=[["윤준식",""],["현대성","010-****-9686"],["안창현","010-****-0601"],["김상호","010-****-4410"],["황병석",""],["김경민",""],["김민혜",""],["김우순","010-****-8238"],["김태석",""],["김현지",""],["나훈철",""],["박성욱",""],["박재선",""],["박창근",""],["배영선","010-****-0201"],["배혜숙","010-****-9686"],["손형우","010-****-4532"],["유주원",""],["윤성원","010-****-2966"],["윤정호","010-****-6918"],["이권철",""],["이동혁","010-****-3572"],["이주곤",""],["장정환","010-****-5005"],["장태석",""],["전지희",""],["추교차",""],["허윤경","010-****-8846"],["허종",""]];
 if(S.members.some(m=>m.name==="Ahn")){S.members.forEach(m=>{if(m.name==="Ahn")m.name="안창현"});try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 if(S.members.some(m=>m.name==="김우순(대구사시미)")){S.members.forEach(m=>{if(m.name==="김우순(대구사시미)")m.name="김우순"});try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 if(S.members.some(m=>m.name==="이권철 대구 대월회")){S.members.forEach(m=>{if(m.name==="이권철 대구 대월회")m.name="이권철"});try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -825,6 +825,8 @@ const fmtPhone=v=>{let d=String(v).replace(/\D/g,"").slice(0,11);
   if(d.length<=10)return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
   return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`};
 const maskPh=p=>{const d=String(p||"").replace(/\D/g,"");return d.length>=10?d.slice(0,3)+"-****-"+d.slice(-4):String(p||"")};
+/* 이미 저장된 전화번호도 가운데 4자리를 지움 (뒤 4자리만 유지) */
+S.members.forEach(m=>{if(m.phone)m.phone=maskPh(m.phone)});(S.guests||[]).forEach(g=>{if(g.phone)g.phone=maskPh(g.phone)});
 let phoneEditId=null;
 function editPhone(id){phoneEditId=id;render();const e=document.getElementById("phin");if(e&&e.focus){e.focus();if(e.select)e.select()}}
 function cancelPhone(){phoneEditId=null;render()}
@@ -1046,7 +1048,7 @@ function profView(){const m=S.members.find(x=>x.id===profileId);if(!m)return"";
   const rank=played(m)?1+S.members.filter(x=>played(x)&&better(x)).length:"-";
   const days=m.joined?Math.floor((new Date(today()+"T00:00")-new Date(m.joined+"T00:00"))/864e5):null;
   const row=(k,v)=>`<li style="padding:10px 0"><span style="color:var(--muted);width:76px;flex:none">${k}</span><div class="grow" style="text-align:right;font-weight:500">${v}</div></li>`;
-  return `<div class="modal tipc" onclick="closeProfile()"><div class="sheet"><div class="panel" style="padding:20px 16px"><div style="text-align:center"><div style="display:inline-block">${av(m,112)}</div><div style="font-size:22px;font-weight:900;margin-top:10px">${esc(m.name)} ${m.role?`<span class="tag ok" style="vertical-align:middle">${m.role}</span> `:""}${isNew(m)?'<span class="tag ok" style="vertical-align:middle">신입회원</span>':""}</div></div><div class="stats" style="margin:18px 0 6px"><div class="stat"><b>${rank}</b><span>순위</span></div><div class="stat"><b>${s.w}승 ${s.d?s.d+"무 ":""}${s.l}패</b><span>전적</span></div><div class="stat"><b>${n?Math.round(s.w/n*100)+"%":"-"}</b><span>승률</span></div></div><ul class="list">${row("회원자격",m.status||"-")}${row("실력",m.level||"미지정")}${row("가입일",m.joined?`${m.joined}${days>=0?` · ${days+1}일째`:""}`:"미입력")}${isAdmin()&&m.phone?row("연락처",esc(m.phone)):""}</ul><p style="margin:10px 0 0;text-align:center;font-size:11px;color:var(--muted)">화면을 한 번 더 누르면 닫혀요</p></div></div></div>`}
+  return `<div class="modal tipc" onclick="closeProfile()"><div class="sheet"><div class="panel" style="padding:20px 16px"><div style="text-align:center"><div style="display:inline-block">${av(m,112)}</div><div style="font-size:22px;font-weight:900;margin-top:10px">${esc(m.name)} ${m.role?`<span class="tag ok" style="vertical-align:middle">${m.role}</span> `:""}${isNew(m)?'<span class="tag ok" style="vertical-align:middle">신입회원</span>':""}</div></div><div class="stats" style="margin:18px 0 6px"><div class="stat"><b>${rank}</b><span>순위</span></div><div class="stat"><b>${s.w}승 ${s.d?s.d+"무 ":""}${s.l}패</b><span>전적</span></div><div class="stat"><b>${n?Math.round(s.w/n*100)+"%":"-"}</b><span>승률</span></div></div><ul class="list">${row("회원자격",m.status||"-")}${row("실력",m.level||"미지정")}${row("가입일",m.joined?`${m.joined}${days>=0?` · ${days+1}일째`:""}`:"미입력")}${isAdmin()&&m.phone?row("연락처",esc(maskPh(m.phone))):""}</ul><p style="margin:10px 0 0;text-align:center;font-size:11px;color:var(--muted)">화면을 한 번 더 누르면 닫혀요</p></div></div></div>`}
 /* 역대 단체전 입상 내역 (운영자 입력) */
 const TEAM_DIVS=["에이스(금배)부","동호인(은배)부","동배부"];
 S.teamAwards.forEach(x=>{if(x.div==="은배부")x.div="동호인(은배)부"});
