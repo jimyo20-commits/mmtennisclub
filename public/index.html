@@ -1067,7 +1067,7 @@ function cancelTeam(){teamEditId=null;render()}
 /* 출전선수 명단에서 내 이름을 강조 */
 const teamNames=t=>String(t||"").split(/[,，、·\/\s]+/).filter(Boolean);
 const teamHasMe=t=>{const nm=me?mname(me):"";return !!nm&&nm!=="탈퇴 회원"&&teamNames(t).includes(nm)};
-const teamPlayers=t=>{const nm=me?mname(me):"";return String(t||"").split(/([,，、·\/\s]+)/).map(p=>p&&p===nm?`<b style="background:rgba(230,180,34,.38);color:var(--ink);border-radius:5px;padding:0 5px">${esc(p)} ★</b>`:esc(p)).join("")};
+const teamPlayers=t=>{const nm=me?mname(me):"";return String(t||"").split(/([,，、·\/\s]+)/).map(p=>p&&p===nm?`<b style="background:rgba(230,180,34,.38);color:var(--ink);border-radius:5px;padding:0 5px">${esc(p)}</b>`:esc(p)).join("")};
 function teamView(){
   const l=[...S.teamAwards].sort((a,b)=>(b.year||"").localeCompare(a.year||"")||(a.rank||"").localeCompare(b.rank||"","ko"));
   const ad=isAdmin();const et=S.teamAwards.find(x=>x.id===teamEditId)||{};
