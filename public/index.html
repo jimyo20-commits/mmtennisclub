@@ -1206,15 +1206,21 @@ function bkPanel(){const l=bkList();
   return `<div class="panel"><h2>백업 / 복원 (운영자)</h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">이 기기에 저장된 데이터를 백업합니다. 매주 월요일에 자동 백업됩니다. (서버가 운영자 접속과 상관없이 백업하고, 이 기기에는 월요일 이후 처음 열 때 백업됩니다.) (최근 5개 보관)</p><button class="btn" onclick="makeBackup(false)">지금 백업</button>${l.length?`<ul class="list" style="margin-top:8px">${l.map((b,i)=>`<li style="padding:8px 0"><div class="grow">${b.auto?"자동 백업":"수동 백업"}<small>${bkDate(b.ts)}</small></div><button class="btn ghost" style="flex:none" onclick="restoreBackup(${i})">복원</button><button class="btn ghost" style="flex:none" onclick="delBackup(${i})">삭제</button></li>`).join("")}</ul>`:`<p class="empty">저장된 백업이 없습니다.</p>`}<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b style="font-size:13px">다른 기기로 옮기기</b><p style="margin:4px 0 8px;font-size:12px;color:var(--muted)">"내보내기"를 누르면 아래 칸에 백업 글이 생깁니다. 복사해서 다른 기기의 같은 칸에 붙여넣고 "가져오기"를 누르세요.</p><textarea id="bkt" rows="3" style="width:100%" placeholder="백업 글"></textarea><div class="row" style="margin-top:8px"><button class="btn off" onclick="exportBk()">내보내기</button><button class="btn off" onclick="importBk()">가져오기</button></div></div></div>`}
 function shopPanel(){
   const m=S.members.find(x=>x.id===me);if(!m)return"";
-  const pts=attPts(m);const mine=[...S.purchases].filter(x=>x.by===me).reverse();
-  const items=PRODUCTS.map(p=>{const ok=pts>=p.cost;return `<li style="padding:12px 0;flex-wrap:wrap"><div class="grow"><b>${esc(p.name)}</b><small>${p.cost}P 차감${ok?"":` · ${p.cost-pts}P 더 필요`}</small></div><button class="btn" ${ok?"":"disabled"} onclick="buy('${p.id}')">구매하기</button></li>`}).join("");
+  const pts=ptsOf(m);const mine=[...S.purchases].filter(x=>x.by===me).reverse();
+  const items=PRODUCTS.map(p=>{const ok=pts>=p.cost;return `<li style="padding:12px 0;flex-wrap:wrap"><div class="grow"><b>${esc(p.name)}</b><small>필요 ${p.cost}P · 내 포인트 ${pts}P · ${ok?`<b style="color:var(--court)">구매 가능 (${pts-p.cost}P 남음)</b>`:`<b style="color:var(--bad)">${p.cost-pts}P 더 필요</b>`}</small></div><button class="btn" ${ok?"":"disabled"} onclick="buy('${p.id}')">구매하기</button></li>`}).join("");
   const hist=mine.length?`<h2 style="margin:16px 0 4px;font-size:15px">내 구매 내역</h2><ul class="list">${mine.map(x=>`<li><div class="grow">${esc(x.name)}<small>${x.date} · ${x.cost}P 사용</small></div><button class="btn ghost" onclick="copyPurchase('${x.id}')">카톡에 보낼 내용 복사</button></li>`).join("")}</ul>`:"";
-  return `<div class="panel"><h2>상품 구매</h2><div style="display:flex;justify-content:space-between;align-items:baseline;margin:-6px 0 4px;font-size:13px;color:var(--muted)"><span>잔여 출석 포인트로 구매할 수 있어요</span><span>잔여출석 <b style="color:var(--ink)">${pts}P</b></span></div><ul class="list">${items}</ul>${hist}</div>`}
+  return `<div class="panel"><h2>상품 구매</h2><div style="display:flex;justify-content:space-between;align-items:baseline;margin:-6px 0 4px;font-size:13px;color:var(--muted)"><span>포인트로 구매할 수 있어요</span><span>내 포인트 <b style="color:var(--ink)">${pts}P</b></span></div><ul class="list">${items}</ul>${hist}</div>`}
+let buyPid=null;
 function buy(pid){const p=PRODUCTS.find(x=>x.id===pid);const m=S.members.find(x=>x.id===me);if(!p||!m)return;
-  if(attPts(m)<p.cost){alert("잔여 출석 포인트가 부족합니다. (필요 "+p.cost+"P, 보유 "+attPts(m)+"P)");return}
-  if(!confirm(p.name+"을(를) "+p.cost+"P로 구매할까요?\n구매 후 잔여 출석 포인트 "+(attPts(m)-p.cost)+"P가 남습니다."))return;
+  if(ptsOf(m)<p.cost){alert("포인트가 부족합니다. (필요 "+p.cost+"P, 보유 "+ptsOf(m)+"P)");return}
+  buyPid=pid;render()}   /* 확인창(confirm)은 미리보기에서 막혀 앱 안의 확인/취소 창을 사용 */
+function cancelBuy(){buyPid=null;render()}
+function confirmBuy(){const p=PRODUCTS.find(x=>x.id===buyPid);const m=S.members.find(x=>x.id===me);buyPid=null;if(!p||!m){render();return}
+  if(ptsOf(m)<p.cost){render();alert("포인트가 부족합니다. (필요 "+p.cost+"P, 보유 "+ptsOf(m)+"P)");return}
   S.purchases.push({id:uid(),by:me,pid:p.id,name:p.name,cost:p.cost,date:today()});save();render();
   alert("구매했습니다. 내 구매 내역에서 '카톡에 보낼 내용 복사'를 눌러 운영자에게 전달해 주세요.")}
+function buyView(){const p=PRODUCTS.find(x=>x.id===buyPid);const m=S.members.find(x=>x.id===me);if(!p||!m)return"";const pts=ptsOf(m);
+  return `<div class="modal tipc" onclick="if(event.target===this)cancelBuy()"><div class="sheet"><h2 style="margin:0 0 10px">구매 확인</h2><p style="margin:0 0 4px;font-size:15px"><b>${esc(p.name)}</b>을(를) <b>${p.cost}P</b>로 구매할까요?</p><p style="margin:0;font-size:13px;color:var(--muted)">내 포인트 ${pts}P → 구매 후 <b style="color:var(--ink)">${pts-p.cost}P</b>가 남습니다.</p><div class="row" style="margin-top:16px;gap:8px"><button class="btn" style="flex:1" onclick="confirmBuy()">확인</button><button class="btn off" style="flex:1" onclick="cancelBuy()">취소</button></div></div></div>`}
 function copyPurchase(id){const x=S.purchases.find(y=>y.id===id);if(!x)return;const t=`[무명회] ${mname(x.by)} 님 ${x.name} 구매 (${x.cost}P 사용) ${x.date}`;
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("복사했습니다. 카톡방에 붙여넣으세요.")).catch(()=>prompt("아래 내용을 복사하세요",t))}
 function setStatus(id,v){const m=S.members.find(x=>x.id===id);if(m){m.status=v;save();render()}}
@@ -1266,7 +1272,7 @@ function render(){
   else if(profileId)$("#modal").innerHTML=profView();
   else if(guestView)$("#modal").innerHTML=guestCardView();
   else if(teamOpen)$("#modal").innerHTML=teamView();
-  else if(tipModal>=0)$("#modal").innerHTML=tipView();
+  else if(tipModal>=0)$("#modal").innerHTML=tipView();   else if(buyPid)$("#modal").innerHTML=buyView();
   const ns=document.querySelector(".sheet");if(ns)ns.scrollTop=st;
   setSyncStatus();
   if(!bkAuto&&isAdmin()){bkAuto=true;const l=bkList();if(!l.length||l[0].ts<lastMonday()){if(makeBackup(true))render()}}
