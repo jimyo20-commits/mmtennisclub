@@ -169,6 +169,7 @@ const teams=g=>[g.t1||[g.p1],g.t2||[g.p2]];
 const NAME_COLOR={1:"#c99a00",2:"#8a949e",3:"#b4691f"};
 /* 1·2·3위 이름: 금·은·동 금속 메달 느낌의 그라데이션 글자 (순위 기준은 랭킹 탭과 동일) */
 const MEDAL_BG={1:"linear-gradient(135deg,#6b4e00 0%,#d9a914 25%,#ffe680 47%,#c99a00 66%,#6b4e00 100%)",2:"linear-gradient(135deg,#454d57 0%,#9aa4af 26%,#dde2e7 47%,#7d8792 66%,#434b55 100%)",3:"linear-gradient(135deg,#5e320d 0%,#b8672a 26%,#f0b07a 47%,#a85c20 66%,#552d0a 100%)"};
+const MEDAL_STOPS={1:[[0,"#7a5a00"],[.28,"#e8b923"],[.5,"#fff1a8"],[.7,"#d4a017"],[1,"#7a5a00"]],2:[[0,"#4d555f"],[.28,"#aab3bd"],[.5,"#f1f4f7"],[.7,"#8a949f"],[1,"#4a535d"]],3:[[0,"#5e320d"],[.28,"#c9803f"],[.5,"#ffd0a0"],[.7,"#b4691f"],[1,"#5a300c"]]};
 const medalTxt=r=>MEDAL_BG[r]?`background:${MEDAL_BG[r]};-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;font-weight:800;filter:drop-shadow(0 .6px 0 rgba(0,0,0,.28))`:"";
 function rankOf(m){const st=stats();if(!st[m.id])return 0;const pl=x=>st[x.id]&&st[x.id].w+st[x.id].l+st[x.id].d>0;if(!pl(m))return 0;return 1+S.members.filter(x=>pl(x)&&rkBetter(st[x.id],st[m.id])).length}
 function nameR(m){const r=rankOf(m);return MEDAL_BG[r]?`<span style="${medalTxt(r)}">${esc(m.name)}</span>`:esc(m.name)}
@@ -782,7 +783,7 @@ roster(){
   const MED={1:["#e8b923","#3d2c00"],2:["#c3cad1","#27303a"],3:["#c9803f","#ffffff"]};
   const NC={1:"#c99a00",2:"#8a949e",3:"#b4691f"};
   const mc=m=>MED[rk(m)]||["var(--court)","#fff"];
-  const medal=(n,c)=>`<svg width="38" height="46" viewBox="0 0 38 46" style="flex:none" role="img" aria-label="${n}위"><path d="M10 0h8l5 17h-8z" fill="#c0392b"/><path d="M28 0h-8l-5 17h8z" fill="#8e2a20"/><circle cx="19" cy="30" r="15" fill="${c[0]}" stroke="rgba(0,0,0,.28)" stroke-width="1.5"/><circle cx="19" cy="30" r="11" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><text x="19" y="36" text-anchor="middle" font-size="17" font-weight="900" font-family="inherit" fill="${c[1]}">${n}</text></svg>`;
+  const medal=(n,c)=>`<svg width="38" height="46" viewBox="0 0 38 46" style="flex:none" role="img" aria-label="${n}위"><path d="M10 0h8l5 17h-8z" fill="#c0392b"/><path d="M28 0h-8l-5 17h8z" fill="#8e2a20"/><defs><linearGradient id="mg${n}" x1="0.1" y1="0" x2="0.9" y2="1">${(MEDAL_STOPS[n]||[]).map(([o,col])=>`<stop offset="${o}" stop-color="${col}"/>`).join("")}</linearGradient></defs><circle cx="19" cy="30" r="15" fill="${MEDAL_STOPS[n]?`url(#mg${n})`:c[0]}" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/><circle cx="19" cy="30" r="11" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.4"/><path d="M10 25 A10.5 10.5 0 0 1 22 19.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-linecap="round"/><text x="19" y="36" text-anchor="middle" font-size="17" font-weight="900" font-family="inherit" fill="${n===3?"#3a1c06":c[1]}">${n}</text></svg>`;
   const played=m=>st[m.id].w+st[m.id].l+st[m.id].d>0;
   const better=(a,b)=>rkBetter(st[a.id],st[b.id]);
   const list=[...S.members].sort((a,b)=>(played(b)-played(a))||rkCmp(st[a.id],st[b.id])||a.name.localeCompare(b.name,"ko"));
