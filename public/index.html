@@ -1125,7 +1125,7 @@ function closeRec(){recId=null;render()}
 function recChart(m,days){
   const pts=days.slice(0,5).reverse().map(d=>{let w=0,l=0,dd=0;d.list.forEach(g=>{const inA=teams(g)[0].includes(m.id);if(g.s1===g.s2)dd++;else if(inA?g.s1>g.s2:g.s2>g.s1)w++;else l++});return{date:d.date,w,l,d:dd,r:w+l?Math.round(w/(w+l)*100):50}});
   if(!pts.length)return"";
-  const W=300,H=130,L=26,R=12,T=16,B=34,iw=W-L-R,ih=H-T-B,x=i=>pts.length===1?L+iw/2:L+iw*i/(pts.length-1),y=v=>T+ih*(1-v/100);
+  const W=300,H=130,L=26,R=12,T=16,B=34,PD=24,iw=W-L-R,ih=H-T-B,x=i=>pts.length===1?L+iw/2:L+PD+(iw-2*PD)*i/(pts.length-1),y=v=>T+ih*(1-v/100);
   const md=ds=>{const t=new Date((ds||"")+"T00:00");return isNaN(t)?"":(t.getMonth()+1)+"/"+t.getDate()};
   const grid=[0,50,100].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" stroke-opacity="${v===50?.25:.12}" ${v===50?'stroke-dasharray="3 3"':""}/><text x="${L-4}" y="${y(v)+3}" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".6">${v}</text>`).join("");
   const line=pts.length>1?`<polyline points="${pts.map((p,i)=>x(i)+","+y(p.r)).join(" ")}" fill="none" stroke="#2f7a5c" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:"";
