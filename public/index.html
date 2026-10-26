@@ -130,7 +130,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
-if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={};
+if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
 S.members.forEach(m=>{if(!LEVELS.includes(m.level))m.level="";if(!STATUSES.includes(m.status))m.status="정회원"});
@@ -805,7 +805,7 @@ votes(){
     <p style="margin:10px 0 0${u.past?';display:none':''}">${v[voter]?`<span class="tag ok">투표 완료 +${POINT}P</span>`:`<span class="tag">투표하면 +${POINT}P</span>`}</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 8px;text-align:center">${[["yes","참석","#2ea05a"],["maybe","미정","#8a948d"],["no","불참","#d93025"]].map(([k,l,c])=>`<div style="border:1.5px solid ${c};border-radius:10px;padding:6px 2px;color:${c}"><b style="font-size:20px;line-height:1.1;display:block">${cnt(k)}</b><span style="font-size:12px">${l}</span></div>`).join("")}</div>
     <div style="font-size:12px;color:var(--muted);margin:0 0 6px">미응답 ${S.members.length-cnt("yes")-cnt("maybe")-cnt("no")}명</div>
-    ${[["yes","참석","#2ea05a","●"],["maybe","미정","#8a948d","○"],["no","불참","#d93025","●"]].map(([k,l,c,d])=>`<div style="border-left:4px solid ${c};background:rgba(128,128,128,.08);border-radius:0 10px 10px 0;padding:6px 10px;margin-bottom:6px;font-size:13px;line-height:1.7"><div style="font-weight:800;color:${c}">${d} ${l} ${cnt(k)}명</div>${nm(k)==="없음"?"<div>없음</div>":`<div class="cg">${nm(k)}</div>`}</div>`).join("")}<button class="btn off" style="margin-top:8px" onclick="copyList('${u.ds}')">카톡에 올릴 현황 복사</button>${invBlock(u)}${isAdmin()?attBlock(u):""}</div>`}).join("");
+    ${[["yes","참석","#2ea05a","●"],["maybe","미정","#8a948d","○"],["no","불참","#d93025","●"]].map(([k,l,c,d])=>`<div style="border-left:4px solid ${c};background:rgba(128,128,128,.08);border-radius:0 10px 10px 0;padding:6px 10px;margin-bottom:6px;font-size:13px;line-height:1.7"><div style="font-weight:800;color:${c}">${d} ${l} ${cnt(k)}명</div>${nm(k)==="없음"?"<div>없음</div>":`<div class="cg">${nm(k)}</div>`}</div>`).join("")}<button class="btn off" style="margin-top:8px" onclick="copyList('${u.ds}')">카톡에 올릴 현황 복사</button>${invBlock(u)}${isAdmin()?(S.attDone[u.ds]?`<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:700;color:var(--court)">✅ 최종 출석 확정 완료</span><button class="btn off" onclick="reopenAtt('${u.ds}')">다시 열기</button></div>`:attBlock(u)):""}</div>`}).join("");
   return `<div class="panel"><h2>참석 투표</h2><div class="row"><label>투표하는 회원<select ${isAdmin()?"":"disabled"} onchange="voter=this.value;render()">${S.members.map(m=>`<option value="${m.id}"${m.id===voter?" selected":""}>${esc(m.name)}</option>`).join("")}</select></label></div><p class="empty" style="margin:10px 0 0">회원을 고른 뒤 각 경기의 참석·미정·불참을 누르세요. 같은 버튼을 다시 누르면 취소됩니다.</p></div>${cards}`;
 },
 dues(){
@@ -1077,6 +1077,7 @@ function newPanel(){
   if(!ns.length)return"";
   return `<div class="panel"><h2>🎉 신입회원을 환영합니다 (${ns.length}명)</h2><div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px">${ns.map(m=>`<button onclick="openProfile('${m.id}')" aria-label="${esc(m.name)} 프로필 보기" style="flex:none;text-align:center;min-width:96px;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0">${av(m,64)}<div style="font-weight:700;margin-top:6px">${esc(m.name)} ${(r=>`<span class="tag" style="font-size:11px;font-weight:700;${r?rateColor(r.pct):""}">${r?`출석률 ${r.pct}%`:"출석률 -"}</span>`)(attRate(m))}</div><div style="font-size:12px;color:var(--muted)">${m.joined.slice(5).replace("-","/")} 가입</div></button>`).join("")}</div><p style="margin:8px 0 0;font-size:12px;color:var(--muted)">신입회원은 3개월간 출석률 70% 이상 달성이 필수입니다.</p></div>`}
 function lastPast(){const n=new Date();n.setHours(0,0,0,0);for(let i=1;i<=21;i++){const d=new Date(n);d.setDate(n.getDate()-i);const ds=iso(d);const s=sessOn(ds)[0];if(s)return{ds,d,s}}return null}
+const attEnd=u=>new Date(u.ds+"T"+((u.s&&u.s.end)||"23:59"));
 const attOpen=(ds,st)=>new Date()>=new Date(ds+"T"+(st||"00:00"));
 function attBlock(u){
   const open=attOpen(u.ds,u.s&&u.s.start);
@@ -1084,7 +1085,9 @@ function attBlock(u){
   const ms=[...S.members].sort((x,y)=>((v[y.id]==="yes")-(v[x.id]==="yes"))||x.name.localeCompare(y.name,"ko"));
   const n=ms.filter(m=>a[m.id]).length;
   const chips=ms.map(m=>`<button ${open?`onclick="toggleAttend('${u.ds}','${m.id}')"`:"disabled"} style="${open?"":"opacity:.45;"}display:inline-flex;align-items:center;gap:5px;margin:3px 6px 3px 0;padding:4px 10px 4px 5px;border-radius:99px;font:inherit;font-size:13px;cursor:${open?"pointer":"not-allowed"};border:1px solid ${a[m.id]?"transparent":"var(--line)"};background:${a[m.id]?"var(--ball)":"transparent"};color:${a[m.id]?"var(--ballink)":"var(--ink)"}">${av(m,22)}${esc(m.name)}${a[m.id]?" ✓":""}${a[m.id]?"":v[m.id]==="yes"?' <span style="color:var(--court)">●</span>':v[m.id]==="maybe"?' <span style="color:var(--muted)">○</span>':v[m.id]==="no"?' <span style="color:#d93025">●</span>':""}</button>`).join("");
-  return `<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px"><div style="font-weight:700;margin-bottom:4px">출석 확인 (운영자) <span class="tag ok" style="vertical-align:middle">${n}명 확인</span></div><p style="margin:0 0 8px;font-size:13px;color:${open?"var(--muted)":"var(--bad)"}">${open?`이름을 누르면 출석이 확인되고 ${POINT_ATT}P가 적립됩니다.`:`🔒 모임 시작 시간(${u.s.start}) 이후부터 출석 확인이 가능합니다.`} <span style="color:var(--court)">●</span> 참석 · ○ 미정 · <span style="color:#d93025">●</span> 불참 투표</p><div>${chips}</div></div>`}
+  return `<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px"><div style="font-weight:700;margin-bottom:4px">출석 확인 (운영자) <span class="tag ok" style="vertical-align:middle">${n}명 확인</span></div><p style="margin:0 0 8px;font-size:13px;color:${open?"var(--muted)":"var(--bad)"}">${open?`이름을 누르면 출석이 확인되고 ${POINT_ATT}P가 적립됩니다.`:`🔒 모임 시작 시간(${u.s.start}) 이후부터 출석 확인이 가능합니다.`} <span style="color:var(--court)">●</span> 참석 · ○ 미정 · <span style="color:#d93025">●</span> 불참 투표</p><div>${chips}</div>${open&&new Date()>=attEnd(u)?`<button class="btn" style="margin-top:10px;width:100%" onclick="finishAtt('${u.ds}')">최종 출석 체크 완료 (${n}명) · 창 닫기</button>`:`<p style="margin:10px 0 0;font-size:12px;color:var(--muted)">모임 종료 후 '최종 출석 체크 완료' 버튼이 나타납니다.</p>`}</div>`}
+function finishAtt(ds){S.attDone[ds]=true;save();render()}
+function reopenAtt(ds){delete S.attDone[ds];save();render()}
 function toggleAttend(ds,id){const ss=sessOn(ds)[0];if(ss&&!attOpen(ds,ss.start)){alert("모임 시작 시간("+ss.start+") 이후부터 출석 확인이 가능합니다.");return}const a=S.attend[ds]=S.attend[ds]||{};if(a[id])delete a[id];else a[id]=true;save();render()}
 function toggleAdmin(id){const m=S.members.find(x=>x.id===id);if(!m||!isAdmin())return;m.admin=!m.admin;save();render()}   /* 확인창(confirm)은 미리보기에서 막혀 버튼이 안 먹히므로 사용하지 않음 */
 function setRole(id,v){const m=S.members.find(x=>x.id===id);if(m){m.role=v;save();render()}}
@@ -1361,7 +1364,7 @@ function applyOpsS(st,ops){for(const op of ops){
 }return st}
 function ensureS(){
   ["sponsors","teamAwards","bookings","matches","awards","guests","purchases","members","analysis"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
-  ["invites","tips","attend","votes","officers","imports","recoFix"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
+  ["invites","tips","attend","votes","officers","imports","recoFix","attDone"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
   if(!Array.isArray(S.schedule)||!S.schedule.length)S.schedule=[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}];
 }
 function adoptS(st){S=jclone(st);ensureS()}
