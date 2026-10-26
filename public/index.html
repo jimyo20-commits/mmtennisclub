@@ -220,6 +220,10 @@ function anImportPreset(){
     const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o={...r};delete o.name;if(m)o.pid=m.id;else{o.pid="";o.name=r.name}return o});
     const rec={id:g.id,by:me,date:g.date,type:g.type,court:g.court,note:g.note||"",rows};
     if(!(S.analysis||[]).some(x=>x.id===g.id||sig(x)===sig(rec))){if(!S.analysis)S.analysis=[];S.analysis.push(rec)}});
+  /* 이미 올라간 프리셋 경기에 세부 내역(w/u 등)이 비어 있으면 최신 프리셋으로 채운다 */
+  AN_PRESET.forEach(g=>{const ex=(S.analysis||[]).find(x=>x.id===g.id);if(!ex||!ex.rows)return;
+    g.rows.forEach(pr=>{if(!pr.w||!pr.u)return;const row=ex.rows.find(r=>(r.pid&&(S.members.find(m=>m.id===r.pid)||{}).name===pr.name)||r.name===pr.name);
+      if(row&&!(row.w&&row.u)){["w","u","c","sv","svp","ph","sq","so"].forEach(k=>{if(pr[k]!==undefined)row[k]=pr[k]});ch=true}})});
   if(ch)save();
 }
 /* 분석 대상 = 회원 + 등록된 게스트 */
