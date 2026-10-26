@@ -130,7 +130,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
-if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={};
+if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
 S.members.forEach(m=>{if(!LEVELS.includes(m.level))m.level="";if(!STATUSES.includes(m.status))m.status="정회원"});
@@ -961,9 +961,18 @@ function recoGender(ps,rate,seed){
   return [g1,g2]}
 function recoKey(a,b){return [[...a].sort().join(),[...b].sort().join()].sort().join("|")}
 /* 참석 투표가 마감되면(경기 1시간 전) 그날 추천 2게임을 저장해 고정합니다. 마감 뒤에는 투표 "참석"한 사람만 기준이라 출석 체크로 바뀌지 않습니다 */
-function recoCalc(){const c=recoCalc0();
-  if(c&&c.games&&voteClosed(c.u.ds)&&!(S.recoFix&&S.recoFix[c.u.ds])){if(!S.recoFix)S.recoFix={};
-    S.recoFix[c.u.ds]=c.games.map(gm=>({A:gm.A.map(m=>m.id),B:gm.B.map(m=>m.id),diff:gm.diff}));setTimeout(()=>{try{save()}catch(e){}},0)}
+const recoSnap=g=>g.map(gm=>({A:gm.A.map(m=>m.id),B:gm.B.map(m=>m.id),diff:gm.diff}));
+function recoCalc(){let c=recoCalc0();
+  if(c){const ds=c.u.ds;if(!S.recoFix)S.recoFix={};if(!S.recoChg)S.recoChg={};
+    const hasBonus=(S.matches||[]).some(x=>x.bonus&&x.date===ds);
+    const rev=Date.now()>=new Date(ds+"T"+c.u.s.start+":00").getTime()-86400000;
+    const fx=S.recoFix[ds];
+    if(fx&&rev&&!voteClosed(ds)&&!S.recoChg[ds]&&!hasBonus){   // 공개 후 불참자가 생기면 딱 한 번만 다시 짠다
+      const v=S.votes[ds]||{};const ids=[].concat(...fx.map(g=>g.A.concat(g.B)));
+      if(ids.some(id=>v[id]!=="yes")){const keep=fx;delete S.recoFix[ds];const c2=recoCalc0();
+        if(c2&&c2.games){S.recoFix[ds]=recoSnap(c2.games);S.recoChg[ds]=true;setTimeout(()=>{try{save()}catch(e){}},0);return c2}
+        S.recoFix[ds]=keep}}
+    if(c.games&&(voteClosed(ds)||rev)&&!S.recoFix[ds]){S.recoFix[ds]=recoSnap(c.games);setTimeout(()=>{try{save()}catch(e){}},0)}}
   return c}
 function recoCalc0(){
   const u=upcoming()[0];if(!u)return null;
@@ -1367,7 +1376,7 @@ function applyOpsS(st,ops){for(const op of ops){
 }return st}
 function ensureS(){
   ["sponsors","teamAwards","bookings","matches","awards","guests","purchases","members","analysis"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
-  ["invites","tips","attend","votes","officers","imports","recoFix","attDone"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
+  ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
   if(!Array.isArray(S.schedule)||!S.schedule.length)S.schedule=[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}];
 }
 function adoptS(st){S=jclone(st);ensureS()}
