@@ -212,7 +212,7 @@ function anImportSample(){
   S.imports.an0324=1;save();
 }
 /* 앱에 미리 넣어 둔 경기 기록(코드로 배포): 운영자가 분석 탭을 열면 아직 없는 경기만 자동 추가됩니다 */
-const AN_PRESET=[{"id":"p-0316","date":"2026-03-16","type":"친선","court":"CLAY","note":"엑셀 기록 (3.16)","rows":[{"name":"김우순","so":1,"s1":[9,17],"s2":[8,8],"W":12,"U":7,"c":{"Fs":2,"R":3,"O":6,"V":5,"S":1},"sv":{"F":8,"A":1,"Sp":1},"w":{"Fs":1,"O":6,"V":2,"S":1},"u":{"R":3,"Fs":1,"V":3},"svp":1,"ph":{"e":[6,2],"m":[3,4],"l":[3,1]},"sq":"WWUWWWUWUWUUUWWWWUW"},{"name":"게스트","so":3,"s1":[10,11],"s2":[1,1],"W":7,"U":4,"c":{"V":1,"R":2,"L":1,"O":3,"Fs":2},"sv":{"F":1,"Sp":2},"w":{"O":3,"Fs":2},"u":{"V":1,"R":2,"L":1},"svp":1,"ph":{"e":[1,4],"m":[6,0],"l":[0,0]},"sq":"UUUUWWWWWWW"},{"name":"김태석","so":4,"s1":[6,10],"s2":[4,4],"W":5,"U":8,"c":{"R":4,"V":5,"Fs":2,"O":2},"sv":{"F":4},"w":{"V":3,"O":2},"u":{"R":4,"V":2,"Fs":2},"svp":1,"ph":{"e":[2,5],"m":[3,3],"l":[0,0]},"sq":"UWUUUUWUWWWUU"},{"name":"김동현","so":2,"s1":[11,12],"s2":[1,1],"W":2,"U":7,"c":{"Fs":2,"V":3,"L":2,"R":2},"sv":{"F":1},"w":{"L":1,"V":1},"u":{"Fs":2,"V":2,"R":2,"L":1},"svp":1,"ph":{"e":[0,3],"m":[2,3],"l":[0,1]},"sq":"UUUWUUWUU"}]},{"id":"p-1025","date":"2026-10-25","type":"친선","court":"CLAY","note":"엑셀 기록 (10.25)","rows":[{"name":"배영선","s1":[9,17],"s2":[6,8],"W":1,"U":14,"c":{"Bs":3,"Fs":3,"V":8,"O":1},"sv":{"F":6,"D":1},"w":{"Fs":1},"u":{"Bs":3,"Fs":2,"V":8,"O":1},"ph":{"e":[0,5],"m":[1,6],"l":[0,3]},"sq":"UUUUUUWUUUUUUUU"},{"name":"윤성원","s1":[9,12],"s2":[3,3],"W":6,"U":10,"c":{"Fs":8,"V":4,"O":3,"L":1},"sv":{"F":3},"w":{"Fs":4,"V":1,"O":1},"u":{"O":2,"Fs":4,"L":1,"V":3},"svp":1,"ph":{"e":[4,6],"m":[2,4],"l":[0,0]},"sq":"WWUUUUWUUWWWUUUU","so":3},{"name":"윤정호","s1":[12,12],"s2":[0,0],"W":2,"U":13,"c":{"Fs":10,"V":3,"FS":1,"L":1},"w":{"V":1,"Fs":1},"u":{"Fs":9,"V":2,"FS":1,"L":1},"svp":1,"ph":{"e":[0,5],"m":[2,7],"l":[0,1]},"sq":"UUUUUUUWWUUUUUU","so":4},{"name":"추교차","s1":[10,12],"s2":[2,2],"W":3,"U":2,"c":{"Fs":2,"R":2,"V":1},"sv":{"D":1,"F":2},"w":{"R":1,"V":1,"Fs":1},"u":{"Fs":1,"R":1},"ph":{"e":[0,1],"m":[2,1],"l":[1,0]},"sq":"UWUWW"}]}];
+const AN_PRESET=[{"id":"p-0316","date":"2026-03-16","type":"친선","court":"CLAY","note":"엑셀 기록 (3.16)","rows":[{"name":"김우순","so":1,"s1":[9,17],"s2":[8,8],"W":12,"U":7,"c":{"Fs":2,"R":3,"O":6,"V":5,"S":1},"sv":{"F":8,"A":1,"Sp":1},"w":{"Fs":1,"O":6,"V":2,"S":1},"u":{"R":3,"Fs":1,"V":3},"svp":1,"ph":{"e":[6,2],"m":[3,4],"l":[3,1]},"sq":"WWUWWWUWUWUUUWWWWUW"},{"name":"게스트","so":3,"s1":[10,11],"s2":[1,1],"W":7,"U":4,"c":{"V":1,"R":2,"L":1,"O":3,"Fs":2},"sv":{"F":1,"Sp":2},"w":{"O":3,"Fs":2},"u":{"V":1,"R":2,"L":1},"svp":1,"ph":{"e":[1,4],"m":[6,0],"l":[0,0]},"sq":"UUUUWWWWWWW"},{"name":"김태석","so":4,"s1":[6,10],"s2":[4,4],"W":5,"U":8,"c":{"R":4,"V":5,"Fs":2,"O":2},"sv":{"F":4},"w":{"V":3,"O":2},"u":{"R":4,"V":2,"Fs":2},"svp":1,"ph":{"e":[2,5],"m":[3,3],"l":[0,0]},"sq":"UWUUUUWUWWWUU"},{"name":"김동현","so":2,"s1":[11,12],"s2":[1,1],"W":2,"U":7,"c":{"Fs":2,"V":3,"L":2,"R":2},"sv":{"F":1},"w":{"L":1,"V":1},"u":{"Fs":2,"V":2,"R":2,"L":1},"svp":1,"ph":{"e":[0,3],"m":[2,3],"l":[0,1]},"sq":"UUUWUUWUU"}]},{"id":"p-1025","date":"2026-10-25","type":"친선","court":"CLAY","note":"엑셀 기록 (10.25)","rows":[{"name":"배영선","s1":[9,17],"s2":[6,8],"W":1,"U":16,"c":{"Bs":3,"Fs":3,"V":8,"O":1},"sv":{"F":6,"D":2},"w":{"Fs":1},"u":{"Bs":3,"Fs":2,"V":8,"O":1},"svp":1,"ph":{"e":[0,6],"m":[1,7],"l":[0,3]},"sq":"UUUUUUUWUUUUUUUUU","so":1},{"name":"윤성원","s1":[9,12],"s2":[3,3],"W":6,"U":10,"c":{"Fs":8,"V":4,"O":3,"L":1},"sv":{"F":3},"w":{"Fs":4,"V":1,"O":1},"u":{"O":2,"Fs":4,"L":1,"V":3},"svp":1,"ph":{"e":[4,6],"m":[2,4],"l":[0,0]},"sq":"WWUUUUWUUWWWUUUU","so":3},{"name":"윤정호","s1":[12,12],"s2":[0,0],"W":2,"U":13,"c":{"Fs":10,"V":3,"FS":1,"L":1},"w":{"V":1,"Fs":1},"u":{"Fs":9,"V":2,"FS":1,"L":1},"svp":1,"ph":{"e":[0,5],"m":[2,7],"l":[0,1]},"sq":"UUUUUUUWWUUUUUU","so":4},{"name":"추교차","s1":[10,12],"s2":[2,2],"W":3,"U":2,"c":{"Fs":2,"R":2,"V":1},"sv":{"F":2},"w":{"R":1,"V":1,"Fs":1},"u":{"Fs":1,"R":1},"svp":1,"ph":{"e":[0,1],"m":[2,1],"l":[1,0]},"sq":"UWUWW","so":2}]}];
 function anImportPreset(){
   if(!isAdmin())return;if(!S.imports)S.imports={};let ch=false;
   const sig=x=>[x.date,String(x.court||"").toUpperCase(),(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
@@ -222,8 +222,9 @@ function anImportPreset(){
     if(!(S.analysis||[]).some(x=>x.id===g.id||sig(x)===sig(rec))){if(!S.analysis)S.analysis=[];S.analysis.push(rec)}});
   /* 이미 올라간 프리셋 경기에 세부 내역(w/u 등)이 비어 있으면 최신 프리셋으로 채운다 */
   AN_PRESET.forEach(g=>{const ex=(S.analysis||[]).find(x=>x.id===g.id);if(!ex||!ex.rows)return;
-    g.rows.forEach(pr=>{if(!pr.w||!pr.u)return;const row=ex.rows.find(r=>(r.pid&&(S.members.find(m=>m.id===r.pid)||{}).name===pr.name)||r.name===pr.name);
-      if(row&&(!(row.w&&row.u)||(pr.ph&&!row.ph))){["w","u","c","sv","svp","ph","sq","so"].forEach(k=>{if(pr[k]!==undefined)row[k]=pr[k]});ch=true}})});
+    g.rows.forEach(pr=>{const row=ex.rows.find(r=>(r.pid&&(S.members.find(m=>m.id===r.pid)||{}).name===pr.name)||r.name===pr.name);
+      const sg=r=>JSON.stringify([r.s1,r.s2,r.W,r.U,r.w||null,r.u||null,r.ph||null,r.svp||0,r.so||0]);
+      if(row&&sg(row)!==sg(pr)){["w","u","c","sv","svp","ph","sq","so"].forEach(k=>delete row[k]);Object.assign(row,pr);delete row.name;if(!row.pid)row.name=pr.name;ch=true}})});   /* 프리셋 데이터가 정정되면 이미 올라간 경기도 맞춰 갱신 */
   if(ch)save();
 }
 /* 분석 대상 = 회원 + 등록된 게스트 */
@@ -359,17 +360,18 @@ function anParsePoints(aoa,rows,opt){
   // 서브칸 배경색 = 서브를 넣는 선수의 이름칸 배경색 → 게임별 서버 판별 (색 정보가 없으면 서브권 순서 추정으로 대체)
   const hcol={};if(opt.fills)pcols.forEach((c,i)=>{const k=opt.fills[anColL(c+(opt.c0||0))+(hr+(opt.r0||0)+1)];if(k)hcol[k]=names[i]});
   const colSrv=([s,e])=>{if(!opt.fills||!Object.keys(hcol).length)return null;const cnt={};for(let r=s;r<e;r++){const k=opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];if(k&&hcol[k])cnt[k]=(cnt[k]||0)+1}const b=Object.keys(cnt).sort((x,y)=>cnt[y]-cnt[x])[0];return b?hcol[b]:null};
+  const cellSrv=r=>{const k=opt.fills&&opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];return (k&&hcol[k])||null};   // 서브 칸 셀 하나하나의 색 = 그 서브를 넣은 선수 (게임 경계에 걸쳐 적힌 더블폴트도 정확히 배정)
   const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
   const serveOk=srvOf.every(Boolean);
   const so={};srvOf.forEach((n,gi)=>{if(n&&so[n]===undefined&&gi<names.length)so[n]=gi+1});
-  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv=srvOf[gi];for(let r=s;r<e;r++){
+  segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv0=srvOf[gi];for(let r=s;r<e;r++){
     // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
-    const sk=txt((aoa[r]||[])[sc]);if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W"}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U"}}
+    const sk=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0;if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W"}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U"}}
     pcols.forEach((c,i)=>{
     const k=txt((aoa[r]||[])[c]);if(!k)return;inc(codes[names[i]],k);
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
       if(col&&anSameCol(col,opt.wKey)){inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W";phc[names[i]][pk][0]++;sqc[names[i]]+="W"}else if(col&&anSameCol(col,opt.uKey)){inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U";phc[names[i]][pk][1]++;sqc[names[i]]+="U"}}})}});
-  segs.forEach(([s,e],g)=>{const srv=srvOf[g];if(!srv)return;for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]);if(k)inc(sv[srv],k)}});
+  segs.forEach(([s,e],g)=>{const srv0=srvOf[g];for(let r=s;r<e;r++){const k=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0;if(k&&srv)inc(sv[srv],k)}});
   return {codes,sv,wu,ph,sq,phc,sqc,so,serve:serveOk};
 }
 /* aoa: 시트를 2차원 배열로 읽은 것 → {date,type,court,rows} 또는 null */
