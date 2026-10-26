@@ -249,6 +249,7 @@ const anCStyle=s=>{
   return `background:hsl(${h} 65% 85%);color:hsl(${h} 70% 22%);border-color:hsl(${h} 50% 55%)`;
 };
 const anC=s=>s.contrib!==null?s.contrib+"%":s.inf?"∞":"-";
+const anP1Col=p=>{const t=Math.max(0,Math.min(1,(p-50)/40));return `hsl(${Math.round(t*125)},${Math.round(72-t*8)}%,${Math.round(44-t*8)}%)`};   // 1st 서브 확률 50%(빨강) → 90%(녹색) 그라데이션
 const anBar=(v,max,col)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${col};width:${max?Math.max(v?4:0,Math.round(v/max*55)):0}%"></span>`;
 function anFormView(sel){
   const eg=anEditId&&(S.analysis||[]).find(r=>r.id===anEditId);
@@ -505,7 +506,7 @@ function anView(){
   if(st.p1!==null&&st.p1<60)tips.push(`1st 서브 성공률 ${st.p1}% — 60% 이상을 목표로 해보세요`);
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
   <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
-  <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
+  <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"><b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
