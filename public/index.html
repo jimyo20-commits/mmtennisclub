@@ -500,7 +500,7 @@ function anView(){
     const shots=["Fs","Bs","V","O","P","L","R","S"].map(c=>[c,(AN_W.find(x=>x[0]===c)||[])[1],code("w",c),code("u",c)]);
     const bw=AN_W.map(([c,l])=>[c,l,code("w",c)]).sort((a,b)=>b[2]-a[2])[0],bu=AN_U.map(([c,l])=>[c,l,code("u",c)]).sort((a,b)=>b[2]-a[2])[0];
     if(bw&&bw[2])shotS=`<b>${bw[1]}</b> 득점이 가장 많아요 (${bw[2]}점)`;
-    if(bu&&bu[2])shotW=`<b>${bu[1]}</b> 범실이 가장 많아요 (${bu[2]}회)`;
+    if(bu&&bu[2]>2)shotW=`<b>${bu[1]}</b> 범실이 가장 많아요 (${bu[2]}회)`;
     bars=`<div class="panel"><h2>샷별 득점 / 범실 <span style="font-size:11px;font-weight:400;color:var(--muted)">(코드 상세가 있는 ${cm.length}경기 기준)</span></h2><div style="font-size:12px;color:var(--muted);margin-bottom:6px"><span style="color:var(--court)">■</span> Winning &nbsp; <span style="color:#e07b00">■</span> Unforced</div>${shots.map(([c,l,w,u])=>`<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:6px 0;font-size:13px"><span><b>${c}</b> <span style="color:var(--muted);font-size:11px">${l}</span></span><span>${anBar(w,Math.max(maxW,maxU),"var(--court)")} <small>${w}</small><br>${anBar(u,Math.max(maxW,maxU),"#e07b00")} <small>${u}</small></span></div>`).join("")}<div style="margin-top:8px;font-size:13px;line-height:1.8">${["A","Sp"].map(c=>`<span class="tag ok">${AN_W.find(x=>x[0]===c)[1]} ${code("w",c)+svc(c)}</span> `).join("")}${["F","D"].map(c=>`<span class="tag" style="${c==="D"?"background:#fde0e0;color:#a31919":"background:#ffe8cc;color:#b45f00"}">${AN_U.find(x=>x[0]===c)[1]} ${code("u",c)+svc(c)}</span> `).join("")}</div></div>`;
   }
   if(st.p1!==null&&st.p1>=80){let hh=st.p1*7+st.W*3+st.U;for(const e of mine)for(const ch of String(e.pid||e.name||""))hh=(hh*31+ch.charCodeAt(0))>>>0;   // 1st 서브 80% 이상이면 높은 빈도(약 90%)로 강점 칭찬
@@ -514,7 +514,9 @@ function anView(){
    if(me0&&ot.length>=2){const avg=f=>ot.reduce((t,o)=>t+f(o),0)/ot.length,r1=v=>String(Math.round(v*10)/10).replace(/\.0$/,"");
      const best=(f,hi)=>ot.every(o=>hi?f(me0)>f(o):f(me0)<f(o)),worst=(f,hi)=>ot.every(o=>hi?f(me0)<f(o):f(me0)>f(o));
      const hasP=me0.p!==null&&ot.every(o=>o.p!==null);
-     if(best(o=>o.c,true)&&me0.U>0)peerS=`같이 뛴 선수들 중 <b>승리기여도 1위</b> (${st.contrib}%)`;
+     let hs3=0;for(const ch of String(me0.n)+String(st.W)+String(st.U)+(mine[0]&&(mine[0].pid||mine[0].name)||""))hs3=(hs3*31+ch.charCodeAt(0))>>>0;
+     if(best(o=>o.u,false)&&hs3%3===0)peerS=`<b>안정형 플레이어</b>예요 — 범실이 같이 뛴 선수 중 가장 적어요 (${r1(me0.u)}개, 평균 ${r1(avg(o=>o.u))}개)`;   // 위닝이 적어도 범실이 가장 적으면 가끔(약 1/3) 안정형으로 칭찬
+     else if(best(o=>o.c,true)&&me0.U>0)peerS=`같이 뛴 선수들 중 <b>승리기여도 1위</b> (${st.contrib}%)`;
      else if(best(o=>o.w,true)&&me0.W>0)peerS=`<b>위닝</b> ${r1(me0.w)}개로 같이 뛴 선수 중 1위 (평균 ${r1(avg(o=>o.w))}개)`;
      else if(hasP&&!praise&&best(o=>o.p,true))peerS=`<b>1st 서브</b> ${Math.round(me0.p)}%로 같이 뛴 선수 중 1위 (평균 ${Math.round(avg(o=>o.p))}%)`;
      else if(best(o=>o.u,false))peerS=`<b>범실</b>이 같이 뛴 선수 중 가장 적어요 (${r1(me0.u)}개, 평균 ${r1(avg(o=>o.u))}개)`;
@@ -669,7 +671,7 @@ function anComment(list,s){
   const w={},u={},sv={};
   list.forEach(e=>{for(const k in (e.sv||{}))sv[k]=(sv[k]||0)+(+e.sv[k]||0);if(e.hasC){for(const k in (e.w||{}))w[k]=(w[k]||0)+(+e.w[k]||0);for(const k in (e.u||{}))u[k]=(u[k]||0)+(+e.u[k]||0)}});
   const top=(t,L)=>{let b=null;L.forEach(([c,l])=>{if(t[c]>0&&(!b||t[c]>b[2]))b=[c,l,t[c]]});return b};
-  const bw=top(w,AN_W),bu=top(u,AN_U),fl=anFlow(list),ph=anPhase(list),cr=anCourt(list);
+  const bw=top(w,AN_W),bu0=top(u,AN_U),bu=bu0&&bu0[2]>2?bu0:null,fl=anFlow(list),ph=anPhase(list),cr=anCourt(list);
   const key=list.map(e=>e.pid||e.name).join("")+s.W+s.U;let hs=0;for(const ch of key)hs=(hs*31+ch.charCodeAt(0))>>>0;
   const pick=a=>a[hs%a.length];
   const pn={e:"초반",m:"중반",l:"후반"};
