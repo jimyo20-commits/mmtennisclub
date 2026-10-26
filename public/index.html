@@ -460,7 +460,7 @@ function anNewIds(){const cur=(S.analysis||[]).filter(g=>g&&g.rows&&g.id&&!Strin
   if(Array.isArray(seen)){const o={};seen.forEach(i=>{if(sg[i])o[i]=sg[i]});seen=o}   // 예전 저장 형식 호환
   if(!seen||typeof seen!=="object"){try{localStorage.setItem(anSeenKey,JSON.stringify(sg))}catch(e){}return[]}   // 처음 켠 기기는 기존 분석을 읽은 것으로 처리
   const out=[];let ch=false;
-  cur.forEach(g=>{if(g.by===me||seen[g.id]===sg[g.id])return;const tok=g.id+"|"+sg[g.id];
+  cur.forEach(g=>{if(seen[g.id]===sg[g.id])return;const tok=g.id+"|"+sg[g.id];
     if(anCounted[tok]===undefined){const n=(cnt[tok]||0)+1;if(n>3){seen[g.id]=sg[g.id];ch=true;return}cnt[tok]=n;anCounted[tok]=n;ch=true}   // 접속 1회당 1번 센다(최대 3번 안내)
     out.push({id:g.id,n:anCounted[tok]})});
   if(ch){try{localStorage.setItem(anSeenKey,JSON.stringify(seen));localStorage.setItem(anCntKey,JSON.stringify(cnt))}catch(e){}}
