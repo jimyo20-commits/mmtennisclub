@@ -1329,7 +1329,7 @@ function render(){
   setTimeout(navUpd,0);
   $("#view").innerHTML=V[tab]();
   const sc=document.querySelector(".sheet");const st=sc?sc.scrollTop:0;
-  $("#modal").innerHTML=showVote?`<div class="modal" onclick="if(event.target===this)closeVote()"><div class="sheet"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0">이번 경기, 참석하시나요?</h2><button class="btn ghost" onclick="closeVote()">닫기</button></div>${V.votes()}</div></div>`:"";
+  $("#modal").innerHTML=showVote?`<div class="modal" onclick="if(event.target===this)closeVote()"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 12px;padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)"><h2 style="margin:0">이번 경기, 참석하시나요?</h2><button class="btn ghost" onclick="closeVote()">닫기</button></div>${V.votes()}</div></div>`:"";
   if(pwOpen)$("#modal").innerHTML=pwView();
   else if(recId)$("#modal").innerHTML=recView();
   else if(profileId)$("#modal").innerHTML=profView();
