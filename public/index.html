@@ -717,8 +717,13 @@ function anCodeChips(list,tot){tot=tot||{};
 let anMore=false;
 function toggleAnMore(){anMore=!anMore;render()}
 const anDt={};function toggleAnDt(id){anDt[id]=!anDt[id];render()}
+function anTeamTxt(g,me0){   // 같은 편(1~2번째 / 3~4번째) 기준으로 '팀원 vs 상대' 표시
+  const all=anFlat().filter(x=>x.g===g);if(all.length!==4||!me0)return"";
+  const nm=x=>esc((anAll().find(m=>m.id===x.pid)||{}).name||x.name||"?"),i=all.findIndex(x=>x===me0||(x.pid&&x.pid===me0.pid)||(!x.pid&&x.name===me0.name));if(i<0)return"";
+  const mate=all[i%2===0?i+1:i-1],opp=i<2?[all[2],all[3]]:[all[0],all[1]];
+  return ` <span style="color:var(--muted)">${nm(mate)} vs ${opp.map(nm).join("·")}</span>`}
 function anDtList(es){const ds=[...new Set(es.map(e=>e.g&&e.g.date).filter(Boolean))].sort().reverse();
-  return `<div style="margin:5px 0 2px;font-size:11px;line-height:1.7;color:var(--ink);background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:4px 8px"><b style="color:var(--muted)">포함된 경기</b> ${ds.map(d=>{const dt=new Date(d+"T00:00"),ok=!isNaN(dt),g=es.find(e=>e.g&&e.g.date===d).g;return `<span style="white-space:nowrap;display:inline-block;margin-right:8px"><b>${ok?`${dt.getMonth()+1}/${dt.getDate()}(${DAYS[dt.getDay()]})`:esc(d)}</b></span>`}).join("")||"날짜 정보 없음"}</div>`}
+  return `<div style="margin:5px 0 2px;font-size:11px;line-height:1.7;color:var(--ink);background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:4px 8px"><b style="color:var(--muted)">포함된 경기</b> ${ds.map(d=>{const dt=new Date(d+"T00:00"),ok=!isNaN(dt),g=es.find(e=>e.g&&e.g.date===d).g;return `<div style="white-space:nowrap"><b>${ok?`${dt.getMonth()+1}/${dt.getDate()}(${DAYS[dt.getDay()]})`:esc(d)}</b>${anTeamTxt(g,es.find(e=>e.g&&e.g.date===d))}</div>`}).join("")||"날짜 정보 없음"}</div>`}
 function anRank(flat){anUsedQ.clear();
   const rows=anAll().filter(m=>!isGuest()||m.id===me).map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
