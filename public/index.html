@@ -614,8 +614,10 @@ const drillYM=(o)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+(o||
 const drillMainOf=ym=>{const k=(S.drillMain||{})[ym];return AN_DRILL.some(x=>x.k===k)?k:""};
 function drillSetMain(ym,k){if(!isAdmin())return;if(!S.drillMain)S.drillMain={};if(k)S.drillMain[ym]=k;else delete S.drillMain[ym];save();render()}
 function drillOpen(){const k=drillMainOf(drillYM(0));if(k)drillK=k;drillOn=true;render()}
+/* 면허번호: MM710235 + 발급 순서(001부터). 발급일이 빠른 순(같은 날은 회원 목록 순) */
+function drillLicNo(mid){const L=S.members.map((x,i)=>({id:x.id,i,d:drillLicDate(x.id)})).filter(r=>r.d).sort((a,b)=>a.d.localeCompare(b.d)||a.i-b.i),k=L.findIndex(r=>r.id===mid);return "MM710235"+(k>=0?String(k+1).padStart(3,"0"):"-미정")}
 let licOn=false;
-function drillLicView(){const m=(!isGuest()&&me)?S.members.find(x=>x.id===me):null,n=m?drillAll(m.id):0,ok=!!m&&n>=DRILL_LIC,d=ok?drillLicDate(m.id):"",nm=m?m.name:"회원 이름",pres=S.members.find(x=>x.role==="회장"),no=m?"MM-"+String(Math.max(0,S.members.findIndex(x=>x.id===m.id))+1).padStart(3,"0")+"-"+(d?d.replace(/\D/g,"").slice(2,8):"······"):"MM-000-······";
+function drillLicView(){const m=(!isGuest()&&me)?S.members.find(x=>x.id===me):null,n=m?drillAll(m.id):0,ok=!!m&&n>=DRILL_LIC,d=ok?drillLicDate(m.id):"",nm=m?m.name:"회원 이름",pres=S.members.find(x=>x.role==="회장"),no=m?drillLicNo(m.id):"MM710235";
   const ph=m?av(m,76):`<div style="width:76px;height:76px;border-radius:50%;background:#cbd5e1;display:grid;place-items:center;font-size:34px">👤</div>`;
   return `<div class="modal" onclick="licOn=false;render()" style="display:flex;align-items:center;justify-content:center"><div style="width:min(92vw,360px);animation:licIn .35s ease-out" onclick="licOn=false;render()">
   <div style="position:relative;overflow:hidden;border-radius:16px;border:2px solid #0f766e;box-shadow:0 14px 34px rgba(0,0,0,.45);background:linear-gradient(135deg,#d1fae5 0%,#e0f2fe 55%,#fef9c3 100%);color:#134e4a;min-height:210px">
