@@ -589,11 +589,17 @@ const AN_DRILL=[
 ["구역 타깃 서브","서비스박스의 와이드·T·바디 각 구역을 선으로 구분해놓고 각 구역 안에 떨어지면 성공이에요.","구역별 5개 중 3개씩 성공"],
 ["서브 연속 인 5개","서비스박스 안에 연속해서 5개를 넣어요. 실패하면 0부터 다시 세요.","5개 연속 성공 1회"]]}
 ];
+/* 난이도 오름차순(1번이 가장 쉬움). AN_ORD[j]=원래 배열의 몇 번째 드릴이 j번째가 되는지 */
+const AN_ORD={Fs:[0,2,1,3],Bs:[0,2,1,3],V:[1,0,2,3],O:[0,2,1],P:[0,2,1],S:[2,0,1],Sv:[0,1,3,2]};
+AN_DRILL.forEach(x=>{const o=AN_ORD[x.k];if(o)x.d=o.map(i=>x.d[i])});
 function drillMine(){try{const t={};anFlat().filter(e=>e.pid===me).forEach(e=>{Object.keys(e.u||{}).forEach(c=>{t[c]=(t[c]||0)+(+e.u[c]||0)})});t.Sv=(t.F||0)+(t.D||0);let b=null,n=2;["Fs","Bs","V","O","P","L","R","S","Sv"].forEach(c=>{if((t[c]||0)>n){n=t[c];b=c}});return b}catch(e){return null}}
 const DRILL_TIER=[null,{n:"브론즈",c:"#cd7f32",f:"sepia(1) saturate(2.5) hue-rotate(-15deg) brightness(.8)"},{n:"실버",c:"#94a3b8",f:"grayscale(1) contrast(1.4) brightness(1.1)"},{n:"골드",c:"#facc15",f:""}];
 const drillTier=(n,T)=>n>=T?3:n*3>=2*T?2:n*3>=T?1:0;
 const drillCrown=(t,sz)=>t?`<span class="dcrown" style="--gc:${DRILL_TIER[t].c};font-size:${sz||16}px"><span style="display:inline-block;${DRILL_TIER[t].f?"filter:"+DRILL_TIER[t].f:""}">👑</span></span>`:"";
-function drillMig(){if(S.drillVer===2)return;if((S.drills&&Object.keys(S.drills).length)||(S.drillOk&&Object.keys(S.drillOk).length)){S.drillsV1={drills:S.drills||{},ok:S.drillOk||{}};S.drills={};S.drillOk={};S.drillVer=2;save()}else S.drillVer=2}
+function drillMig(){if(S.drillVer===3)return;
+  if(S.drillVer===2){const rm=o=>{const n={};Object.keys(o||{}).forEach(mid=>{n[mid]={};Object.keys(o[mid]||{}).forEach(key=>{const [k,i]=key.split(":"),ord=AN_ORD[k];const j=ord?ord.indexOf(+i):+i;n[mid][k+":"+(j<0?i:j)]=o[mid][key]})});return n};
+    const had=(S.drills&&Object.keys(S.drills).length)||(S.drillOk&&Object.keys(S.drillOk).length);S.drills=rm(S.drills);S.drillOk=rm(S.drillOk);S.drillVer=3;if(had)save();return}
+  if((S.drills&&Object.keys(S.drills).length)||(S.drillOk&&Object.keys(S.drillOk).length)){S.drillsV1={drills:S.drills||{},ok:S.drillOk||{}};S.drills={};S.drillOk={};S.drillVer=3;save()}else S.drillVer=3}
 /* 이달의 메인 스킬 (월별 1개, 운영자 지정) */
 const drillYM=(o)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+(o||0));return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")};
 const drillMainOf=ym=>{const k=(S.drillMain||{})[ym];return AN_DRILL.some(x=>x.k===k)?k:""};
