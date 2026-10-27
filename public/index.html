@@ -234,7 +234,7 @@ function anImportPreset(){
 }
 /* 분석 대상 = 회원 + 등록된 게스트 */
 const anAll=()=>[...S.members,...(S.guests||[])];
-function anFlat(){const out=[];const gmap={};(S.guests||[]).forEach(g=>{if(g.name)gmap[g.name]=g.id});(S.analysis||[]).forEach(g=>{
+function anFlat(){const out=[];const gmap={};anAll().forEach(g=>{if(g.name&&!gmap[g.name])gmap[g.name]=g.id});(S.analysis||[]).forEach(g=>{
   const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
   rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
     out.push({g,pid:r.pid||(r.name&&gmap[r.name])||"",name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",so:r.so||0,c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
@@ -1064,8 +1064,16 @@ dues(){
   <div class="panel"><h2>납부 현황</h2>${S.members.length?`<ul class="list">${S.members.map(m=>`<li><div class="grow">${esc(m.name)}</div><span class="tag ${m.paid[m0]?"ok":"no"}">${m.paid[m0]?"납부 완료":"미납"}</span><button class="btn ghost" onclick="togglePaid('${m.id}')">${m.paid[m0]?"취소":"납부 확인"}</button></li>`).join("")}</ul>`:`<p class="empty">회원을 먼저 추가하세요.</p>`}</div>`;
 }};
 
+/* 게스트 → 회원 전환: 같은 이름의 게스트가 있으면 경기 기록·분석의 게스트 ID를 새 회원 ID로 옮기고 게스트 카드는 정리한다 */
+function guestToMember(g,m){const mp=x=>x===g.id?m.id:x,mpa=a=>Array.isArray(a)?a.map(mp):a;
+  (S.matches||[]).forEach(x=>{if(x.t1)x.t1=mpa(x.t1);if(x.t2)x.t2=mpa(x.t2);if(x.p1===g.id)x.p1=m.id;if(x.p2===g.id)x.p2=m.id;if(x.by===g.id)x.by=m.id});
+  (S.analysis||[]).forEach(a=>{if(a.pid===g.id)a.pid=m.id;(a.rows||[]).forEach(r=>{if(r.pid===g.id)r.pid=m.id})});
+  if(!m.photo&&g.photo)m.photo=g.photo;if((!m.level)&&g.level)m.level=g.level;if(!m.phone&&g.phone)m.phone=g.phone;
+  S.guests=S.guests.filter(x=>x.id!==g.id)}
 function addMember(){const n=$("#nm").value.trim();if(!n){$("#nm").focus();return}
-  S.members.push({id:uid(),name:n,level:$("#lv").value,status:$("#st").value,joined:$("#jd").value||today(),role:$("#rl").value,phone:fmtPh4($("#ph").value),paid:{}});save();render()}
+  const m={id:uid(),name:n,level:$("#lv").value,status:$("#st").value,joined:$("#jd").value||today(),role:$("#rl").value,phone:fmtPh4($("#ph").value),paid:{}};S.members.push(m);
+  const g=(S.guests||[]).find(x=>x.name===n);if(g)guestToMember(g,m);
+  save();render();if(g)alert(n+" 님의 게스트 시절 경기 기록과 분석을 회원으로 이어받았어요.")}
 function delMember(id){if(!confirm(mname(id)+" 회원을 삭제할까요?"))return;S.members=S.members.filter(m=>m.id!==id);S.bookings=S.bookings.filter(b=>b.member!==id);save();render()}
 function book(t,c){const m=$("#bm").value;if(!m){alert("먼저 회원을 추가하세요.");return}
   S.bookings.push({id:uid(),date:S.date,time:t,court:c,member:m});save();render()}
