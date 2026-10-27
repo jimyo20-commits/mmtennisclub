@@ -543,6 +543,58 @@ function anView(){
   /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
   return isAdmin()?(isGuest()?"":head+form)+anRank(flat)+anGuide():anRank(flat)+(isGuest()?"":head+form)+anGuide();
 }
+/* 스킬별 훈련 드릴 */
+let drillOn=false,drillK="Fs";
+const AN_DRILL=[
+{k:"Fs",l:"포핸드",why:"포핸드 범실이 많다면 '타점·스윙 길이·깊이 조절'부터 잡아요.",d:[
+["크로스 랠리 20개 연속","코트 대각선으로 둘이 서서 7할 힘으로 천천히 주고받아요. 20개 연속을 목표로, 실패하면 다시 0부터.","20개 연속 × 3세트"],
+["깊이 타깃 드릴","상대 베이스라인 안쪽 1m 구간에 콘이나 수건을 두고 그 안으로 떨어뜨려요. 네트 위 1m 여유로 넘기는 습관을 만들어요.","10개 중 7개 성공"],
+["스플릿 스텝 + 한 박자 준비","상대가 칠 때 스플릿 스텝, 공이 튀면 바로 어깨 돌리기(유닛 턴). 공 오기 전에 라켓 준비를 끝내요.","15분, 매 타구마다"],
+["다운 더 라인 / 크로스 번갈아","크로스 2개 → 다운 더 라인 1개 패턴으로 방향 전환 연습. 방향 바꿀 때도 같은 스윙을 유지해요.","패턴 10회 × 3"]]},
+{k:"Bs",l:"백핸드",why:"백핸드 범실이 많다면 '공을 끝까지 보기·몸 앞에서 치기'를 먼저 점검해요.",d:[
+["백핸드 크로스 미니 랠리","서비스라인에서 가볍게 시작해 서서히 베이스라인으로 물러나요. 몸 앞쪽 타점을 의식하며 천천히.","30개 연속 × 2"],
+["백핸드 반복 피딩","파트너가 손으로 던져주거나 가볍게 쳐서 같은 위치로 공을 반복해서 보내줘요. 바운드를 끝까지 보고 몸 앞에서 임팩트.","20개씩 3세트"],
+["슬라이스 → 드라이브 전환","백핸드 슬라이스 3개 후 드라이브 1개. 슬라이스는 수비·깊이용으로 안정감을 만들어줘요.","패턴 10회"],
+["셰도 스윙 + 폼 확인","공 없이 거울이나 영상을 보며 준비 → 스윙 → 팔로스루 순서로 천천히 반복해요. 타점이 몸 앞인지 확인.","20회 × 2"]]},
+{k:"V",l:"발리",why:"발리 범실이 많다면 '급한 네트 진입·큰 스윙'이 원인인 경우가 많아요. 짧게, 전진은 천천히.",d:[
+["벽 발리 / 근접 발리","서로 3m 거리에서 짧은 스윙 없이 '블록'만으로 주고받아요. 라켓 면을 눈앞에 두는 감각을 만들어요.","연속 30개 × 3"],
+["스플릿 스텝 + 한 걸음 진입","베이스라인 샷 후 한 걸음 전진 → 상대 타구 순간 스플릿 스텝 → 발리. 뛰어들며 치지 말고 멈추고 쳐요.","10회 × 3세트"],
+["하프 발리 훈련","서비스라인 근처에서 발밑으로 떨어지는 공을 낮게 받아 넘겨요. 무릎을 굽혀 낮은 자세 유지.","15개 연속"],
+["2대1 발리 랠리","한 명은 네트, 두 명은 베이스라인에서 공을 보내요. 발리 위치를 좌우로 옮기며 수비 반응 속도를 키워요.","3분 × 3"]]},
+{k:"O",l:"스매싱",why:"스매싱 범실이 많다면 '뒤로 빠르게 이동 → 옆으로 서기 → 타점은 머리 위 앞'을 확인해요.",d:[
+["셔플 스텝 스매싱","로브를 받으며 옆으로 서서 크로스오버 스텝으로 뒤로 이동 후 스매싱. 공 아래로 들어가는 습관을 만들어요.","10회 × 3세트"],
+["왼팔(비주력 손) 포인팅","공을 향해 반대 팔을 들어올려 균형을 잡아요. 스윙 전 3초 정지 자세로 폼을 확인해요.","15회"],
+["스매싱 후 리커버리","스매싱 직후 다시 네트 중앙으로 빠르게 돌아오는 반복. 한 번에 끝나지 않는 포인트를 대비해요.","10회 × 3"]]},
+{k:"P",l:"패싱",why:"패싱샷 범실이 많다면 '낮고 빠르게, 한 번에 욕심내지 않기'가 핵심이에요.",d:[
+["라인 패싱 / 크로스 패싱","상대가 네트에 서 있을 때 크로스로 먼저 보여준 뒤 라인을 노려요. 낮게 지나가는 궤도에 집중해요.","10개 중 6개 이상 성공"],
+["발밑 공략","네트 플레이어의 발밑을 노리는 낮은 샷 연습. 발리 어려운 위치로 보내 실수를 유도해요.","15개"],
+["오픈 코트 패싱 게임","한 명은 네트 점령, 한 명은 패싱만 하는 게임. 패싱 성공 시 1점.","7점 선취"]]},
+{k:"L",l:"로브",why:"로브 범실이 많다면 '타점을 낮게, 높이를 충분히'를 기억해요.",d:[
+["수비 로브 깊이 드릴","코트 뒤 2m 구간을 타깃으로 상대 머리 위를 넘겨요. 높이 3m 이상, 깊게 떨어뜨리기.","10개 중 6개"],
+["공격 로브 (탑스핀)","네트에 붙은 상대를 속이는 로브. 스윙 마지막에 어깨 위로 끌어올려요. 상대 네트 거리 보며 타이밍 연습.","8개 × 3"],
+["로브 → 스매싱 대응 랠리","한 명이 로브만 올리고 한 명은 스매싱·로브를 번갈아 처리. 서로의 수비·공격을 모두 연습해요.","5분"]]},
+{k:"R",l:"리턴",why:"리턴 범실이 많다면 '준비 자세·짧은 스윙·중앙으로 깊게'를 먼저 확실히 해요.",d:[
+["블록 리턴","서브 속도에 맞춰 백스윙을 거의 없이 면을 맞춰 보내요. 깊게만 넘겨도 성공으로 인정해요.","20개 연속 중 15개 성공"],
+["포지션 이동 리턴","서버 위치와 서브 속도를 보고 한 걸음씩 앞뒤로 위치를 조정해요. 세컨드 서브는 한 걸음 앞에서 공격.","10개 × 3"],
+["크로스 리턴 깊이","상대 코트 베이스라인 안쪽 1m를 노려요. 같은 방향으로만 먼저 안정적으로 연습해요.","10개 중 7개"]]},
+{k:"S",l:"쇼트·어프로치",why:"쇼트 볼 범실이 많다면 '앞으로 한 발 들어가서 짧게 마무리'가 핵심이에요.",d:[
+["어프로치 샷 → 네트 마무리","짧은 볼을 앞으로 들어가며 깊게 보내고 바로 네트 진입. 어프로치는 상대 백핸드 쪽으로.","10회 × 3"],
+["드롭샷 컨트롤","상대가 뒤에 있을 때 드롭샷으로 앞으로 끌어당겨요. 스핀을 걸어 네트를 겨우 넘기는 연습.","8개 × 3"],
+["쇼트 크로스 랠리","서비스라인 안쪽에서만 주고받는 미니 테니스. 손목에 힘 빼기와 부드러운 터치를 익혀요.","3분 × 3"]]},
+{k:"Sv",l:"서브",why:"1st 서브가 60% 미만이거나 폴트·더블폴트가 많다면 '토스 → 리듬 → 타점'을 점검해요.",d:[
+["토스 연습 (라켓 없이)","라켓 없이 토스만 20번. 공이 같은 지점(오른쪽 어깨 앞쪽 위)에 항상 떨어지는지 확인.","20개 연속 동일 위치"],
+["박스 타깃 서브","서비스 박스를 반으로 나눠 '와이드/T/바디' 3구역 타깃을 정해 서브해요. 처음엔 70% 힘으로 정확도부터.","구역당 10개 × 3"],
+["세컨드 서브 안정화","스핀(킥/슬라이스)을 걸어 네트 위 1m 높이로 넘겨요. 더블폴트를 줄이는 데 가장 효과적이에요.","20개 중 18개 성공"],
+["서브 루틴 만들기","바운드 몇 번 → 숨 한 번 → 토스. 매번 같은 루틴으로 리듬을 만들어요. 압박 상황에서 더블폴트를 줄여줘요.","매 서브마다"]]}
+];
+function drillMine(){try{const t={};anFlat().filter(e=>e.pid===me).forEach(e=>{Object.keys(e.u||{}).forEach(c=>{t[c]=(t[c]||0)+(+e.u[c]||0)})});t.Sv=(t.F||0)+(t.D||0);let b=null,n=2;["Fs","Bs","V","O","P","L","R","S","Sv"].forEach(c=>{if((t[c]||0)>n){n=t[c];b=c}});return b}catch(e){return null}}
+function drillView(){const mk=drillMine(),cur=AN_DRILL.find(x=>x.k===drillK)||AN_DRILL[0];
+  const chips=AN_DRILL.map(x=>`<button class="tag ${x.k===cur.k?"ok":""}" style="cursor:pointer;border:1px solid var(--line);padding:5px 10px;font-size:12px;font-weight:800" onclick="drillK='${x.k}';render()">${x.l}${x.k===mk?" ⭐":""}</button>`).join(" ");
+  return `<div class="modal tipc" onclick="if(event.target===this){drillOn=false;render()}"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:6px 0"><h2 style="margin:0">🎾 스킬별 훈련 드릴</h2><button class="btn ghost" style="padding:5px 10px" onclick="drillOn=false;render()">닫기 ✕</button></div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${chips}</div>${mk?`<p style="margin:0 0 8px;font-size:12px;color:var(--muted)">⭐ = 내 기록에서 범실이 가장 많은 스킬이에요</p>`:""}
+  <div class="panel" style="margin:0"><h3 style="margin:0 0 4px;font-size:16px">${cur.l}</h3><p style="margin:0 0 8px;font-size:13px;color:var(--muted);line-height:1.5">${cur.why}</p>
+  <ul class="list">${cur.d.map((d,i)=>`<li style="display:block;padding:10px 0"><b>${i+1}. ${d[0]}</b><div style="font-size:13px;line-height:1.55;margin-top:3px">${d[1]}</div><div style="margin-top:4px"><span class="tag ok" style="font-size:11px">🎯 목표</span> <span style="font-size:12px">${d[2]}</span></div></li>`).join("")}</ul></div>
+  <p style="margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5">처음엔 7할 힘으로 정확도 먼저, 익숙해지면 속도를 올려요. 한 번에 한 스킬씩 15~20분 정도가 좋아요.</p></div></div>`}
 function anGuide(){
   const gl=[["승리기여도","V","Victory 기여도 = Winning ÷ Unforced × 100%. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
   const guide=`<div class="panel"><h2>스탯 설명</h2><dl style="margin:0;font-size:13px;line-height:1.6">${gl.map(([k,ab,d])=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><dt style="flex:none;width:104px;text-align:center;font-weight:800;color:var(--court)">${k}</dt><dd style="flex:none;margin:0;min-width:46px;text-align:center"><span class="tag" style="font-weight:800">${ab}</span></dd><dd style="margin:0">${d}</dd></div>`).join("")}</dl></div>`;
@@ -762,7 +814,7 @@ function anRank(flat){anUsedQ.clear();
   return `<div class="panel"><h2>선수별 비교 <span style="font-size:12px;font-weight:400;color:var(--muted)">이름을 클릭하면 자세한 내용을 볼 수 있어요</span></h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;align-items:flex-start;gap:12px${anTop&&x.m.id===anPid?';background:rgba(46,160,90,.16);border-radius:10px':''}"><div style="flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px">${i+1}</span>${av(x.m,44)}<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></div><div class="grow" style="min-width:0">${nameR(x.m)} <button type="button" class="tag" aria-label="포함된 경기 날짜 보기" onclick="event.stopPropagation();toggleAnDt('${x.m.id}')" style="font-size:11px;vertical-align:middle;border:0;font-family:inherit;cursor:pointer${anDt[x.m.id]?";background:var(--court);color:#fff":""}">${x.s.n}경기 ${anDt[x.m.id]?"▲":"▾"}</button>${anDt[x.m.id]?anDtList(flat.filter(e=>e.pid===x.m.id)):""}${anCodeChips(flat.filter(e=>e.pid===x.m.id),x.s)}${anComment(flat.filter(e=>e.pid===x.m.id),x.s)}</div></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
-analysis(){return anView()},
+analysis(){return `<button class="btn" style="width:100%;margin-bottom:10px" onclick="drillOn=true;render()">🎾 스킬별 훈련 드릴 보기</button>`+anView()},
 home(){
   const paid=S.members.filter(m=>m.paid[ym()]).length;
   const bk=S.bookings.filter(b=>b.date===today()).sort((a,b)=>a.time.localeCompare(b.time));
@@ -1399,6 +1451,7 @@ function render(){
   const sc=document.querySelector(".sheet");const st=sc?sc.scrollTop:0;
   $("#modal").innerHTML=showVote?`<div class="modal" onclick="if(event.target===this)closeVote()"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 12px;padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)"><h2 style="margin:0">이번 경기, 참석하시나요?</h2><button class="btn ghost" onclick="closeVote()">닫기</button></div>${V.votes()}</div></div>`:"";
   if(pwOpen)$("#modal").innerHTML=pwView();
+  else if(drillOn)$("#modal").innerHTML=drillView();
   else if(recId)$("#modal").innerHTML=recView();
   else if(profileId)$("#modal").innerHTML=profView();
   else if(guestView)$("#modal").innerHTML=guestCardView();
