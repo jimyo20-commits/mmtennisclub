@@ -447,20 +447,20 @@ function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&w
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
 let anGid=null;
-function anTrend(mineAll,gSel){
-  const gs=[...new Set(mineAll.map(e=>e.g))].slice(0,10).reverse();if(gs.length<2)return"";
-  const pts=gs.map(g=>{const e=mineAll.find(x=>x.g===g),s=anStats([e]);return {g,W:e.W,U:e.U,c:s.contrib!==null?s.contrib:(s.inf?300:null),lab:anC(s)}});
-  const Wd=360,H=170,L=26,R=34,T=14,B=26,iw=Wd-L-R,ih=H-T-B,n=pts.length;
-  const mc=Math.max(5,...pts.map(p=>Math.max(p.W,p.U))),cm=Math.max(100,...pts.map(p=>p.c||0)),cmax=Math.ceil(cm/50)*50;
-  const x=i=>L+(n===1?iw/2:i*iw/(n-1)),yc=v=>T+ih-v/mc*ih,yp=v=>T+ih-v/cmax*ih;
-  const line=(f,col,dash)=>{const d=pts.map((p,i)=>f(p,i)).filter(Boolean);return `<polyline fill="none" stroke="${col}" stroke-width="2.2" ${dash?'stroke-dasharray="5 3"':""} stroke-linejoin="round" points="${d.map(a=>a[0].toFixed(1)+","+a[1].toFixed(1)).join(" ")}"/>`+d.map(a=>`<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="3" fill="${col}"/>`).join("")};
-  const mdl=d=>{const t=String(d||"").match(/(\d+)-(\d+)-(\d+)/);return t?(+t[2])+"/"+(+t[3]):""};
-  const grid=[0,.5,1].map(f=>`<line x1="${L}" x2="${Wd-R}" y1="${T+ih-f*ih}" y2="${T+ih-f*ih}" stroke="var(--line)" stroke-width="1"/><text x="${L-4}" y="${T+ih-f*ih+3}" font-size="9" fill="var(--muted)" text-anchor="end">${Math.round(f*mc)}</text><text x="${Wd-R+4}" y="${T+ih-f*ih+3}" font-size="9" fill="#16a34a">${Math.round(f*cmax)}%</text>`).join("");
-  const tap=pts.map((p,i)=>`<rect x="${(x(i)-iw/n/2).toFixed(1)}" y="${T}" width="${(iw/n).toFixed(1)}" height="${ih+B}" fill="${p.g.id===gSel?"rgba(22,163,74,.12)":"transparent"}" style="cursor:pointer" onclick="anGid='${p.g.id}';render()"/>`).join("");
-  const xl=pts.map((p,i)=>`<text x="${x(i).toFixed(1)}" y="${H-10}" font-size="9" fill="var(--muted)" text-anchor="middle" style="pointer-events:none">${mdl(p.g.date)}</text>`).join("");
-  const lg=(c,t,d)=>`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="18" height="8"><line x1="0" x2="18" y1="4" y2="4" stroke="${c}" stroke-width="2.5" ${d?'stroke-dasharray="4 2"':""}/></svg>${t}</span>`;
-  const last=pts[pts.length-1];
-  return `<div class="panel"><h2 style="margin-bottom:4px">📈 최근 ${n}경기 추이</h2><p style="margin:0 0 6px;font-size:12px;color:var(--muted)">점이나 날짜 칸을 누르면 그 경기 분석으로 바뀌어요. (왼쪽 눈금=개수, 오른쪽 눈금=승리기여도%)</p><div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:700;margin-bottom:2px">${lg("#16a34a","승리기여도 %",0)}${lg("#2563eb","Winning 개수",0)}${lg("#dc2626","Unforced 개수",1)}</div><svg viewBox="0 0 ${Wd} ${H}" style="width:100%;height:auto;display:block">${grid}${tap}${line((p,i)=>p.c===null?null:[x(i),yp(p.c)],"#16a34a",0)}${line((p,i)=>[x(i),yc(p.W)],"#2563eb",0)}${line((p,i)=>[x(i),yc(p.U)],"#dc2626",1)}${xl}</svg><p style="margin:2px 0 0;font-size:11px;color:var(--muted)">범실 0인 경기는 300%로 그려요. 최근 경기: 기여도 ${last.lab} · W ${last.W} · U ${last.U}</p></div>`}
+function anTrend(list){
+  const gs=[...new Set(list.map(e=>e.g))].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(S.analysis||[]).indexOf(b)-(S.analysis||[]).indexOf(a)).slice(0,10).reverse();
+  if(gs.length<2)return `<div style="margin-top:6px;font-size:11px;color:var(--muted)">📈 2경기부터 추이 그래프가 보여요</div>`;
+  const pts=gs.map(g=>{const e=list.find(x=>x.g===g),s=anStats([e]);return {g,W:e.W,U:e.U,c:s.contrib!==null?s.contrib:(s.inf?300:null)}});
+  const Wd=240,H=96,L=6,R=6,T=8,B=16,iw=Wd-L-R,ih=H-T-B,n=pts.length;
+  const mc=Math.max(5,...pts.map(p=>Math.max(p.W,p.U))),cmax=Math.max(100,Math.ceil(Math.max(0,...pts.map(p=>p.c||0))/50)*50);
+  const x=i=>L+i*iw/(n-1),yc=v=>T+ih-v/mc*ih,yp=v=>T+ih-v/cmax*ih;
+  const line=(f,col,dash)=>{const d=pts.map((p,i)=>f(p,i)).filter(Boolean);return `<polyline fill="none" stroke="${col}" stroke-width="2" ${dash?'stroke-dasharray="4 3"':""} stroke-linejoin="round" points="${d.map(a=>a[0].toFixed(1)+","+a[1].toFixed(1)).join(" ")}"/>`+d.map(a=>`<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="2.4" fill="${col}"/>`).join("")};
+  const md=d=>{const t=String(d||"").match(/(\d+)-(\d+)-(\d+)/);return t?(+t[2])+"/"+(+t[3]):""};
+  const y100=yp(100);
+  const last=pts[n-1];
+  return `<div style="margin-top:6px"><svg viewBox="0 0 ${Wd} ${H}" style="width:100%;height:auto;display:block"><line x1="${L}" x2="${Wd-R}" y1="${T+ih}" y2="${T+ih}" stroke="var(--line)"/><line x1="${L}" x2="${Wd-R}" y1="${y100.toFixed(1)}" y2="${y100.toFixed(1)}" stroke="#16a34a" stroke-opacity=".35" stroke-dasharray="1 3"/>${line((p,i)=>p.c===null?null:[x(i),yp(p.c)],"#16a34a",0)}${line((p,i)=>[x(i),yc(p.W)],"#2563eb",1)}${line((p,i)=>[x(i),yc(p.U)],"#dc2626",1)}<text x="${L}" y="${H-3}" font-size="9" fill="var(--muted)">${md(gs[0].date)}</text><text x="${Wd-R}" y="${H-3}" font-size="9" fill="var(--muted)" text-anchor="end">${md(gs[n-1].date)}</text></svg></div>`}
+function anTrendLegend(n){const lg=(c,t,d)=>`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="18" height="8"><line x1="0" x2="18" y1="4" y2="4" stroke="${c}" stroke-width="2.5" ${d?'stroke-dasharray="4 2"':""}/></svg>${t}</span>`;
+  return `<div style="display:flex;flex-wrap:wrap;gap:2px 12px;font-size:11px;font-weight:700;margin:2px 0 6px">${lg("#16a34a","승리기여도(실선)",0)}${lg("#2563eb","Winning(점선)",1)}${lg("#dc2626","Unforced(점선)",1)}<span style="font-weight:400;color:var(--muted)">· 최근 10경기</span></div>`}
 function anPick(id,jump){if(id!==anPid)anGid=null;anPid=id;if(jump)anTop=true;render();if(jump)setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),50)}
 function anClose(){anTop=false;render();setTimeout(()=>window.scrollTo({top:0}),50)}
 const anCan=g=>isAdmin()||g.by===me||g.pid===me;
@@ -567,7 +567,7 @@ function anView(){
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
-    return back+gpick+anTrend(mineAll,gSel)+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
+    return back+gpick+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
   /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
   return isAdmin()?(isGuest()?"":head+form)+anRank(flat)+anGuide():anRank(flat)+(isGuest()?"":head+form)+anGuide();
 }
@@ -939,7 +939,7 @@ function anComment(list,s){
   const rest=F.filter(f=>f!==hf&&f.detail).slice(0,2).map(f=>f.detail);
   return cmtHtml(hf.head,rest.join(" · "),anQuote(hf.head,hs>>2,{bw,bu,ph,p1,D,sty}));
 }
-function cmtHtml(l1,l2,l3){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l2?`<div style="color:var(--muted)">${l2}</div>`:""}${l3?`<div style="color:var(--court);font-style:italic">💬 ${l3}</div>`:""}</div>`}
+function cmtHtml(l1,l2,l3){return `<div style="margin-top:4px;font-size:11px;line-height:1.45;color:var(--ink,#334)"><div><b>${l1}</b></div>${l3?`<div style="color:var(--court);font-style:italic">💬 ${l3}</div>`:""}</div>`}
 function anCodeChips(list,tot){tot=tot||{};
   const w={},u={},o={},sv={};const add=(t,m)=>{for(const k in (m||{}))t[k]=(t[k]||0)+(+m[k]||0)};
   // 서브 득점(A·Sp)은 W 합계에, 더블폴트(D)는 U 합계에 포함되므로 각 줄로 옮겨 표시 (svp 기록만; 서브 줄에는 F만 남김)
@@ -966,7 +966,7 @@ function anDtList(es){const ds=[...new Set(es.map(e=>e.g&&e.g.date).filter(Boole
 function anRank(flat){anUsedQ.clear();
   const rows=anAll().filter(m=>!isGuest()||m.id===me).map(m=>({m,s:anStats(flat.filter(e=>e.pid===m.id))})).filter(x=>x.s.n).sort((a,b)=>((b.s.contrib??(b.s.inf?9999:-1))-(a.s.contrib??(a.s.inf?9999:-1)))||b.s.net-a.s.net);
   if(!rows.length)return"";
-  return `<div class="panel"><h2>선수별 비교 <span style="font-size:12px;font-weight:400;color:var(--muted)">이름을 클릭하면 자세한 내용을 볼 수 있어요</span></h2><ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;align-items:flex-start;gap:12px${anTop&&x.m.id===anPid?';background:rgba(46,160,90,.16);border-radius:10px':''}"><div style="flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px">${i+1}</span>${av(x.m,44)}<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></div><div class="grow" style="min-width:0">${nameR(x.m)} <button type="button" class="tag" aria-label="포함된 경기 날짜 보기" onclick="event.stopPropagation();toggleAnDt('${x.m.id}')" style="font-size:11px;vertical-align:middle;border:0;font-family:inherit;cursor:pointer${anDt[x.m.id]?";background:var(--court);color:#fff":""}">${x.s.n}경기 ${anDt[x.m.id]?"▲":"▾"}</button>${anDt[x.m.id]?anDtList(flat.filter(e=>e.pid===x.m.id)):""}${anCodeChips(flat.filter(e=>e.pid===x.m.id),x.s)}${anComment(flat.filter(e=>e.pid===x.m.id),x.s)}</div></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
+  return `<div class="panel"><h2>선수별 비교 <span style="font-size:12px;font-weight:400;color:var(--muted)">이름을 클릭하면 자세한 내용을 볼 수 있어요</span></h2>${anTrendLegend()}<ul class="list">${(anMore?rows:rows.slice(0,5)).map((x,i)=>`<li role="button" tabindex="0" onclick="anPick('${x.m.id}',1)"style="cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;align-items:flex-start;gap:12px${anTop&&x.m.id===anPid?';background:rgba(46,160,90,.16);border-radius:10px':''}"><div style="flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:26px;height:26px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px">${i+1}</span>${av(x.m,44)}<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><small style="font-size:10px;color:var(--muted);white-space:nowrap">승리기여도</small><span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(x.s)}">${anC(x.s)}</span></span></div><div class="grow" style="min-width:0">${nameR(x.m)} <button type="button" class="tag" aria-label="포함된 경기 날짜 보기" onclick="event.stopPropagation();toggleAnDt('${x.m.id}')" style="font-size:11px;vertical-align:middle;border:0;font-family:inherit;cursor:pointer${anDt[x.m.id]?";background:var(--court);color:#fff":""}">${x.s.n}경기 ${anDt[x.m.id]?"▲":"▾"}</button>${anDt[x.m.id]?anDtList(flat.filter(e=>e.pid===x.m.id)):""}${anTrend(flat.filter(e=>e.pid===x.m.id))}${anComment(flat.filter(e=>e.pid===x.m.id),x.s)}</div></li>`).join("")}</ul>${rows.length>5?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMore()">${anMore?"접기 ▲":`나머지 ${rows.length-5}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`;
 }
 const V={
 analysis(){return `<button class="btn" onclick="drillOpen()" style="width:100%;margin-bottom:10px;line-height:1.35;padding:10px 12px;display:block;text-align:center"><span style="display:block;font-size:16px;font-weight:900">🎾 스킬별 훈련 드릴 보기</span><span style="display:block;font-size:12px;font-weight:700;opacity:.85;margin-top:2px">${drillMainOf(drillYM(0))?"📅 이달의 메인 스킬 · "+AN_DRILL.find(x=>x.k===drillMainOf(drillYM(0))).l:(isAdmin()?"이달의 메인 스킬을 지정해 주세요":"운영자가 이달의 스킬을 정하면 열려요")}</span></button>`+anView()},
