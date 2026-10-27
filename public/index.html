@@ -240,7 +240,9 @@ function anFlat(){const out=[];const gmap={};anAll().forEach(g=>{if(g.name&&!gma
     out.push({g,pid:r.pid||(r.name&&gmap[r.name])||"",name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",so:r.so||0,c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
 function anStats(l){
   const W=l.reduce((t,e)=>t+e.W,0),U=l.reduce((t,e)=>t+e.U,0),pick=(k,i)=>l.reduce((t,e)=>t+((e[k]||[])[i]||0),0);
-  return {n:l.length,W,U,net:W-U,contrib:U?Math.round(W/U*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
+  /* 승리기여도 = 경기별(Winning ÷ Unforced)의 평균. 한 경기에서 범실이 유난히 많아도 전체가 확 깎이지 않도록 경기수로 평균. 범실 0인 경기는 300%로 계산 */
+  const gr=l.filter(e=>e.W||e.U).map(e=>e.U?e.W/e.U:3),avg=gr.length?gr.reduce((t,v)=>t+v,0)/gr.length:0;
+  return {n:l.length,W,U,net:W-U,contrib:U?Math.round(avg*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
 }
 /* 승리기여도 색: 100% 이상 짙은 녹색 · 30% 이하 짙은 붉은색 · 사이는 붉은색→노랑→녹색 그라데이션 */
 const anCStyle=s=>{
@@ -512,8 +514,8 @@ function anView(){
   if(st.p1!==null&&st.p1<60)tips.push(`1st 서브 성공률 ${st.p1}% — 60% 이상을 목표로 해보세요`);
   /* 같은 경기를 같이 뛴 선수들과 비교한 강점/보완 + 칭찬·샷 정보를 강점/특징/보완으로 정리 */
   {const gs=new Set(mine.map(e=>e.g)),grp={};
-   flat.filter(e=>gs.has(e.g)).forEach(e=>{const k=e.pid||e.name||"?",o=grp[k]=grp[k]||{me:k===(mine[0]&&(mine[0].pid||mine[0].name)),W:0,U:0,a:0,b:0,n:0};o.W+=e.W;o.U+=e.U;o.a+=(e.s1||[])[0]||0;o.b+=(e.s1||[])[1]||0;o.n++});
-   const P=Object.values(grp).map(o=>({...o,c:o.U?o.W/o.U:(o.W?99:0),p:o.b?o.a/o.b*100:null,w:o.W/o.n,u:o.U/o.n})),me0=P.find(o=>o.me),ot=P.filter(o=>!o.me);
+   flat.filter(e=>gs.has(e.g)).forEach(e=>{const k=e.pid||e.name||"?",o=grp[k]=grp[k]||{me:k===(mine[0]&&(mine[0].pid||mine[0].name)),W:0,U:0,a:0,b:0,n:0,r:[]};o.W+=e.W;o.U+=e.U;if(e.W||e.U)o.r.push(e.U?e.W/e.U:3);o.a+=(e.s1||[])[0]||0;o.b+=(e.s1||[])[1]||0;o.n++});
+   const P=Object.values(grp).map(o=>({...o,c:o.U?o.r.reduce((t,v)=>t+v,0)/o.r.length:(o.W?99:0),p:o.b?o.a/o.b*100:null,w:o.W/o.n,u:o.U/o.n})),me0=P.find(o=>o.me),ot=P.filter(o=>!o.me);
    let peerS="",peerW="";
    if(me0&&ot.length>=2){const avg=f=>ot.reduce((t,o)=>t+f(o),0)/ot.length,r1=v=>String(Math.round(v*10)/10).replace(/\.0$/,"");
      const best=(f,hi)=>ot.every(o=>hi?f(me0)>f(o):f(me0)<f(o)),worst=(f,hi)=>ot.every(o=>hi?f(me0)<f(o):f(me0)>f(o));
@@ -537,7 +539,7 @@ function anView(){
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
   <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
   <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"${st.p1===null?"":` style="border-color:${anP1Col(st.p1)};border-width:2px"`}><b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = Winning ÷ Unforced (100%를 넘으면 득점이 범실보다 많다는 뜻)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 범실 0인 경기는 300%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
@@ -725,7 +727,7 @@ function drillView(){drillMig();const VL=drillVisList();
   <div class="panel" style="margin:10px 0 0"><h3 style="margin:0 0 6px;font-size:15px">👥 클럽 진행 현황 <span class="tag" style="font-size:11px;vertical-align:middle">🏆 마스터 ${masters.length}명</span></h3>${ranks.length?`<ul class="list">${ranks.slice(0,15).map((r,i)=>`<li style="display:block;padding:6px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${i+1}. ${drillGrand(drillTier(r.n,T),18)||(r.n>=DRILL_LIC?"🪪":"")} ${esc(r.m.name)}${r.m.id===me?" (나)":""}</span><span style="color:var(--muted)">확인 ${r.n} / ${T}${r.s>r.n?` · 대기 ${r.s-r.n}`:""}</span></div>${drillBar(r.n,T,drillTier(r.n,T)===3?"linear-gradient(90deg,#facc15,#f59e0b)":"",r.s)}</li>`).join("")}</ul>`:`<p class="empty" style="margin:0">아직 체크한 회원이 없어요. 첫 번째 주인공이 되어보세요!</p>`}</div>
   <p style="margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5">처음엔 7할 힘으로 정확도 먼저, 한 번에 한 스킬씩 15~20분 정도가 좋아요. 합격 기준은 파트너와 함께 세어서 달성했을 때 체크해요. 막대의 노란 부분은 확인 대기 중인 드릴이에요.</p></div></div>`}
 function anGuide(){
-  const gl=[["승리기여도","V","Victory 기여도 = Winning ÷ Unforced × 100%. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
+  const gl=[["승리기여도","V","Victory 기여도 = 경기별 Winning ÷ Unforced × 100%의 평균(경기수로 나눔). 범실이 0인 경기는 300%로 계산해요. 100%를 넘으면 득점(W)이 범실(U)보다 많다는 뜻이에요."],["Winning shot","W","상대가 받아내지 못하고 득점으로 이어진 샷 (에이스·발리·스매싱 등)."],["Unforced error","U","상대의 압박 없이 스스로 범한 실수."],["1st Serve","1st S","첫 서브 성공률. 성공 횟수 ÷ 시도 횟수."],["2nd Serve","2nd S","두 번째 서브 성공률. 첫 서브 실패 후 두 번째 서브의 성공 횟수 ÷ 시도 횟수."]];
   const guide=`<div class="panel"><h2>스탯 설명</h2><dl style="margin:0;font-size:13px;line-height:1.6">${gl.map(([k,ab,d])=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><dt style="flex:none;width:104px;text-align:center;font-weight:800;color:var(--court)">${k}</dt><dd style="flex:none;margin:0;min-width:46px;text-align:center"><span class="tag" style="font-weight:800">${ab}</span></dd><dd style="margin:0">${d}</dd></div>`).join("")}</dl></div>`;
   const cd=[["Fs","Forehand stroke","포핸드 스트로크"],["Bs","Backhand stroke","백핸드 스트로크"],["V","Volley","발리"],["O","Overhead","스매싱"],["P","Passing","패싱샷"],["L","Lob","로브"],["R","Return","리턴"],["S","Short","쇼트"],["A","Ace","에이스"],["Sp","Service point","서브포인트"],["F","Fault","폴트"],["D","Double fault","더블폴트"]];
   const codes=`<h3 style="margin:16px 0 4px;font-size:15px">경기 세부 내역 코드</h3><div style="font-size:13px;line-height:1.5">${cd.map(([a,e,k])=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span class="tag ok" style="flex:none;width:44px;justify-content:center;text-align:center;font-weight:800">${a}</span><span><b>${e}</b> <span style="color:var(--muted)">(${k})</span></span></div>`).join("")}</div>`;
