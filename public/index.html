@@ -464,7 +464,7 @@ function anZoomOpen(id,kind){anZoom={id,kind};render()}
 function anZoomClose(){anZoom=null;render()}
 function anZoomView(){const m=anAll().find(x=>x.id===anZoom.id)||{name:"-"},L=anFlat().filter(e=>e.pid===anZoom.id),tr=anZoom.kind==="trend";
   return `<div class="modal tipc" onclick="anZoomClose()" style="cursor:pointer"><div class="sheet"><div style="padding:6px 0"><h2 style="margin:0">${tr?"📈":"⬡"} ${esc(m.name)} · ${tr?"추이 그래프":"선수 특징"}</h2><div style="font-size:11px;color:var(--muted);margin-top:2px">👆 화면을 다시 누르면 닫혀요</div></div>
-  ${tr?anTrendLegend():`<div style="font-size:12px;color:var(--muted);margin:2px 0 6px">진한 도형 = 최근 5경기, 연한 점선 도형 = 최근 10경기 · 각 축 1~10단계 (포핸드·백핸드·발리·스매싱·리턴은 위닝 비율, 서브는 성공률 기준)</div>`}
+  ${tr?anTrendLegend():`<div style="margin:8px 0 6px;padding:8px 10px;border-radius:10px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.45);font-size:12.5px;line-height:1.5;font-weight:700;color:#92400e;word-break:keep-all">💡 점수가 낮은 스킬은 위닝샷이나 에러가 카운팅이 안 된 것이지, 스킬이 부족한 것을 나타내는 것은 아닙니다.</div><div style="font-size:12px;color:var(--muted);margin:2px 0 6px">진한 도형 = 최근 5경기, 연한 점선 도형 = 최근 10경기 · 각 축 1~10단계 (포핸드·백핸드·발리·스매싱·리턴은 위닝 비율, 서브는 성공률 기준)</div>`}
   <div style="max-width:440px;margin:6px auto">${tr?anTrend(L,1):anRadar(L,1)}</div></div></div>`}
 function anRadar(list,big){
   const {lv,n}=anHexLv(list,5),lv10=anHexLv(list,10).lv,W=130,H=134,cx=65,cy=68,R=36,LR=46,NR=58;
