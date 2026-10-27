@@ -446,10 +446,11 @@ async function anUpload(inp){
 function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&window.scrollTo(0,0)}
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
-function anPick(id,jump){anPid=id;if(jump)anTop=true;render();if(jump)setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),50)}
+let anGid=null;
+function anPick(id,jump){if(id!==anPid)anGid=null;anPid=id;if(jump)anTop=true;render();if(jump)setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),50)}
 function anClose(){anTop=false;render();setTimeout(()=>window.scrollTo({top:0}),50)}
 const anCan=g=>isAdmin()||g.by===me||g.pid===me;
-function anGo(mid){const g=S.matches.find(x=>x.id===mid);const a=g&&anHas(g);if(!a)return;recId=null;const ids=teams(g).flat().filter(Boolean);const mine=ids.includes(me)?me:ids[0];anPid=mine;anTop=true;tab="analysis";render();setTimeout(()=>{const el=document.getElementById("ang-"+a.id);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.style.transition="background .4s";el.style.background="rgba(14,165,233,.25)";setTimeout(()=>{el.style.background=""},1800)}else window.scrollTo({top:0})},80)}
+function anGo(mid){const g=S.matches.find(x=>x.id===mid);const a=g&&anHas(g);if(!a)return;recId=null;const ids=teams(g).flat().filter(Boolean);const mine=ids.includes(me)?me:ids[0];anPid=mine;anGid=a.id;anTop=true;tab="analysis";render();setTimeout(()=>{const el=document.getElementById("ang-"+a.id);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.style.transition="background .4s";el.style.background="rgba(14,165,233,.25)";setTimeout(()=>{el.style.background=""},1800)}else window.scrollTo({top:0})},80)}
 function anHas(g){const ids=teams(g).flat().filter(Boolean);return ids.length>0&&(S.analysis||[]).find(a=>a&&a.rows&&a.date===g.date&&ids.every(id=>a.rows.some(r=>r.pid===id||(r.name&&r.name===mname(id)))))}
 function anGameCard(g,showPid){
   const flat=anFlat().filter(e=>e.g===g&&(!isGuest()||e.pid===me));
@@ -492,8 +493,16 @@ function anView(){
   const flat=anFlat();
   const sel=isGuest()?me:anPid&&anAll().some(m=>m.id===anPid)?anPid:me;anPid=sel;
   const m=anAll().find(x=>x.id===sel)||{name:"-"};
-  const mine=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||""));
+  const mineAll=flat.filter(e=>e.pid===sel).sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g));
+  /* 기본 = 가장 최근 경기. 최근 5경기 중에서 골라 보거나 '전체'로 볼 수 있어요 */
+  const gAll=[...new Set(mineAll.map(e=>e.g))],gRecent=gAll.slice(0,5);
+  const gSel=anGid==="ALL"?"ALL":(gAll.some(g=>g.id===anGid)?anGid:(gAll[0]?gAll[0].id:null));
+  const mine=gSel==="ALL"||!gSel?mineAll:mineAll.filter(e=>e.g.id===gSel);
   const st=anStats(mine);
+  const mdl=d=>{const t=String(d||"").match(/(\d+)-(\d+)-(\d+)/);return t?(+t[2])+"/"+(+t[3]):String(d||"")};
+  const gpick=(()=>{if(gAll.length<2)return"";const show=gRecent.some(g=>g.id===gSel)||gSel==="ALL"?gRecent:[...gRecent,gAll.find(g=>g.id===gSel)].filter(Boolean);
+    const sameDay=g=>gAll.filter(x=>x.date===g.date).reverse(),chip=(on,t1,t2,oc)=>`<button onclick="${oc}" style="flex:none;cursor:pointer;font:inherit;text-align:center;padding:6px 10px;border-radius:12px;line-height:1.25;border:1.5px solid ${on?"#16a34a":"var(--line)"};background:${on?"#16a34a":"var(--surface)"};color:${on?"#fff":"inherit"}"><div style="font-size:13px;font-weight:800">${t1}</div><div style="font-size:11px;opacity:${on?".95":".75"}">${t2}</div></button>`;
+    return `<div class="panel"><h2 style="margin-bottom:4px">분석 볼 경기 고르기</h2><p style="margin:0 0 8px;font-size:12px;color:var(--muted)">처음엔 가장 최근 경기가 열려요. 최근 5경기 중에서 골라 볼 수 있어요.</p><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${show.map((g,i)=>{const sd=sameDay(g),nth=sd.length>1?" ·"+(sd.indexOf(g)+1):"",e=mineAll.find(x=>x.g===g);return chip(gSel===g.id,(i===0&&g===gAll[0]?"최근 ":"")+mdl(g.date)+nth,"기여도 "+anC(anStats([e])),`anGid='${g.id}';render()`)}).join("")}${chip(gSel==="ALL","전체",gAll.length+"경기 평균","anGid='ALL';render()")}</div></div>`})();
   const cnt=id=>flat.filter(e=>e.pid===id).length;
   const head=`<div class="panel" id="anDetail" style="scroll-margin-top:70px"><h2>경기 분석</h2><div class="row"><label>선수<select onchange="anPick(this.value,1)">${anAll().map(x=>`<option value="${x.id}"${x.id===sel?" selected":""}>${esc(x.name)}${cnt(x.id)?" ("+cnt(x.id)+"경기)":""}</option>`).join("")}</select></label></div>${isAdmin()?`<div style="margin-top:10px"><label class="btn" style="display:inline-block;cursor:pointer">📄 엑셀 업로드<input type="file" accept=".xlsx,.xls" multiple hidden onchange="anUpload(this)"></label><span style="margin-left:8px;font-size:12px;color:var(--muted)">경기 분석 양식(.xlsx) · 여러 개 선택 가능</span></div>${anMsg?`<p style="margin:8px 0 0;font-size:13px;color:var(--court)">${esc(anMsg)}</p>`:""}${anManageView()}`:""}</div>`;
   const form=anForm?anFormView(sel):"";
@@ -537,14 +546,14 @@ function anView(){
    if(peerW)out.push("보완: "+peerW);
    if(shotW&&shotW!==peerW)out.push("보완: "+shotW);
    tips.unshift(...out)}
-  const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${st.n}경기</span></h2>
+  const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${gSel==="ALL"||!gSel||gAll.length<2?st.n+"경기":mdl((gAll.find(g=>g.id===gSel)||{}).date)+" 경기"}</span></h2>
   <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
   <div class="stats stats3" style="margin-top:8px"><div class="stat"><b>${st.net>0?"+":""}${st.net}</b><span>순기여(위너−범실)</span></div><div class="stat"${st.p1===null?"":` style="border-color:${anP1Col(st.p1)};border-width:2px"`}><b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span></div><div class="stat"><b>${st.p2===null?"-":st.p2+"%"}</b><span>2nd 서브</span></div></div>
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 범실 0인 경기는 300%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
-    return back+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
+    return back+gpick+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
   /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
   return isAdmin()?(isGuest()?"":head+form)+anRank(flat)+anGuide():anRank(flat)+(isGuest()?"":head+form)+anGuide();
 }
