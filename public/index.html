@@ -448,6 +448,13 @@ function anEdit(id){anForm=true;anEditId=id;anErr="";render();window.scrollTo&&w
 function anAskDel(id){anDelId=id;render()}
 function anDel(id){anDelId=null;S.analysis=(S.analysis||[]).filter(r=>r.id!==id);save();render()}
 let anGid=null,anHeadOpen=false,drillSetOpen=false;
+/* 선수별 세부 분석창 접기: 제목을 누르면 접고/펼침, 위의 '모두 닫기'로 한 번에 */
+let anSec={s:1,b:1,l:1};
+function anFold(k,p){if(!p||!p.endsWith("</div>")||p.indexOf("</h2>")<0)return p;const i=p.indexOf("</h2>"),pre='<div class="panel">';
+  const head=p.slice(pre.length,i+5).replace("<h2>",'<h2 style="margin:0;display:flex;justify-content:space-between;align-items:center;gap:6px">').replace("</h2>",'<span style="font-size:12px;color:var(--muted);font-weight:400;flex:none">'+(anSec[k]?"접기 ▴":"펼치기 ▾")+"</span></h2>");
+  return pre+`<details ${anSec[k]?"open":""} ontoggle="anSec['${k}']=this.open?1:0;anFoldBtn()"><summary style="cursor:pointer;list-style:none">${head}</summary><div style="margin-top:8px">${p.slice(i+5,-6)}</div></details></div>`}
+function anFoldBtn(){const b=document.getElementById("anAllBtn");if(b)b.textContent=(anSec.s||anSec.b||anSec.l)?"모두 닫기":"모두 열기"}
+function anSecAll(){const op=!(anSec.s||anSec.b||anSec.l);anSec={s:op?1:0,b:op?1:0,l:op?1:0};render()}
 /* 선수 특징 6각형(포핸드·백핸드·발리·스매싱·서브·리턴) — 최근 5경기 기준, 각 축 1~10단계 */
 const AN_HEX=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["sv","서브"],["R","리턴"]];
 function anHexLv(list,N){N=N||5;
@@ -613,8 +620,8 @@ function anView(){
   <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
-  if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button>`;
-    return back+gpick+sum+list+bars+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
+  if(anTop){const back=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn ghost" style="flex:1" onclick="anClose()">▲ 접기 (선수별 비교로 돌아가기)</button><button class="btn ghost" id="anAllBtn" style="flex:none" onclick="anSecAll()">${anSec.s||anSec.b||anSec.l?"모두 닫기":"모두 열기"}</button></div>`;
+    return back+gpick+anFold("s",sum)+anFold("l",list)+anFold("b",bars)+(isAdmin()?(isGuest()?"":head+form)+anRank(flat):anRank(flat)+(isGuest()?"":head+form))+anGuide()}
   /* 접힌 상태: 선수별 비교(+업로드/입력 도구)만 표시, 상세는 이름을 눌렀을 때만 위쪽에 펼침 */
   return isAdmin()?(isGuest()?"":head+form)+anRank(flat)+anGuide():anRank(flat)+(isGuest()?"":head+form)+anGuide();
 }
