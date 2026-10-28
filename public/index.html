@@ -814,7 +814,8 @@ function anPhaseView(p){
   const cell=([k,l,r])=>{const [w,u]=p.t[k],s={contrib:u?Math.round(w/u*100):null,inf:!u&&w>0};
     const bc=(s.inf||(s.contrib!==null&&s.contrib>=100))?"#14633a":s.contrib===null?"":s.contrib<=30?"#a31919":`hsl(${Math.round(Math.min(1,(s.contrib-30)/50)*120)} 55% 48%)`;   /* 구간 승리기여도에 따른 테두리색(배지 색과 같은 기준) */
     return `<div class="stat"${bc?` style="border:2.5px solid ${bc}"`:""}><b style="font-size:15px">${w+u?`<span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(s)}">${anC(s)}</span>`:"-"}</b><span>${l}<br><small style="font-size:10px">${r}</small></span><span style="font-size:11px">W ${w} · U ${u}</span></div>`};
-  const msg=p.strong?`<b style="color:#14633a">${nm(p.strong)}</b>에 강하고 <b style="color:#a31919">${nm(p.weak)}</b>에 약해요`:"구간별 편차가 크지 않아요";
+  const act=AN_PH.map(x=>p.t[x[0]]).filter(t=>t[0]+t[1]>0),allG=act.length>1&&act.every(t=>t[1]?t[0]/t[1]>=1:true);   /* 기록 있는 구간이 모두 초록(기여도 100%↑)이면 약세 구간도 사실은 높은 편 → '상대적으로' */
+  const msg=p.strong?`<b style="color:#14633a">${nm(p.strong)}</b>에 강하고 ${allG?"상대적으로 ":""}<b style="color:#a31919">${nm(p.weak)}</b>에 약해요`:"구간별 편차가 크지 않아요";
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">구간별 분석 <span style="font-weight:400;font-size:11px;color:var(--muted)">(승리기여도 · 테두리색 = 승리기여도, 초록 높음 / 빨강 낮음)</span></div><div class="stats stats3">${AN_PH.map(cell).join("")}</div><p style="margin:6px 0 0;font-size:13px">${msg}</p></div>`;
 }
 /* 시간순(엑셀 위→아래) 흐름: 같은 종류가 3번 이상 연달아 나오면 "몰림". 범실(주황)=위축, 위닝(초록)=안정감·숙련도 */
