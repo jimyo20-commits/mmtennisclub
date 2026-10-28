@@ -1680,7 +1680,7 @@ function navMore(d){const n=document.getElementById("nav");if(n)n.scrollBy({left
 function render(){
   const u=S.members.find(m=>m.id===me)||(isGuest()?(S.guests||[]).find(g=>g.id===me):null);
   $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u&&!isGuest()?"":"none";$("#who").innerHTML=u?`${esc(u.name)}님${isGuest()?" (게스트)":""}${isAdmin()?" · 운영자":""} ${isGuest()?"":`<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button>`}<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
-  if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML=exitOpen?exitView():"";return}
+  if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML="";return}
   const tabs=isGuest()?TABS.filter(([k])=>["home","club","matches","analysis"].includes(k)):TABS.filter(([k])=>isAdmin()||!["members","dues"].includes(k));
   if(!tabs.some(([k])=>k===tab))tab=tabs[0][0];
   $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
@@ -1698,7 +1698,6 @@ function render(){
   else if(guestView)$("#modal").innerHTML=guestCardView();
   else if(teamOpen)$("#modal").innerHTML=teamView();
   else if(tipModal>=0)$("#modal").innerHTML=tipView();   else if(buyPid)$("#modal").innerHTML=buyView();   else if(delGuestId)$("#modal").innerHTML=delGuestView(); else if(delMatchId)$("#modal").innerHTML=delMatchView();
-  if(exitOpen)$("#modal").innerHTML=exitView();
   const ns=document.querySelector(".sheet");if(ns)ns.scrollTop=st;
   setSyncStatus();
   if(!bkAuto&&isAdmin()){bkAuto=true;const l=bkList();if(!l.length||l[0].ts<lastMonday()){if(makeBackup(true))render()}}
@@ -1811,16 +1810,6 @@ $("#view").innerHTML='<p class="empty" style="padding:40px 0;text-align:center">
 syncInit().catch(()=>false).then(boot);
 setInterval(tickRem,30000);
 try{if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
-/* 뒤로가기 → 바로 종료되지 않고 "앱을 종료하시겠습니까?" 확인창 */
-let exitOpen=false,exitTrap=true;
-function exitView(){return `<div class="modal tipc" onclick="if(event.target===this)exitNo()"><div class="sheet"><h2 style="margin:0 0 10px">앱 종료</h2><p style="margin:0;font-size:15px">앱을 종료하시겠습니까?</p><div class="row" style="margin-top:16px;gap:8px"><button class="btn del" style="flex:1" onclick="exitYes()">종료</button><button class="btn off" style="flex:1" onclick="exitNo()">취소</button></div></div></div>`}
-function exitNo(){exitOpen=false;render()}
-function exitYes(){exitTrap=false;exitOpen=false;render();
-  /* 설치형 앱(홈 화면 추가)은 창을 닫고, 일반 브라우저 탭처럼 닫기가 막히면 빈 화면으로 이동해 앱 화면이 남지 않게 함 */
-  try{window.close()}catch(e){}
-  setTimeout(()=>{try{location.replace("about:blank")}catch(e){try{history.go(-2)}catch(e2){}}},250)}
-try{history.replaceState({mm:1},"");history.pushState({mm:2},"");
-  window.addEventListener("popstate",()=>{if(!exitTrap)return;history.pushState({mm:2},"");exitOpen=!exitOpen;render()})}catch(e){}
 setInterval(tickTips,2000);
 </script>
 </body>
