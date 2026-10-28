@@ -155,6 +155,8 @@ if(!seeded){
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}syncKick()};
 let me=null;try{me=localStorage.getItem(KEY+"-user")}catch(e){}
+/* 운영자는 자동 로그인하지 않음: 저장된 로그인이 운영자 계정이면 지우고 비밀번호를 다시 입력하게 함 */
+try{const u0=S.members.find(m=>m.id===me);if(u0&&(u0.name==="윤준식"||u0.admin)){me=null;localStorage.removeItem(KEY+"-user")}}catch(e){}
 /* 게스트 로그인: 회원이 아닌 등록 게스트(전화번호 뒷 4자리)는 분석 탭만 볼 수 있음 */
 const isGuest=()=>!!me&&!S.members.some(m=>m.id===me)&&(S.guests||[]).some(g=>g.id===me);
 const isAdmin=()=>{const u=S.members.find(m=>m.id===me);return !!u&&(u.name==="윤준식"||u.admin)};
@@ -1222,7 +1224,7 @@ function savePhone(id){const m=S.members.find(x=>x.id===id);const e=document.get
   if(v&&lastDigits(v).length<4){const er=document.getElementById("phe");if(er)er.textContent="끝 4자리를 모두 입력하세요. (가운데 4자리는 입력하지 않습니다)";return}
   m.phone=v;phoneEditId=null;save();render()}
 function loginView(){return `<div class="panel" style="max-width:420px;margin:10px auto"><h2>로그인</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>비밀번호 <span style="font-weight:400">(처음에는 전화번호 뒷 4자리)</span><input id="lgp" type="password" inputmode="numeric" maxlength="8" autocomplete="off" onkeydown="if(event.key==='Enter')login()"></label><button class="btn" onclick="login()">로그인</button></div><div id="lgc"></div><p id="lge" style="color:var(--bad);min-height:22px;margin:10px 0 0"></p><p class="empty" style="margin:0">운영자(윤준식)는 처음 한 번, 사용할 4자리를 입력하고 <a href="#" onclick="adminSetup();return false">여기</a>를 눌러 등록하세요.</p></div>`}
-function pick(id){me=id;voter=id;const gu=isGuest();tab="home";showVote=!gu;try{localStorage.setItem(KEY+"-user",me)}catch(e){}render()}
+function pick(id){me=id;voter=id;const gu=isGuest();tab="home";showVote=!gu;try{const u1=S.members.find(m=>m.id===me);if(u1&&(u1.name==="윤준식"||u1.admin))localStorage.removeItem(KEY+"-user");else localStorage.setItem(KEY+"-user",me)}catch(e){}render()}
 async function login(){const ent=$("#lgp").value.trim();
   if(typeof SYNC!=="undefined"&&SYNC.on){$("#lge").textContent="확인 중…";try{await syncPull()}catch(e){}$("#lge").textContent=""}   // 다른 기기에서 바꾼 비밀번호도 바로 적용되도록 최신 데이터를 먼저 받아옵니다
   if(!/^\d{4,8}$/.test(ent)){$("#lge").textContent="비밀번호(숫자 4~8자리)를 입력하세요.";return}
