@@ -595,6 +595,11 @@ function anView(){
    const feat=praise&&peerS?peerS:(main!==shotS?shotS:"");if(feat)out.push("특징: "+feat);
    if(peerW)out.push("보완: "+peerW);
    if(shotW&&shotW!==peerW)out.push("보완: "+shotW);
+   /* 이어지는 두 구간 이상 승리기여도가 100%에 못 미치면 집중력을 올려 보라는 팁(문구 3가지 중 경기 정보로 선택) */
+   {const ph2=anPhase(mine);if(ph2){const seq=AN_PH.map(x=>ph2.t[x[0]]),lo=seq.map(t=>t[0]+t[1]>0&&t[1]>0&&t[0]/t[1]<1);let run=0,mx=0;lo.forEach((b,i)=>{if(b){run++;mx=Math.max(mx,run)}else if(seq[i][0]+seq[i][1]>0)run=0});
+     if(mx>=2){let hq=7;for(const ch of String(m.id||"")+"|"+st.W+"|"+st.U+"|"+mine.length)hq=(hq*31+ch.charCodeAt(0))>>>0;
+       const FT=["구간이 이어서 기여도가 100%에 못 미쳤어요 — 흐름이 떨어질 때일수록 한 포인트 한 포인트에 집중력을 끌어올려 보세요","연속된 구간에서 에러가 위닝보다 많았어요 — 포인트 사이에 숨을 고르고 다음 공에 집중해 보세요","한번 흐트러지면 이어지기 쉬워요 — 포인트 사이 루틴을 정해 두고 집중력을 다시 모아 보세요"];
+       out.push("팁: "+FT[hq%3])}}}
    /* 약한 구간이 있으면(모든 구간이 100%↑가 아닐 때) 약 10% 확률로, 가장 많은 에러 형태에 맞춰 포지셔닝을 생각해 보라는 팁 */
    {const ph1=anPhase(mine);if(ph1&&ph1.weak&&cm.length){const act=AN_PH.map(x=>ph1.t[x[0]]).filter(t=>t[0]+t[1]>0),allG=act.length>1&&act.every(t=>t[1]?t[0]/t[1]>=1:true);
      let hp=2166136261;for(const ch of String(m.id||"")+"|"+st.W+"|"+st.U+"|"+mine.length+"|"+(mine[0]&&mine[0].g.date||""))hp=Math.imul(hp^ch.charCodeAt(0),16777619)>>>0;hp=(hp^(hp>>>15))>>>0;
