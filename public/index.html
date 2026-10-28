@@ -595,6 +595,12 @@ function anView(){
    const feat=praise&&peerS?peerS:(main!==shotS?shotS:"");if(feat)out.push("특징: "+feat);
    if(peerW)out.push("보완: "+peerW);
    if(shotW&&shotW!==peerW)out.push("보완: "+shotW);
+   /* 약한 구간이 있으면(모든 구간이 100%↑가 아닐 때) 약 10% 확률로, 가장 많은 에러 형태에 맞춰 포지셔닝을 생각해 보라는 팁 */
+   {const ph1=anPhase(mine);if(ph1&&ph1.weak&&cm.length){const act=AN_PH.map(x=>ph1.t[x[0]]).filter(t=>t[0]+t[1]>0),allG=act.length>1&&act.every(t=>t[1]?t[0]/t[1]>=1:true);
+     let hp=2166136261;for(const ch of String(m.id||"")+"|"+st.W+"|"+st.U+"|"+mine.length+"|"+(mine[0]&&mine[0].g.date||""))hp=Math.imul(hp^ch.charCodeAt(0),16777619)>>>0;hp=(hp^(hp>>>15))>>>0;
+     const tu=AN_U.map(([c,l])=>[c,l,code("u",c)]).sort((a,b)=>b[2]-a[2])[0];
+     if(!allG&&(hp>>>3)%10===0&&tu&&tu[2]>0){const PT={Fs:"포핸드 범실이 많아요 — 공을 칠 때 몸과 공 사이의 거리, 발 위치(포지셔닝)를 한 번 생각해 보세요",Bs:"백핸드 범실이 많아요 — 공을 칠 때 몸과 공 사이의 거리, 발 위치(포지셔닝)를 한 번 생각해 보세요",V:"발리 범실이 많아요 — 네트 앞에서 서는 위치(포지셔닝)와 공을 맞이하는 거리를 생각해 보세요",O:"스매싱 범실이 많아요 — 낙하 지점을 먼저 잡는 포지셔닝을 생각해 보세요",L:"로브 범실이 많아요 — 공격한 뒤 내가 서 있던 위치(포지셔닝)와 상대 위치를 함께 생각해 보세요",R:"리턴 범실이 많아요 — 리턴 대기 위치(포지셔닝)를 서버 스타일에 맞게 점검해 보세요",P:"패싱 범실이 많아요 — 상대 네트 플레이어의 위치(포지셔닝)를 보고 코스를 정해 보세요",S:"쇼트볼 범실이 많아요 — 앞으로 들어가는 타이밍과 위치(포지셔닝)를 생각해 보세요",F:"서브 폴트가 많아요 — 서브 시작 위치와 토스 위치(포지셔닝)를 점검해 보세요",D:"더블폴트가 많아요 — 서브 시작 위치와 토스 위치(포지셔닝)를 점검해 보세요"};
+       out.push("팁: "+(PT[tu[0]]||"에러 형태에 맞춰 내 위치(포지셔닝)를 한 번 생각해 보세요"))}}}
    tips.unshift(...out)}
   const sum=`<div class="panel"><h2>${nameR(m)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${gSel==="ALL"||!gSel||gAll.length<2?st.n+"경기":mdl((gAll.find(g=>g.id===gSel)||{}).date)+" 경기"}</span></h2>
   <div class="stats stats3"><div class="stat"><b>${anC(st)}</b><span>승리기여도</span></div><div class="stat"><b>${st.W}</b><span>Winning</span></div><div class="stat"><b>${st.U}</b><span>Unforced</span></div></div>
