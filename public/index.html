@@ -1815,7 +1815,10 @@ try{if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").ca
 let exitOpen=false,exitTrap=true;
 function exitView(){return `<div class="modal tipc" onclick="if(event.target===this)exitNo()"><div class="sheet"><h2 style="margin:0 0 10px">앱 종료</h2><p style="margin:0;font-size:15px">앱을 종료하시겠습니까?</p><div class="row" style="margin-top:16px;gap:8px"><button class="btn del" style="flex:1" onclick="exitYes()">종료</button><button class="btn off" style="flex:1" onclick="exitNo()">취소</button></div></div></div>`}
 function exitNo(){exitOpen=false;render()}
-function exitYes(){exitTrap=false;exitOpen=false;render();try{window.close()}catch(e){}try{history.go(-2)}catch(e){}}
+function exitYes(){exitTrap=false;exitOpen=false;render();
+  /* 설치형 앱(홈 화면 추가)은 창을 닫고, 일반 브라우저 탭처럼 닫기가 막히면 빈 화면으로 이동해 앱 화면이 남지 않게 함 */
+  try{window.close()}catch(e){}
+  setTimeout(()=>{try{location.replace("about:blank")}catch(e){try{history.go(-2)}catch(e2){}}},250)}
 try{history.replaceState({mm:1},"");history.pushState({mm:2},"");
   window.addEventListener("popstate",()=>{if(!exitTrap)return;history.pushState({mm:2},"");exitOpen=!exitOpen;render()})}catch(e){}
 setInterval(tickTips,2000);
