@@ -1819,6 +1819,15 @@ $("#view").innerHTML='<p class="empty" style="padding:40px 0;text-align:center">
 syncInit().catch(()=>false).then(boot);
 setInterval(tickRem,30000);
 try{if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
+/* 뒤로가기: 앱에서 바로 나가지 않고, 열려 있는 창(팝업)을 위에서부터 하나씩 닫음. 닫을 창이 없으면 분석 상세 → 접기, 그 외에는 그대로 둠 */
+function backClose(){
+  if(pwOpen){pwOpen=false}else if(anZoom){anZoom=null}else if(licOn){licOn=false}else if(drillGuideOn){drillGuideOn=false}else if(drillOn){drillOn=false}
+  else if(recId){recId=null}else if(profileId){profileId=null}else if(guestView){guestView=null}else if(teamOpen){teamOpen=false;teamEditId=null}
+  else if(tipModal>=0){tipDelId=null;tipModal=-1;tipEditId=null}else if(buyPid){buyPid=null}else if(delGuestId){delGuestId=null}else if(delMatchId){delMatchId=null}
+  else if(showVote){showVote=false}else if(anTop&&tab==="analysis"){anTop=false}else return false;
+  render();return true}
+try{history.replaceState({mm:1},"");history.pushState({mm:2},"");
+  window.addEventListener("popstate",()=>{history.pushState({mm:2},"");try{backClose()}catch(e){}})}catch(e){}
 setInterval(tickTips,2000);
 </script>
 </body>
