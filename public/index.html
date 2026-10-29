@@ -1819,15 +1819,22 @@ $("#view").innerHTML='<p class="empty" style="padding:40px 0;text-align:center">
 syncInit().catch(()=>false).then(boot);
 setInterval(tickRem,30000);
 try{if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
-/* 뒤로가기: 앱에서 바로 나가지 않고, 열려 있는 창(팝업)을 위에서부터 하나씩 닫음. 닫을 창이 없으면 분석 상세 → 접기, 그 외에는 그대로 둠 */
+/* 뒤로가기: 열린 창(팝업)을 위에서부터 하나씩 닫고, 분석 상세 접기 → 다른 탭이면 메인(홈) 화면으로. 메인 화면에서 한 번 더 누르면 앱 종료.
+   창/탭이 열릴 때(사용자가 누른 순간)마다 브라우저 기록을 한 칸씩 쌓고, 닫히면 그만큼 되돌려서 기록 수와 화면 단계를 맞춤 */
+function layerCount(){if(!me)return 0;return (tab!=="home"?1:0)+(showVote?1:0)+(anTop&&tab==="analysis"?1:0)+[pwOpen,anZoom,licOn,drillGuideOn,drillOn,recId,profileId,guestView,teamOpen,tipModal>=0,buyPid,delGuestId,delMatchId].filter(Boolean).length}
 function backClose(){
   if(pwOpen){pwOpen=false}else if(anZoom){anZoom=null}else if(licOn){licOn=false}else if(drillGuideOn){drillGuideOn=false}else if(drillOn){drillOn=false}
   else if(recId){recId=null}else if(profileId){profileId=null}else if(guestView){guestView=null}else if(teamOpen){teamOpen=false;teamEditId=null}
   else if(tipModal>=0){tipDelId=null;tipModal=-1;tipEditId=null}else if(buyPid){buyPid=null}else if(delGuestId){delGuestId=null}else if(delMatchId){delMatchId=null}
-  else if(showVote){showVote=false}else if(anTop&&tab==="analysis"){anTop=false}else return false;
-  render();return true}
-try{history.replaceState({mm:1},"");history.pushState({mm:2},"");
-  window.addEventListener("popstate",()=>{history.pushState({mm:2},"");try{backClose()}catch(e){}})}catch(e){}
+  else if(showVote){showVote=false}else if(anTop&&tab==="analysis"){anTop=false}else if(tab!=="home"){tab="home"}else return false;
+  return true}
+let histD=0,histBusy=false;
+function histSync(){try{const d=layerCount();
+  if(d>histD){for(let i=histD;i<d;i++)history.pushState({mm:i+1},"");histD=d}
+  else if(d<histD&&!histBusy){const n=histD-d;histD=d;histBusy=true;history.go(-n);setTimeout(()=>{histBusy=false},400)}}catch(e){}}
+try{const _render=render;render=function(){_render.apply(this,arguments);histSync()};
+  window.addEventListener("popstate",()=>{if(histBusy){histBusy=false;return}
+    histD=Math.max(0,histD-1);try{if(backClose())_render()}catch(e){}histSync()})}catch(e){}
 setInterval(tickTips,2000);
 </script>
 </body>
