@@ -1453,11 +1453,12 @@ function recoCalc0(){
     if(key(games[0])===key(games[1]))games[1]=splits(wins[best.b].g)[1]}
   return{u,ps,games,rate,shown}}
 let recoAsk=false;
-function recoRedo(){if(!isAdmin())return;const u=upcoming()[0];if(!u)return;const ds=u.ds;
+const recoRedoOk=u=>voteClosed(u.ds)&&Date.now()<new Date(u.ds+"T"+u.s.start+":00").getTime()&&!((S.recoSeed||{})[u.ds]>0);   // 투표 마감 후 ~ 경기 시작 전, 단 한 번만
+function recoRedo(){if(!isAdmin())return;const u=upcoming()[0];if(!u||!recoRedoOk(u))return;const ds=u.ds;
   if((S.matches||[]).some(x=>x.bonus&&x.date===ds)){alert("이미 추천매치로 입력된 경기가 있어서 다시 짤 수 없어요.");return}
   if(!recoAsk){recoAsk=true;render();return}
   recoAsk=false;if(!S.recoSeed)S.recoSeed={};S.recoSeed[ds]=(S.recoSeed[ds]||0)+1;if(S.recoFix)delete S.recoFix[ds];save();render()}
-const recoRedoBtn=u=>isAdmin()&&voteClosed(u.ds)?`<button class="btn ${recoAsk?"":"ghost"}" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedo()">${recoAsk?"⚠️ 정말 다시 짤까요? 한 번 더 누르면 지금 투표 기준으로 새로 짜요":"🔄 최종 투표로 추천매치 다시 짜기 (운영자)"}</button>`:"";
+const recoRedoBtn=u=>isAdmin()&&voteClosed(u.ds)?(!recoRedoOk(u)?`<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">${(S.recoSeed||{})[u.ds]>0?"🔄 최종 투표 반영 재구성은 이미 한 번 사용했어요":"🔄 최종 투표 반영 재구성은 경기 시작 전까지만 가능해요"}</p>`:`<button class="btn ${recoAsk?"":"ghost"}" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedo()">${recoAsk?"⚠️ 정말 다시 짤까요? 한 번 더 누르면 지금 투표 기준으로 새로 짜요 (단 한 번만 가능)":"🔄 최종 투표로 추천매치 다시 짜기 (운영자 · 단 1회)"}</button>`):"";
 function recoPanel(){
   const c=recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
