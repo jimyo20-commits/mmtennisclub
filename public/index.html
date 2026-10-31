@@ -1423,23 +1423,16 @@ function recoKey(a,b){return [[...a].sort().join(),[...b].sort().join()].sort().
 /* 참석 투표가 마감되면(경기 1시간 전) 그날 추천 2게임을 저장해 고정합니다. 마감 뒤에는 투표 "참석"한 사람만 기준이라 출석 체크로 바뀌지 않습니다 */
 const recoSnap=g=>g.map(gm=>({A:gm.A.map(m=>m.id),B:gm.B.map(m=>m.id),diff:gm.diff}));
 function recoCalc(){let c=recoCalc0();
-  if(c){const ds=c.u.ds;if(!S.recoFix)S.recoFix={};if(!S.recoChg)S.recoChg={};
-    const hasBonus=(S.matches||[]).some(x=>x.bonus&&x.date===ds);
-    const rev=Date.now()>=new Date(ds+"T"+c.u.s.start+":00").getTime()-86400000;
-    const fx=S.recoFix[ds];
-    if(fx&&rev&&!voteClosed(ds)&&!S.recoChg[ds]&&!hasBonus){   // 공개 후 불참자가 생기면 딱 한 번만 다시 짠다
-      const v=S.votes[ds]||{};const ids=[].concat(...fx.map(g=>g.A.concat(g.B)));
-      if(ids.some(id=>v[id]!=="yes")){const keep=fx;delete S.recoFix[ds];const c2=recoCalc0();
-        if(c2&&c2.games){S.recoFix[ds]=recoSnap(c2.games);S.recoChg[ds]=true;setTimeout(()=>{try{save()}catch(e){}},0);return c2}
-        S.recoFix[ds]=keep}}
-    if(c.games&&(voteClosed(ds)||rev)&&!S.recoFix[ds]){S.recoFix[ds]=recoSnap(c.games);setTimeout(()=>{try{save()}catch(e){}},0)}}
+  if(c){const ds=c.u.ds;if(!S.recoFix)S.recoFix={};
+    if(c.games&&voteClosed(ds)&&!S.recoFix[ds]){S.recoFix[ds]=recoSnap(c.games);setTimeout(()=>{try{save()}catch(e){}},0)}}   // 투표 마감(경기 1시간 전) 때 출석 인원으로 짜서 고정
   return c}
 function recoCalc0(){
   const u=upcoming()[0];if(!u)return null;
   const st=stats(),v=S.votes[u.ds]||{},at=S.attend[u.ds]||{},closed=voteClosed(u.ds);
-  const ps=S.members.filter(m=>v[m.id]==="yes"||(!closed&&at[m.id]));
+  const ps=S.members.filter(m=>v[m.id]==="yes");
   const rate=m=>{const s=st[m.id]||{w:0,l:0};return (s.w+1)/(s.w+s.l+2)};      // 기록이 적으면 50%쪽으로 보정
   const shown=m=>{const s=st[m.id]||{w:0,l:0};return s.w+s.l?Math.round(s.w/(s.w+s.l)*100)+"%":"기록 없음"};
+  if(!closed)return{u,ps,games:null,rate,shown,pending:true};
   const fx=S.recoFix&&S.recoFix[u.ds];   // 당일 추천게임 경기가 입력되면 그날 추천 2게임을 고정
   if(fx){const mm=id=>S.members.find(x=>x.id===id);const gm=fx.map(g=>({A:g.A.map(mm),B:g.B.map(mm),diff:g.diff||0}));
     if(gm.every(g=>g.A.concat(g.B).every(Boolean)))return{u,ps,games:gm,rate,shown}}
@@ -1462,9 +1455,8 @@ function recoCalc0(){
 function recoPanel(){
   const c=recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
-  {const st=new Date(u.ds+"T"+u.s.start+":00").getTime(),op=st-86400000;
-   if(Date.now()<op){const od=new Date(op);const ot=`${od.getMonth()+1}/${od.getDate()} (${DAYS[od.getDay()]}) ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))}`;
-   return `<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 경기</p><div style="text-align:center;padding:14px 8px 10px"><div style="font-size:34px;line-height:1">🎁</div><div style="font-weight:800;margin-top:8px">대진표는 아직 비밀이에요!</div><div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7">누구랑 붙을지 궁금하죠? 🎾<br>경기 하루 전, <b style="color:#16a34a">${ot}</b>에 짠~ 하고 공개됩니다.<br>그 전에 참석 투표 먼저 해두세요 😉</div></div></div>`}}
+  if(!voteClosed(u.ds)){const od=deadline(u.ds),ot=`${od.getMonth()+1}/${od.getDate()} (${DAYS[od.getDay()]}) ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))}`;
+   return `<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 경기</p><div style="text-align:center;padding:14px 8px 10px"><div style="font-size:34px;line-height:1">🎁</div><div style="font-weight:800;margin-top:8px">대진표는 아직 비밀이에요!</div><div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7">누구랑 붙을지 궁금하죠? 🎾<br>경기 1시간 전, 출석 투표가 마감되는 <b style="color:#16a34a">${ot}</b>에<br>출석한 인원으로 짠~ 하고 공개됩니다.<br>그 전에 참석 투표 먼저 해두세요 😉</div></div></div>`}
   const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 4점 · 패 2점${voteClosed(u.ds)?" · 투표 마감으로 고정":""}</p>${b}</div>`;
   if(!games)return wrap(`<p class="empty">참석자가 4명 이상 모이면 승률이 비슷한 사람끼리 2게임을 추천해요.</p>`);
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${shown(m)}</small></span>`;
