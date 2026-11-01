@@ -1475,7 +1475,7 @@ function recoGender(ps,rate,seed){
     const rs=g.map(rate),spread=Math.max(...rs)-Math.min(...rs);
     for(const sp of sps){const A=sp[0].map(i=>g[i]),B=sp[1].map(i=>g[i]);
       const tOk=t=>t.filter(m=>gdOf(m)==="남").length<=1&&t.filter(m=>gdOf(m)==="여").length<=1;
-      const bal=(M===0||F===0)||(M<=2&&F<=2&&tOk(A)&&tOk(B)),pen=bal?0:(M+F===4&&Math.abs(M-F)>=2?0.25:0.4);
+      const bal=(M===0||F===0)||(M<=2&&F<=2&&tOk(A)&&tOk(B)),pen=bal?((M===0||F===0)?0:0.06):(M+F===4?0.4:0.1);
       const diff=Math.abs(A.reduce((t,m)=>t+rate(m),0)-B.reduce((t,m)=>t+rate(m),0))/2;
       let fun=0;A.forEach(a=>B.forEach(b=>{fun+=0.015*lop(a,b)-0.005*rival(a,b)}));fun+=0.01*(syn(A[0],A[1])+syn(B[0],B[1]));
       const mix=recoMix(A,B,rate);cands.push({A,B,diff,mix,cost:(mix?diff+0.04:spread+diff)+pen+fun+0.01*g.reduce((t,m)=>t+rc(m),0)+rnd()*0.002})}}
@@ -1564,7 +1564,7 @@ function recoPanel(){
       if(best){const r=H.opp[best.b.id+"|"+best.a.id];parts.push(`상대전적 ${esc(best.a.name)} ${best.o.w}승 ${r?r.w:0}패 ${esc(best.b.name)}`)}
       if(!(H.par[g.A[0].id+"|"+g.A[1].id])||!(H.par[g.B[0].id+"|"+g.B[1].id]))parts.push("처음 호흡을 맞추는 조합 포함");
       return parts.length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">💡 ${parts.join(" · ")}</div>`:""})()}${recoGBtn(u,i,g)}</li>`}).join("");
-  return wrap(`<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">승률이 비슷한 참석자끼리 묶고, 두 팀 전력이 비슷하도록 나눴어요. (기록이 적은 사람은 50% 쪽으로 보정) 승률이 비슷하면 추천게임에 덜 뽑힌 분을 먼저, 상대전적이 일방적이지 않은 맞대결과 새 파트너 조합을 이왕이면 골랐고, 팀 구성은 두 팀의 평균 승률이 비슷하도록, 실력 구성이 서로 다른 팀끼리 또는 비슷한 실력끼리 팀 중에서 무작위로 골랐어요.${c.gender?" 남녀가 섞이면 각 팀이 남녀 한 명씩(혼합복식)이 되도록 우선해서 짰어요. 남녀 2:2가 아닌 조합은 어쩔 수 없이 한 팀이 치우칠 수 있어요.":""}</p></details>`)}
+  return wrap(`<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">승률이 비슷한 참석자끼리 묶고, 두 팀 전력이 비슷하도록 나눴어요. (기록이 적은 사람은 50% 쪽으로 보정) 승률이 비슷하면 추천게임에 덜 뽑힌 분을 먼저, 상대전적이 일방적이지 않은 맞대결과 새 파트너 조합을 이왕이면 골랐고, 팀 구성은 두 팀의 평균 승률이 비슷하도록, 실력 구성이 서로 다른 팀끼리 또는 비슷한 실력끼리 팀 중에서 무작위로 골랐어요.${c.gender?" 남자복식·여자복식을 가장 우선하고, 남녀가 섞이면 양 팀이 남녀 한 명씩인 혼합복식으로 짰어요. 남남 대 남녀처럼 한 팀만 성별이 섞인 대진은 가능하면 피했어요.":""}</p></details>`)}
 function offPanel(){
   const rows=OFFICES.filter(o=>o!=="운영자").map(o=>{const ms=S.members.filter(m=>m.role===o);
     const people=ms.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;margin:3px 14px 3px 0">${av(m,36)}<b>${esc(m.name)}</b></span>`).join("");
