@@ -1529,7 +1529,8 @@ function recoCalc0(){
   return{u,ps,games,rate,shown}}
 let recoAsk=null;
 const recoStartMs=u=>new Date(u.ds+"T"+u.s.start+":00").getTime();
-const recoRedoUsed=(ds,i)=>!!((S.recoRedoG||{})[ds]||{})[i];
+const RECO_EPOCH=2;   /* 올리면 이전에 쓴 다시 짜기 기록이 초기화되어 게임당 한 번씩 다시 가능 */
+const recoRedoUsed=(ds,i)=>((S.recoRedoG||{})[ds]||{})[i]===RECO_EPOCH;
 const recoRedoOkG=(u,i)=>voteClosed(u.ds)&&Date.now()<recoStartMs(u)&&!recoRedoUsed(u.ds,i);   // 투표 마감 후 ~ 경기 시작 전, 게임마다 단 한 번만
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
@@ -1545,7 +1546,7 @@ function recoRedoG(i){if(!isAdmin())return;const c=recoCalc();if(!c||!c.games||!
     if(!pk)pk=g;if(ov(g)<=Math.max(2,ov0)){pk=g;break}}
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];
-  if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=1;save();render()}
+  if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH;save();render()}
 const recoGBtn=(u,i,g)=>{if(!isAdmin()||!voteClosed(u.ds)||recoDone(u.ds,g))return"";
   if(recoRedoUsed(u.ds,i))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 ${i+1}게임 다시 짜기는 이미 사용했어요</p>`;
   if(Date.now()>=recoStartMs(u))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 다시 짜기는 경기 시작 전까지만 가능해요</p>`;
