@@ -1529,8 +1529,9 @@ function recoCalc0(){
   return{u,ps,games,rate,shown}}
 let recoAsk=null;
 const recoStartMs=u=>new Date(u.ds+"T"+u.s.start+":00").getTime();
-const RECO_EPOCH=2;   /* 올리면 이전에 쓴 다시 짜기 기록이 초기화되어 게임당 한 번씩 다시 가능 */
-const recoRedoUsed=(ds,i)=>((S.recoRedoG||{})[ds]||{})[i]===RECO_EPOCH;
+const RECO_EPOCH=3,RECO_MAX=3;   /* 올리면 이전에 쓴 다시 짜기 기록이 초기화되어 게임당 한 번씩 다시 가능 */
+const recoRedoCnt=(ds,i)=>{const v=((S.recoRedoG||{})[ds]||{})[i]||0;return Math.floor(v/100)===RECO_EPOCH?v%100:0};   /* 값 = 규칙번호*100 + 사용 횟수 */
+const recoRedoUsed=(ds,i)=>recoRedoCnt(ds,i)>=RECO_MAX;
 const recoRedoOkG=(u,i)=>voteClosed(u.ds)&&Date.now()<recoStartMs(u)&&!recoRedoUsed(u.ds,i);   // 투표 마감 후 ~ 경기 시작 전, 게임마다 단 한 번만
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
@@ -1540,17 +1541,18 @@ function recoRedoG(i){if(!isAdmin())return;const c=recoCalc();if(!c||!c.games||!
   if(recoAsk!==i){recoAsk=i;render();return}
   recoAsk=null;
   const base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0),oth=cur[o]?cur[o].A.concat(cur[o].B):[],ov=g=>g.A.concat(g.B).filter(m=>oth.includes(m)).length,ov0=ov(cur[i]);
+  if(!S.recoRedoK)S.recoRedoK={};const seen=((S.recoRedoK[ds]=S.recoRedoK[ds]||{})[i]=S.recoRedoK[ds][i]||[]);if(!seen.includes(recoGKey(cur[i])))seen.push(recoGKey(cur[i]));   // 이미 나왔던 조합은 다시 안 나오게
   let pk=null;
-  for(let t=1;t<=40;t++){const gg=recoGender(c.ps,c.rate,base+"|g"+i+"|"+t);if(!gg||!gg[i])break;const g=gg[i],k=recoGKey(g);
-    if(k===recoGKey(cur[i])||(cur[o]&&k===recoGKey(cur[o])))continue;
+  for(let t=1;t<=60;t++){const gg=recoGender(c.ps,c.rate,base+"|g"+i+"|r"+recoRedoCnt(ds,i)+"|"+t);if(!gg||!gg[i])break;const g=gg[i],k=recoGKey(g);
+    if(seen.includes(k)||(cur[o]&&k===recoGKey(cur[o])))continue;
     if(!pk)pk=g;if(ov(g)<=Math.max(2,ov0)){pk=g;break}}
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
-  if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];
-  if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH;save();render()}
+  if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
+  if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+recoRedoCnt(ds,i)+1;save();render()}
 const recoGBtn=(u,i,g)=>{if(!isAdmin()||!voteClosed(u.ds)||recoDone(u.ds,g))return"";
-  if(recoRedoUsed(u.ds,i))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 ${i+1}게임 다시 짜기는 이미 사용했어요</p>`;
+  if(recoRedoUsed(u.ds,i))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 ${i+1}게임 다시 짜기는 ${RECO_MAX}번 모두 사용했어요</p>`;
   if(Date.now()>=recoStartMs(u))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 다시 짜기는 경기 시작 전까지만 가능해요</p>`;
-  const ask=recoAsk===i;return `<button class="btn ${ask?"":"ghost"}" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">${ask?"⚠️ 정말 다시 짤까요? 한 번 더 누르면 "+(i+1)+"게임만 지금 투표 기준으로 새로 짜요 (단 한 번만 가능)":"🔄 "+(i+1)+"게임 다시 짜기 (운영자 · 게임당 1회)"}</button>`};
+  const ask=recoAsk===i;return `<button class="btn ${ask?"":"ghost"}" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">${ask?"⚠️ 정말 다시 짤까요? 한 번 더 누르면 "+(i+1)+"게임만 새로 짜요 (남은 "+(RECO_MAX-recoRedoCnt(u.ds,i))+"회 중 1회 사용)":"🔄 "+(i+1)+"게임 다시 짜기 (운영자 · 남은 "+(RECO_MAX-recoRedoCnt(u.ds,i))+"/"+RECO_MAX+"회)"}</button>`};
 function recoPanel(){
   const c=recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
