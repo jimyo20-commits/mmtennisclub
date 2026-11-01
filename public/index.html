@@ -1271,7 +1271,7 @@ votes(){
     <p style="margin:10px 0 0${u.past?';display:none':''}">${v[voter]?`<span class="tag ok">투표 완료 +${POINT}P</span>`:`<span class="tag">투표하면 +${POINT}P</span>`}</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 8px;text-align:center">${[["yes","참석","#2ea05a"],["maybe","미정","#8a948d"],["no","불참","#d93025"]].map(([k,l,c])=>`<div style="border:1.5px solid ${c};border-radius:10px;padding:6px 2px;color:${c}"><b style="font-size:20px;line-height:1.1;display:block">${cnt(k)}</b><span style="font-size:12px">${l}</span></div>`).join("")}</div>
     <div style="font-size:12px;color:var(--muted);margin:0 0 6px">미응답 ${S.members.length-cnt("yes")-cnt("maybe")-cnt("no")}명</div>
-    ${[["yes","참석","#2ea05a","●"],["maybe","미정","#8a948d","○"],["no","불참","#d93025","●"]].map(([k,l,c,d])=>`<div style="border-left:4px solid ${c};background:rgba(128,128,128,.08);border-radius:0 10px 10px 0;padding:6px 10px;margin-bottom:6px;font-size:13px;line-height:1.7"><div style="font-weight:800;color:${c}">${d} ${l} ${cnt(k)}명</div>${nm(k)==="없음"?"<div>없음</div>":`<div class="cg">${nm(k)}</div>`}</div>`).join("")}<button class="btn off" style="margin-top:8px" onclick="copyList('${u.ds}')">카톡에 올릴 현황 복사</button>${invBlock(u)}${isAdmin()?(S.attDone[u.ds]?`<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:700;color:var(--court)">✅ 최종 출석 확정 완료</span><button class="btn off" onclick="reopenAtt('${u.ds}')">다시 열기</button></div>`:attBlock(u)):""}</div>`}).join("");
+    ${[["yes","참석","#2ea05a","●"],["maybe","미정","#8a948d","○"],["no","불참","#d93025","●"]].map(([k,l,c,d])=>`<div style="border-left:4px solid ${c};background:rgba(128,128,128,.08);border-radius:0 10px 10px 0;padding:6px 10px;margin-bottom:6px;font-size:13px;line-height:1.7"><div style="font-weight:800;color:${c}">${d} ${l} ${cnt(k)}명</div>${nm(k)==="없음"?"<div>없음</div>":`<div class="cg">${nm(k)}</div>`}</div>`).join("")}<button class="btn off" style="margin-top:8px" onclick="copyList('${u.ds}')">카톡에 올릴 현황 복사</button>${smsBlock(u)}${invBlock(u)}${isAdmin()?(S.attDone[u.ds]?`<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:700;color:var(--court)">✅ 최종 출석 확정 완료</span><button class="btn off" onclick="reopenAtt('${u.ds}')">다시 열기</button></div>`:attBlock(u)):""}</div>`}).join("");
   return `<div class="panel"><h2>참석 투표</h2><div class="row"><label>투표하는 회원<select ${isAdmin()?"":"disabled"} onchange="voter=this.value;render()">${S.members.map(m=>`<option value="${m.id}"${m.id===voter?" selected":""}>${esc(m.name)}</option>`).join("")}</select></label></div><p class="empty" style="margin:10px 0 0">회원을 고른 뒤 각 경기의 참석·미정·불참을 누르세요. 같은 버튼을 다시 누르면 취소됩니다.</p></div>${cards}`;
 },
 dues(){
@@ -1360,6 +1360,38 @@ function adminSetup(){const ent=$("#lgp").value.trim();const a=S.members.find(m=
   if(!a||!/^\d{4}$/.test(ent)){$("#lge").textContent="먼저 사용할 4자리 숫자를 입력창에 쓰고 눌러주세요.";return}
   if(a.phone){$("#lge").textContent="이미 등록되어 있습니다. 4자리를 입력하고 로그인하세요.";return}
   a.phone="010-****-"+ent;save();pick(a.id)}
+/* 미투표자 문자: 전체 번호는 운영자 폰(localStorage)에만 저장하고, 동기화되는 S에는 넣지 않음 */
+const PB_KEY="mm-phonebook";let smsOpen=null,smsMsgs={},smsRes="",smsBulkT="";
+const pbGet=()=>{try{return JSON.parse(localStorage.getItem(PB_KEY)||"{}")||{}}catch(e){return {}}};
+const pbSet=o=>{try{localStorage.setItem(PB_KEY,JSON.stringify(o));return true}catch(e){return false}};
+const smsNon=ds=>{const v=S.votes[ds]||{};return S.members.filter(m=>m.id!==me&&m.status!=="휴회원"&&!v[m.id])};
+const smsDef=ds=>{const u=upcoming().find(x=>x.ds===ds);if(!u)return"";return `[무명회] ${u.d.getMonth()+1}/${u.d.getDate()}(${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)} 경기 참석 투표를 아직 안 하셨어요. 투표 마감: ${fmtDL(ds,1)}\n${location.href.split(/[?#]/)[0]}`};
+const smsText=ds=>{const ta=document.getElementById("smsMsg");return ta?ta.value:(smsMsgs[ds]==null?smsDef(ds):smsMsgs[ds])};
+const smsNums=ds=>{const pb=pbGet();return smsNon(ds).map(m=>pb[m.id]).filter(Boolean)};
+const smsUrl=(ds,ios)=>"sms:"+smsNums(ds).join(",")+(ios?"&":"?")+"body="+encodeURIComponent(smsText(ds));
+function smsSend(ds){if(!smsNums(ds).length)return;location.href=smsUrl(ds,/iPhone|iPad|iPod/.test(navigator.userAgent))}
+function smsCopy(ds){const t="받는 사람: "+smsNums(ds).join(", ")+"\n\n"+smsText(ds);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("받는 사람 번호와 문구를 복사했어요.")).catch(()=>prompt("아래 내용을 복사하세요",t))}
+function smsReg(){const ta=document.getElementById("smsBulk"),t=ta?ta.value:smsBulkT,pb=pbGet();let ok=0;const bad=[];
+  String(t||"").split(/\r?\n/).forEach(l=>{l=l.trim().replace(/\+82[\s-]*/,"0");if(!l)return;const dm=l.match(/0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/),d=dm?dm[0].replace(/\D/g,""):"",nm=l.replace(dm?dm[0]:"","").replace(/[,:\t]/g," ").replace(/\s+/g," ").trim(),m=S.members.find(x=>x.name===nm);
+    if(!m||!/^01\d{8,9}$/.test(d)){bad.push(nm||l);return}
+    const l4=String(m.phone||"").replace(/\D/g,"").slice(-4);if(l4.length===4&&l4!==d.slice(-4)){bad.push(nm+"(끝 4자리가 회원정보와 달라요)");return}
+    pb[m.id]=d;ok++});
+  smsRes=`✅ ${ok}명 등록${bad.length?` · ⚠️ 확인 필요: ${esc(bad.join(", "))}`:""}`;if(ok&&!pbSet(pb))smsRes+=" · 저장 실패(브라우저 저장소가 막혀 있어요)";smsBulkT="";render()}
+function smsBlock(u){if(!isAdmin()||u.past)return"";const ds=u.ds,non=smsNon(ds),pb=pbGet(),has=non.filter(m=>pb[m.id]),no=non.filter(m=>!pb[m.id]),open=smsOpen===ds;
+  const head=`<button class="btn off" style="margin-top:8px" onclick="smsOpen=${open?"null":"'"+ds+"'"};smsRes='';render()">📱 미투표자에게 문자 (${non.length}명) ${open?"▴":"▾"}</button>`;
+  if(!open)return head;
+  const msg=smsMsgs[ds]==null?smsDef(ds):smsMsgs[ds];
+  return head+`<div style="margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:13px;line-height:1.6">
+  <div><b>문자 받을 사람 ${non.length}명</b> <span style="font-size:11px;color:var(--muted)">(휴회원·본인 제외)</span></div>
+  <div style="margin:4px 0">${non.map(m=>`<span style="display:inline-block;margin:2px 8px 2px 0;${pb[m.id]?"":"color:var(--muted);text-decoration:line-through"}">${esc(m.name)}</span>`).join("")||"모두 투표했어요 🎉"}</div>
+  <div style="font-size:11px;color:var(--muted)">번호가 등록된 ${has.length}명에게 보내요${no.length?` · 번호 없음 ${no.length}명(취소선)`:""}</div>
+  <textarea id="smsMsg" rows="4" oninput="smsMsgs['${ds}']=this.value" style="width:100%;margin-top:8px;box-sizing:border-box;font:inherit">${esc(msg)}</textarea>
+  <div class="row" style="margin-top:8px;gap:6px"><button class="btn" ${has.length?"":"disabled"} onclick="smsSend('${ds}')">📨 문자 앱 열기 (${has.length}명)</button><button class="btn off" ${has.length?"":"disabled"} onclick="smsCopy('${ds}')">번호·문구 복사</button></div>
+  <p style="margin:6px 0 0;font-size:11px;color:var(--muted)">문자 앱이 열리면 내용을 확인하고 직접 <b>보내기</b>를 눌러요. 기종에 따라 단체 문자로 묶여 서로 번호가 보일 수 있어요.</p>
+  <details style="margin-top:10px"${smsRes?" open":""}><summary style="cursor:pointer;font-weight:700">📒 전체 번호 등록 (이 폰에만 저장) · ${S.members.filter(m=>pb[m.id]).length}/${S.members.length}명</summary>
+  <p style="margin:6px 0;font-size:11px;color:var(--muted)">한 줄에 한 명씩 <b>이름 010-1234-5678</b> 형식으로 붙여 넣으세요. 번호는 이 기기에만 저장되고 다른 회원에게는 공유되지 않아요. 브라우저 데이터를 지우면 사라져요.</p>
+  <textarea id="smsBulk" rows="5" oninput="smsBulkT=this.value" placeholder="김철수 010-1234-5678" style="width:100%;box-sizing:border-box;font:inherit">${esc(smsBulkT)}</textarea>
+  <button class="btn off" style="margin-top:6px" onclick="smsReg()">번호 등록</button>${smsRes?`<div style="margin-top:6px;font-size:12px">${smsRes}</div>`:""}</details></div>`}
 function copyList(ds){const v=S.votes[ds]||{};const u=upcoming().find(x=>x.ds===ds);if(!u)return;const nm=k=>S.members.filter(m=>v[m.id]===k).map(m=>m.name);
   const t=`[무명회] ${u.d.getMonth()+1}/${u.d.getDate()}(${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}~${fmtT(u.s.end)} 참석 현황\n참석(${nm("yes").length}): ${nm("yes").join(", ")||"-"}\n미정(${nm("maybe").length}): ${nm("maybe").join(", ")||"-"}\n불참(${nm("no").length}): ${nm("no").join(", ")||"-"}\n미응답: ${S.members.filter(m=>!v[m.id]).length}명${(S.invites[ds]||[]).length?"\n초청 게스트("+(S.invites[ds]||[]).length+"): "+(S.invites[ds]||[]).map(x=>x.name+"("+invLbl(x,1)+")").join(", "):""}`;
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("복사했습니다. 카톡방에 붙여넣으세요.")).catch(()=>prompt("아래 내용을 복사하세요",t))}
