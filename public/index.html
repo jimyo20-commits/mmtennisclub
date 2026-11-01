@@ -1371,6 +1371,19 @@ const smsNums=ds=>{const pb=pbGet();return smsNon(ds).map(m=>pb[m.id]).filter(Bo
 const smsUrl=(ds,ios)=>"sms:"+smsNums(ds).join(",")+(ios?"&":"?")+"body="+encodeURIComponent(smsText(ds));
 function smsSend(ds){if(!smsNums(ds).length)return;location.href=smsUrl(ds,/iPhone|iPad|iPod/.test(navigator.userAgent))}
 function smsCopy(ds){const t="받는 사람: "+smsNums(ds).join(", ")+"\n\n"+smsText(ds);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("받는 사람 번호와 문구를 복사했어요.")).catch(()=>prompt("아래 내용을 복사하세요",t))}
+function smsImport(list){const pb=pbGet(),nrm=s=>String(s||"").replace(/무명회|테니스|\(.*?\)|\s/g,"");let ok=0,skip=0;const bad=[];
+  list.forEach(c=>{const cn=nrm(c.n);if(!cn){skip++;return}let ms=S.members.filter(m=>nrm(m.name)===cn);if(!ms.length)ms=S.members.filter(m=>m.name.length>=2&&cn.includes(m.name));
+    if(!ms.length){skip++;return}if(ms.length>1){bad.push(c.n+"(이름이 같은 회원이 여러 명)");return}const m=ms[0];
+    const ds=(c.t||[]).map(t=>String(t).replace(/^\s*\+82[\s-]*/,"0").replace(/\D/g,"")).filter(d=>/^01\d{8,9}$/.test(d));
+    if(!ds.length){bad.push(m.name+"(휴대폰 번호 없음)");return}
+    const l4=String(m.phone||"").replace(/\D/g,"").slice(-4),d=l4.length===4?ds.find(x=>x.slice(-4)===l4):ds[0];
+    if(!d){bad.push(m.name+"(끝 4자리가 회원정보와 달라요)");return}pb[m.id]=d;ok++});
+  if(ok&&!pbSet(pb))bad.push("저장 실패(브라우저 저장소가 막혀 있어요)");
+  const left=S.members.filter(m=>m.id!==me&&m.status!=="휴회원"&&!pb[m.id]).map(m=>m.name);
+  smsRes=`✅ ${ok}명 등록${skip?` · 회원이 아닌 연락처 ${skip}개 제외`:""}${bad.length?` · ⚠️ 확인 필요: ${esc(bad.join(", "))}`:""}${left.length?`<br>아직 번호 없는 회원 ${left.length}명: ${esc(left.join(", "))}`:""}`;render()}
+async function smsPick(){if(!(navigator.contacts&&navigator.contacts.select)){smsRes="⚠️ 이 폰·브라우저는 연락처 직접 불러오기를 지원하지 않아요 (안드로이드 크롬에서 가능). 아래 연락처 파일(.vcf) 가져오기나 붙여넣기를 이용해 주세요.";render();return}
+  try{const cs=await navigator.contacts.select(["name","tel"],{multiple:true});smsImport(cs.map(c=>({n:(c.name||[])[0]||"",t:c.tel||[]})))}catch(e){smsRes="연락처를 불러오지 못했어요 ("+((e&&e.name)||"취소됨")+")";render()}}
+function smsVcf(inp){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const out=[];String(r.result||"").split(/BEGIN:VCARD/i).slice(1).forEach(b=>{const fn=(b.match(/^FN[^:\r\n]*:(.*)$/im)||[])[1]||"",t=[...b.matchAll(/^(?:item\d+\.)?TEL[^:\r\n]*:(.*)$/gim)].map(x=>x[1].trim());out.push({n:fn.trim(),t})});inp.value="";smsImport(out)};r.readAsText(f)}
 function smsReg(){const ta=document.getElementById("smsBulk"),t=ta?ta.value:smsBulkT,pb=pbGet();let ok=0;const bad=[];
   String(t||"").split(/\r?\n/).forEach(l=>{l=l.trim().replace(/\+82[\s-]*/,"0");if(!l)return;const dm=l.match(/0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/),d=dm?dm[0].replace(/\D/g,""):"",nm=l.replace(dm?dm[0]:"","").replace(/[,:\t]/g," ").replace(/\s+/g," ").trim(),m=S.members.find(x=>x.name===nm);
     if(!m||!/^01\d{8,9}$/.test(d)){bad.push(nm||l);return}
@@ -1390,7 +1403,7 @@ function smsBlock(u){if(!isAdmin()||u.past)return"";const ds=u.ds,non=smsNon(ds)
   <p style="margin:6px 0 0;font-size:11px;color:var(--muted)">문자 앱이 열리면 내용을 확인하고 직접 <b>보내기</b>를 눌러요. 기종에 따라 단체 문자로 묶여 서로 번호가 보일 수 있어요.</p>
   <details style="margin-top:10px"${smsRes?" open":""}><summary style="cursor:pointer;font-weight:700">📒 전체 번호 등록 (이 폰에만 저장) · ${S.members.filter(m=>pb[m.id]).length}/${S.members.length}명</summary>
   <p style="margin:6px 0;font-size:11px;color:var(--muted)">한 줄에 한 명씩 <b>이름 010-1234-5678</b> 형식으로 붙여 넣으세요. 번호는 이 기기에만 저장되고 다른 회원에게는 공유되지 않아요. 브라우저 데이터를 지우면 사라져요.</p>
-  <textarea id="smsBulk" rows="5" oninput="smsBulkT=this.value" placeholder="김철수 010-1234-5678" style="width:100%;box-sizing:border-box;font:inherit">${esc(smsBulkT)}</textarea>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0"><button class="btn off" style="padding:6px 10px;font-size:12px" onclick="smsPick()">📇 연락처에서 불러오기</button><label class="btn off" style="padding:6px 10px;font-size:12px;cursor:pointer">📄 연락처 파일(.vcf)<input type="file" accept=".vcf,text/vcard,text/x-vcard" style="display:none" onchange="smsVcf(this)"></label></div><p style="margin:0 0 6px;font-size:11px;color:var(--muted)">연락처 목록이 뜨면 <b>무명회 회원들만 골라서</b> 확인을 누르세요. 이름이 회원 이름과 같은 연락처만 등록되고 나머지는 무시돼요. (연락처 이름에 "무명회"가 붙어 있어도 돼요)</p><textarea id="smsBulk" rows="5" oninput="smsBulkT=this.value" placeholder="김철수 010-1234-5678" style="width:100%;box-sizing:border-box;font:inherit">${esc(smsBulkT)}</textarea>
   <button class="btn off" style="margin-top:6px" onclick="smsReg()">번호 등록</button>${smsRes?`<div style="margin-top:6px;font-size:12px">${smsRes}</div>`:""}</details></div>`}
 function copyList(ds){const v=S.votes[ds]||{};const u=upcoming().find(x=>x.ds===ds);if(!u)return;const nm=k=>S.members.filter(m=>v[m.id]===k).map(m=>m.name);
   const t=`[무명회] ${u.d.getMonth()+1}/${u.d.getDate()}(${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}~${fmtT(u.s.end)} 참석 현황\n참석(${nm("yes").length}): ${nm("yes").join(", ")||"-"}\n미정(${nm("maybe").length}): ${nm("maybe").join(", ")||"-"}\n불참(${nm("no").length}): ${nm("no").join(", ")||"-"}\n미응답: ${S.members.filter(m=>!v[m.id]).length}명${(S.invites[ds]||[]).length?"\n초청 게스트("+(S.invites[ds]||[]).length+"): "+(S.invites[ds]||[]).map(x=>x.name+"("+invLbl(x,1)+")").join(", "):""}`;
