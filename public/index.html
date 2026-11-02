@@ -599,13 +599,13 @@ function anManageView(){
   return `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn ghost" style="width:100%" onclick="toggleAnList()">📋 업로드된 경기 관리 (${gs.length}) ${anListOpen?"▲":"▼"}</button>${body}</div>`;
 }
 /* ===== 위치 기록(시험 · 운영자 전용): 위닝·언포스드 에러가 난 순간 4명의 위치를 가상 코트에 찍기 ===== */
-let posOpen=false,posG="",posK="w",posH=0,posC=0,posD={},posMode="rec",posVW=0,posVK="all",posVH=0,posSel="",posMo=0,posB=null,posVB=0,posNote="",posCm=0,posCt="",posCl=[];
+let posOpen=false,posG="",posK="w",posH=0,posC=0,posD={},posMode="rec",posVW=0,posVK="all",posVH=0,posSel="",posMo=0,posB=null,posVB=0,posNote="",posCm=0,posCt="",posCl=[],posExp=0;
 const posGames=()=>(S.analysis||[]).filter(g=>g&&g.rows&&g.rows.length).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 const posNames=g=>g?(g.rows||[]).map(r=>r.name||(r.pid?mname(r.pid):"")).filter(Boolean):[];
 const posGl=g=>(g.date||"").slice(5).replace("-",".")+" "+posNames(g).join("·");
 const POSC=["#2f6fe4","#f08a24","#8e44d6","#0fa3a3"];
 function posTog(o){posOpen=o}
-function posSet(k,v){if(k==="g"){posG=v;posD={};posB=null;posCl=[];posCm=0;posC=0;posH=0;posVW=0;posSel=""}else if(k==="k")posK=v;else if(k==="h")posH=+v;else if(k==="c"){posC=+v;const n0=posNames(posGames().find(x=>x.id===posG)),d0=posD[n0[posC]];posMo=d0?d0.m||0:0}else if(k==="cm")posCm=posCm?0:1;else if(k==="vb")posVB=posVB?0:1;else if(k==="mo"){posMo=+v;const n1=posNames(posGames().find(x=>x.id===posG)),c1=n1[Math.min(posC,n1.length-1)];if(c1&&posD[c1])posD[c1].m=posMo}else if(k==="m"){posMode=v;posSel=""}else if(k==="vw")posVW=+v;else if(k==="vk")posVK=v;else if(k==="vh")posVH=posVH?0:1;else if(k==="sel")posSel=posSel===v?"":v;render()}
+function posSet(k,v){if(k==="g"){posG=v;posD={};posB=null;posCl=[];posCm=0;posC=0;posH=0;posVW=0;posSel=""}else if(k==="k")posK=v;else if(k==="h")posH=+v;else if(k==="c"){posC=+v;const n0=posNames(posGames().find(x=>x.id===posG)),d0=posD[n0[posC]];posMo=d0?d0.m||0:0}else if(k==="ex")posExp=posExp?0:1;else if(k==="cm")posCm=posCm?0:1;else if(k==="vb")posVB=posVB?0:1;else if(k==="mo"){posMo=+v;const n1=posNames(posGames().find(x=>x.id===posG)),c1=n1[Math.min(posC,n1.length-1)];if(c1&&posD[c1])posD[c1].m=posMo}else if(k==="m"){posMode=v;posSel=""}else if(k==="vw")posVW=+v;else if(k==="vk")posVK=v;else if(k==="vh")posVH=posVH?0:1;else if(k==="sel")posSel=posSel===v?"":v;render()}
 function posTap(ev){if(!isAdmin()||isGuest()||posMode!=="rec")return;const g=posGames().find(x=>x.id===posG);if(!g)return;const n=posNames(g);if(!n.length)return;posSel="";
   const svg=ev.currentTarget,pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
   const x=Math.round(Math.min(255,Math.max(-35,q.x))*10)/10,y=Math.round(Math.min(510,Math.max(-35,q.y))*10)/10;
@@ -617,6 +617,33 @@ function posCmDel(i){posCl.splice(i,1);render()}
 function posCmDelS(id,i){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id===id);if(!e||!e.cm)return;e.cm.splice(i,1);if(!e.cm.length)delete e.cm;save();render()}
 function posArrow(d){const dx=d.x>150?-1:1,tx=d.x+dx*36,ty=Math.max(-24,d.y-36),vx=d.x-tx,vy=d.y-ty,L=Math.hypot(vx,vy)||1,ux=vx/L,uy=vy/L,ex=d.x-ux*13,ey=d.y-uy*13,hx=ex-ux*9,hy=ey-uy*9;
   return `<line x1="${tx}" y1="${ty}" x2="${hx}" y2="${hy}" stroke="#ffd54a" stroke-width="2.6"/><polygon points="${ex},${ey} ${hx-uy*5},${hy+ux*5} ${hx+uy*5},${hy-ux*5}" fill="#ffd54a"/><circle cx="${tx}" cy="${ty}" r="9" fill="#ffd54a" stroke="#7a5a00" stroke-width="1.2"/><text x="${tx}" y="${ty+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#5a3f00">${d.n}</text>`}
+function posAnal(g,N,ev){
+  const sm=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0),pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y=>Math.abs(y-237.7)/20,zn=y=>dep(y)<=6.4?0:dep(y)<=11.9?1:2,ZN=["전위(서비스라인 안)","중위","후위(베이스라인 쪽)"];
+  const rowOf=n=>(g.rows||[]).find(r=>(r.name||(r.pid?mname(r.pid):""))===n)||{};
+  const mt=N.map(n=>{const r=rowOf(n),hasW=!!r.w||r.W===0,hasU=!!r.u||r.U===0,sv=r.sv||{},wE=sm(r.w),uE=sm(r.u),wR=ev.filter(e=>e.h===n&&e.k==="w").length,uR=ev.filter(e=>e.h===n&&e.k==="e").length,sW=(sv.A||0)+(sv.Sp||0),dF=sv.D||0;
+    const st=(rec,exp,ok)=>!ok?`<span style="color:var(--muted)">엑셀 없음</span>`:rec===exp?`<b style="color:#16a34a">${rec}/${exp} ✓</b>`:rec<exp?`<b style="color:#d97706">${rec}/${exp} (${exp-rec}개 미기록)</b>`:`<b style="color:#dc2626">${rec}/${exp} (${rec-exp}개 초과)</b>`;
+    return `<tr><td style="padding:5px 4px;font-weight:700;white-space:nowrap">${esc(n)}</td><td style="padding:5px 4px">${st(wR,wE,hasW&&r.w)}<div style="font-size:11px;color:var(--muted)">서브득점 ${sW}개 제외</div></td><td style="padding:5px 4px">${st(uR,uE,hasU&&r.u)}<div style="font-size:11px;color:var(--muted)">더블폴트 ${dF}개 제외</div></td></tr>`}).join("");
+  const W=N[Math.min(posVW,N.length-1)],mine=ev.filter(e=>e.h===W&&e.pp&&e.pp[W]);
+  const Z=k=>{const a=mine.filter(e=>e.k===k),c=[0,0,0];a.forEach(e=>c[zn(e.pp[W].y)]++);return {n:a.length,c}};
+  const zw=Z("w"),ze=Z("e");
+  const mv=k=>{const a=mine.filter(e=>e.k===k);return [a.filter(e=>!e.pp[W].m).length,a.filter(e=>e.pp[W].m).length]};
+  const [sw,mw]=mv("w"),[se,me]=mv("e");
+  const fm=k=>{const o={"2-up(둘 다 전위)":0,"1-up 1-back":0,"2-back(둘 다 후위)":0,"확인 불가":0};mine.filter(e=>e.k===k).forEach(e=>{const myTop=e.pp[W].y<237.7,mates=Object.keys(e.pp).filter(n=>(e.pp[n].y<237.7)===myTop);if(mates.length<2){o["확인 불가"]++;return}const up=mates.filter(n=>zn(e.pp[n].y)===0).length;o[up>=2?"2-up(둘 다 전위)":up===1?"1-up 1-back":"2-back(둘 다 후위)"]++});return o};
+  const fW=fm("w"),fE=fm("e");
+  const fr=(o,t)=>Object.entries(o).filter(([k,v])=>v).map(([k,v])=>`${k} ${v}회(${pc(v,t)})`).join(" · ")||"-";
+  const td="padding:4px 6px;border-top:1px solid var(--line);font-size:13px";
+  const stat=mine.length?`<table style="width:100%;border-collapse:collapse;margin-top:6px"><tr style="font-size:12px;color:var(--muted)"><td style="padding:4px 6px"></td><td style="padding:4px 6px">✅ 위닝 ${zw.n}</td><td style="padding:4px 6px">❌ 에러 ${ze.n}</td></tr>
+    ${ZN.map((z,i)=>`<tr><td style="${td}">${z}</td><td style="${td}">${zw.c[i]}회 (${pc(zw.c[i],zw.n)})</td><td style="${td}">${ze.c[i]}회 (${pc(ze.c[i],ze.n)})</td></tr>`).join("")}
+    <tr><td style="${td}">서서 친 샷</td><td style="${td}">${sw}회</td><td style="${td}">${se}회</td></tr>
+    <tr><td style="${td}">달리며 친 샷</td><td style="${td}">${mw}회</td><td style="${td}">${me}회</td></tr></table>
+    <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b>${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:#dc2626">${pc(me,mw+me)}</b>`:""}<br>위닝 때 우리 팀 대형: ${fr(fW,zw.n)}<br>에러 때 우리 팀 대형: ${fr(fE,ze.n)}</p>`
+    :`<p class="empty" style="margin:8px 0 0">${esc(W)} 선수가 친 장면이 아직 없어요.</p>`;
+  const exp=posExp?`<textarea readonly onclick="this.select()" style="width:100%;box-sizing:border-box;height:120px;margin-top:6px;font-size:11px">${esc(JSON.stringify({date:g.date,court:g.court,rows:(g.rows||[]).map(r=>({name:r.name||mname(r.pid),W:r.W,U:r.U,w:r.w,u:r.u,sv:r.sv})),scenes:ev}))}</textarea>`:"";
+  return `<p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">엑셀의 위닝·에러 개수와 위치 기록을 맞춰 봐요. 서브 득점(A·Sp)과 더블폴트(D)는 위치 기록 대상이 아니라서 엑셀 숫자에서 뺀 값과 비교합니다.</p>
+  <table style="width:100%;border-collapse:collapse"><tr style="font-size:12px;color:var(--muted)"><td style="padding:4px"></td><td style="padding:4px">위닝 기록/엑셀</td><td style="padding:4px">에러 기록/엑셀</td></tr>${mt}</table>
+  <div style="font-size:12px;color:var(--muted);margin:12px 0 3px">위치 분석을 볼 선수</div><div style="display:flex;flex-wrap:wrap;gap:6px">${N.map((n,i)=>`<button class="btn ${n===W?"":"ghost"}" style="padding:6px 10px;font-size:13px" onclick="posSet('vw',${i})">${esc(n)}</button>`).join("")}</div>
+  ${stat}
+  <button class="btn ghost" style="margin-top:8px;padding:5px 10px;font-size:12px" onclick="posSet('ex',0)">📋 데이터 보기(복사용)</button>${exp}`}
 function posEdit(id){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id===id),el=document.getElementById("posEd");if(!e||!el)return;const v=el.value.trim().slice(0,80);if(v)e.n=v;else delete e.n;save();render()}
 function posDel(id){if(!isAdmin())return;S.pos=(S.pos||[]).filter(x=>x.id!==id);if(posSel===id)posSel="";save();render()}
 function posCourt(dots,tap){
@@ -642,6 +669,7 @@ function posPanel(){
     <div style="font-size:12px;color:var(--muted);margin:6px 0 3px">움직임 <span style="color:var(--text)">(찍기 전에 고르세요 · 삼각형의 뾰족한 쪽이 달리는 방향)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${[["●  서서 침",0],["↖ 달리며",1],["↗ 달리며",2],["↙ 달리며",3],["↘ 달리며",4]].map(([t,i])=>btn(posMo===i,`posSet('mo',${i})`,t)).join("")}</div>
     <div style="font-size:12px;color:var(--muted);margin:6px 0 3px">지금 찍을 선수 <span style="color:var(--text)">(●서서 ▲달리며 🎾공 · 공 색: 위닝=초록, 에러=빨강)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">${N.map((n,i)=>`<button class="btn ${i===c?"":"ghost"}" style="padding:6px 10px;font-size:13px;${i===c?"background:"+POSC[i%4]+";border-color:"+POSC[i%4]+";color:#fff":"border-color:"+POSC[i%4]}" onclick="posSet('c',${i})">${posD[n]?(posD[n].m?"▲ ":"● "):""}${esc(n)}</button>`).join("")}<button class="btn ${c>=N.length?"":"ghost"}" style="padding:6px 10px;font-size:13px;${c>=N.length?"background:"+(posK==="w"?"#22a85a":"#e5484d")+";border-color:"+(posK==="w"?"#22a85a":"#e5484d")+";color:#fff":"border-color:"+(posK==="w"?"#22a85a":"#e5484d")}" onclick="posSet('c',${N.length})">${posB?"✓ ":""}🎾 공</button></div>`;
     var recBtns=`<input id="posNt" maxlength="80" value="${esc(posNote)}" oninput="posNote=this.value" placeholder="💬 이 장면 코멘트 (예: 센터 비어서 포치 실패)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:8px 10px;font-size:13px"><div style="display:flex;gap:6px;margin-top:8px"><button class="btn" style="flex:1;padding:8px;${Object.keys(posD).length||posB?"":"opacity:.5"}" onclick="posSave()">💾 이 장면 저장 (${Object.keys(posD).length}/${N.length}명${posB?" + 공":""})</button><button class="btn ghost" style="padding:8px 12px" onclick="posClr()">지우기</button></div>`}
+  else if(posMode==="an"){body=posAnal(g,N,ev)}
   else{const W=nm(posVW);const fl=ev.filter(e=>(posVK==="all"||e.k===posVK)&&e.pp[W]&&(!posVH||e.h===W));
     dots=fl.map(e=>({x:e.pp[W].x,y:e.pp[W].y,m:e.pp[W].m||0,c:e.k==="w"?"#22a85a":"#e5484d",t:"",r:9,o:.85}));if(posVB)ev.filter(e=>e.b&&(posVK==="all"||e.k===posVK)&&(!posVH||e.h===W)).forEach(e=>dots.push({ball:1,x:e.b.x,y:e.b.y,c:e.k==="w"?"#22a85a":"#e5484d"}));
     body=`<div style="font-size:12px;color:var(--muted);margin:10px 0 3px">위치를 볼 선수</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${N.map((n,i)=>btn(i===Math.min(posVW,N.length-1),`posSet('vw',${i})`,esc(n))).join("")}</div>
@@ -653,8 +681,8 @@ function posPanel(){
   const cmList=cmArr.length?`<ul class="list" style="margin-top:6px">${cmArr.map((c,i)=>`<li style="padding:5px 0;align-items:flex-start"><span style="flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#ffd54a;color:#5a3f00;font-weight:800;font-size:12px">${i+1}</span><div class="grow" style="font-size:13px">${c.p?`<b style="color:${POSC[Math.max(0,N.indexOf(c.p))%4]}">${esc(c.p)}</b> · `:`<span style="color:var(--muted)">코트 · </span>`}${esc(c.t)}</div><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="${sel?`posCmDelS('${sel.id}',${i})`:`posCmDel(${i})`}">삭제</button></li>`).join("")}</ul>`:"";
   return `<div class="panel"><details ${posOpen?"open":""} ontoggle="posTog(this.open)">${head}
   <div class="row" style="margin-top:10px"><label>경기<select onchange="posSet('g',this.value)">${gs.map(x=>`<option value="${x.id}"${x.id===g.id?" selected":""}>${esc(posGl(x))}</option>`).join("")}</select></label></div>
-  <div style="display:flex;gap:6px;margin-top:8px">${btn(posMode==="rec","posSet('m','rec')","✏️ 기록하기")}${btn(posMode==="view","posSet('m','view')","📊 모아보기")}</div>
-  ${body}${cmTop}${posCourt(dots,posMode==="rec"&&!sel)}${cmList}${typeof recBtns!=="undefined"&&posMode==="rec"&&!sel?recBtns:""}
+  <div style="display:flex;gap:6px;margin-top:8px">${btn(posMode==="rec","posSet('m','rec')","✏️ 기록하기")}${btn(posMode==="view","posSet('m','view')","📊 모아보기")}${btn(posMode==="an","posSet('m','an')","🔎 분석")}</div>
+  ${body}${cmTop}${posMode==="an"&&!sel?"":posCourt(dots,posMode==="rec"&&!sel)}${cmList}${typeof recBtns!=="undefined"&&posMode==="rec"&&!sel?recBtns:""}
   ${N.length&&(posMode==="rec"||sel)?`<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;margin-top:6px">${N.map((n,i)=>`<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${POSC[i%4]};vertical-align:middle"></span> ${esc(n)}</span>`).join("")}</div>`:""}
   ${evl}</details></div>`}
 function anView(){return anView0()+posPanel()}
