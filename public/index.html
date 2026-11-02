@@ -598,7 +598,46 @@ function anManageView(){
     return `<li style="padding:8px 0"><div class="grow" style="min-width:0"><b style="font-size:13px">${esc(g.date||"")}</b> <span class="tag" style="font-size:11px">${esc(g.type||"")}</span> <span style="font-size:12px;color:var(--muted)">${esc(g.court||"")}</span><small>${g.rows.map(r=>esc(nm(r))).join(", ")}</small></div>${del}</li>`}).join("")}</ul>`:`<p class="empty" style="margin:8px 0 0">업로드된 경기가 없어요.</p>`):"";
   return `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn ghost" style="width:100%" onclick="toggleAnList()">📋 업로드된 경기 관리 (${gs.length}) ${anListOpen?"▲":"▼"}</button>${body}</div>`;
 }
-function anView(){
+/* ===== 위치 기록(시험 · 운영자 전용): 가상 코트에 위닝·에러 지점 찍기 ===== */
+let posOpen=false,posG="",posP="",posK="w",posF="all";
+const posGames=()=>(S.analysis||[]).filter(g=>g&&g.rows&&g.rows.length).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+const posNames=g=>g?(g.rows||[]).map(r=>r.name||(r.pid?mname(r.pid):"")).filter(Boolean):[];
+const posGl=g=>(g.date||"").slice(5).replace("-",".")+" "+posNames(g).join("·");
+function posTog(o){posOpen=o}
+function posSet(k,v){if(k==="g"){posG=v;posP="";posF="all"}else if(k==="p")posP=v;else if(k==="k")posK=v;else if(k==="f")posF=v;render()}
+function posTap(ev){if(!isAdmin()||isGuest())return;const g=posGames().find(x=>x.id===posG);if(!g)return;const names=posNames(g),p=names.includes(posP)?posP:names[0];if(!p)return;
+  const svg=ev.currentTarget,pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+  const x=Math.round(Math.min(255,Math.max(-35,q.x))*10)/10,y=Math.round(Math.min(510,Math.max(-35,q.y))*10)/10;
+  if(!S.pos)S.pos=[];S.pos.push({id:uid(),g:g.id,p,k:posK,x,y});save();render()}
+function posDel(id){if(!isAdmin())return;S.pos=(S.pos||[]).filter(x=>x.id!==id);save();render()}
+function posUndo(){if(!isAdmin())return;const l=(S.pos||[]).filter(x=>x.g===posG);if(!l.length)return;posDel(l[l.length-1].id)}
+function posCourt(list,multi,names){
+  const L="stroke:#fff;stroke-width:2;fill:none",mk=list.map(e=>{const c=e.k==="w"?"#22a85a":"#e5484d",i=Math.max(0,names.indexOf(e.p)),lab=multi?esc(String(e.p).slice(0,1)):"";
+    return e.k==="w"?`<circle cx="${e.x}" cy="${e.y}" r="9" fill="${c}" stroke="#fff" stroke-width="1.6"/>${lab?`<text x="${e.x}" y="${e.y+3.6}" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">${lab}</text>`:""}`
+    :`<g><circle cx="${e.x}" cy="${e.y}" r="9" fill="${c}" stroke="#fff" stroke-width="1.6"/>${lab?`<text x="${e.x}" y="${e.y+3.6}" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">${lab}</text>`:`<path d="M${e.x-4} ${e.y-4}L${e.x+4} ${e.y+4}M${e.x+4} ${e.y-4}L${e.x-4} ${e.y+4}" stroke="#fff" stroke-width="2"/>`}</g>`}).join("");
+  return `<svg viewBox="-40 -40 299.4 555.4" style="width:100%;max-width:300px;display:block;margin:8px auto;border-radius:10px;touch-action:manipulation;cursor:crosshair" onclick="posTap(event)"><rect x="-40" y="-40" width="299.4" height="555.4" fill="#2f7a4d"/><rect x="0" y="0" width="219.4" height="475.4" fill="#3b8f5d"/><g style="${L}"><rect x="0" y="0" width="219.4" height="475.4"/><path d="M27.4 0V475.4M192 0V475.4M27.4 109.7H192M27.4 365.7H192M109.7 109.7V365.7M109.7 0v8M109.7 475.4v-8"/></g><path d="M-8 237.7H227.4" stroke="#fff" stroke-width="3" stroke-dasharray="5 3"/><text x="231" y="241" font-size="10" fill="#fff" font-weight="700">네트</text><text x="-36" y="-26" font-size="10" fill="#fff" opacity=".85">▲ 먼 쪽(상대 코트)</text><text x="-36" y="505" font-size="10" fill="#fff" opacity=".85">▼ 가까운 쪽</text>${mk}</svg>`}
+function posPanel(){
+  if(!isAdmin()||isGuest())return"";const gs=posGames();
+  const head=`<summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📍 위치 기록 <span class="tag" style="font-size:10px;vertical-align:middle">시험 · 운영자만</span></h2><span class="tag" style="font-size:11px">열기 ▾</span></summary>`;
+  if(!gs.length)return `<div class="panel"><details ${posOpen?"open":""} ontoggle="posTog(this.open)">${head}<p class="empty">분석 경기가 없어요.</p></details></div>`;
+  const g=gs.find(x=>x.id===posG)||gs[0];posG=g.id;const names=posNames(g),p=names.includes(posP)?posP:names[0];posP=p;
+  const all=(S.pos||[]).filter(x=>x.g===g.id),list=posF==="all"?all:all.filter(x=>x.p===posF);
+  const btn=(on,fn,t,c)=>`<button class="btn ${on?"":"ghost"}" style="padding:6px 10px;font-size:13px;${on&&c?"background:"+c+";border-color:"+c+";color:#fff":""}" onclick="${fn}">${t}</button>`;
+  const cnt=n=>{const a=all.filter(x=>x.p===n);return `${a.filter(x=>x.k==="w").length}/${a.filter(x=>x.k==="e").length}`};
+  const own=posF==="all"?"":posF;
+  return `<div class="panel"><details ${posOpen?"open":""} ontoggle="posTog(this.open)">${head}
+  <div class="row" style="margin-top:10px"><label>경기<select onchange="posSet('g',this.value)">${gs.map(x=>`<option value="${x.id}"${x.id===g.id?" selected":""}>${esc(posGl(x))}</option>`).join("")}</select></label></div>
+  <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">① 친 선수 · ② 위닝/에러 선택 후 ③ 코트에서 공이 떨어진 곳(에러는 나간 곳)을 누르세요</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${names.map(n=>btn(n===p,`posSet('p','${esc(n).replace(/'/g,"&#39;")}')`,esc(n))).join("")}</div>
+  <div style="display:flex;gap:6px">${btn(posK==="w","posSet('k','w')","✅ 위닝","#22a85a")}${btn(posK==="e","posSet('k','e')","❌ 에러","#e5484d")}<button class="btn ghost" style="padding:6px 10px;font-size:13px;margin-left:auto" onclick="posUndo()">↩ 마지막 취소</button></div>
+  ${posCourt(list,posF==="all",names)}
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;margin-bottom:6px"><span style="color:var(--muted)">보기:</span>${btn(posF==="all","posSet('f','all')","전체")}${names.map(n=>btn(posF===n,`posSet('f','${esc(n).replace(/'/g,"&#39;")}')`,esc(n)+" "+cnt(n))).join("")}</div>
+  <p style="margin:0;font-size:12px;color:var(--muted)">선수 옆 숫자 = 위닝/에러 · 초록 ●위닝, 빨강 ●에러${posF==="all"?" (글자는 선수 성)":""}</p>
+  ${list.length?`<ul class="list" style="margin-top:8px">${list.slice().reverse().map(e=>`<li style="padding:5px 0"><div class="grow" style="font-size:13px">${e.k==="w"?"✅ 위닝":"❌ 에러"} · ${esc(e.p)}</div><button class="btn ghost del" style="padding:3px 8px;font-size:11px" onclick="posDel('${e.id}')">삭제</button></li>`).join("")}</ul>`:""}
+  </details></div>`}
+
+function anView(){return anView0()+posPanel()}
+function anView0(){
   anImportSample();anImportPreset();anFillSampleC();
   const flat=anFlat();
   const sel=isGuest()?me:anPid&&anAll().some(m=>m.id===anPid)?anPid:me;anPid=sel;
