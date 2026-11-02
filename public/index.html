@@ -603,7 +603,7 @@ function anManageView(){
 }
 /* ===== 위치 기록(시험 · 운영자 전용): 위닝·언포스드 에러가 난 순간 4명의 위치를 가상 코트에 찍기 ===== */
 let posOpen=false,posG="",posK="w",posH=0,posC=0,posD={},posMode="rec",posVW=0,posVK="all",posVH=0,posSel="",posMo=0,posB=null,posVB=0,posNote="",posCm=0,posCt="",posCl=[],posExp=0,posSh="";
-const POSSH=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["R","리턴"],["S","쇼트"]],POSSHN=Object.fromEntries(POSSH);
+const POSSH=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["P","패싱"],["L","로브"],["S","쇼트"]],POSSHN=Object.fromEntries([...POSSH,["R","리턴"]]);
 const posGames=()=>(S.analysis||[]).filter(g=>g&&g.rows&&g.rows.length).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 const posNames=g=>g?(g.rows||[]).map(r=>r.name||(r.pid?mname(r.pid):"")).filter(Boolean):[];
 const posGl=g=>(g.date||"").slice(5).replace("-",".")+" "+posNames(g).join("·");
@@ -622,7 +622,7 @@ function posCmDelS(id,i){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id==
 function posArrow(d){const dx=d.x>150?-1:1,tx=d.x+dx*36,ty=Math.max(-24,d.y-36),vx=d.x-tx,vy=d.y-ty,L=Math.hypot(vx,vy)||1,ux=vx/L,uy=vy/L,ex=d.x-ux*13,ey=d.y-uy*13,hx=ex-ux*9,hy=ey-uy*9;
   return `<line x1="${tx}" y1="${ty}" x2="${hx}" y2="${hy}" stroke="#ffd54a" stroke-width="2.6"/><polygon points="${ex},${ey} ${hx-uy*5},${hy+ux*5} ${hx+uy*5},${hy-ux*5}" fill="#ffd54a"/><circle cx="${tx}" cy="${ty}" r="9" fill="#ffd54a" stroke="#7a5a00" stroke-width="1.2"/><text x="${tx}" y="${ty+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#5a3f00">${d.n}</text>`}
 function posAlign(g,ev){
-  const E=(g.pts||[]).filter(p=>!["Sp","A","D"].includes(p[3])),n=E.length,m=ev.length,wk=e=>e.k==="w"?"W":"U";
+  const E=(g.pts||[]).filter(p=>!["Sp","A","D","R"].includes(p[3])),n=E.length,m=ev.length,wk=e=>e.k==="w"?"W":"U";
   const sc=(i,j)=>{const a=E[i],b=ev[j];if(a[2]!==b.h||a[4]!==wk(b))return 0;return b.s?(b.s===a[3]?3:1):2};
   const dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
   for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){const s=sc(i-1,j-1);dp[i][j]=Math.max(dp[i-1][j],dp[i][j-1],s?dp[i-1][j-1]+s:0)}
@@ -634,12 +634,12 @@ function posAlign(g,ev){
 function posAnal(g,N,ev){
   const sm=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0),pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y=>Math.abs(y-237.7)/20,zn=y=>dep(y)<=6.4?0:dep(y)<=11.9?1:2,ZN=["전위(서비스라인 안)","중위","후위(베이스라인 쪽)"];
   const rowOf=n=>(g.rows||[]).find(r=>(r.name||(r.pid?mname(r.pid):""))===n)||{};
-  const mt=N.map(n=>{const r=rowOf(n),hasW=!!r.w||r.W===0,hasU=!!r.u||r.U===0,sv=r.sv||{},wE=sm(r.w),uE=sm(r.u),wR=ev.filter(e=>e.h===n&&e.k==="w").length,uR=ev.filter(e=>e.h===n&&e.k==="e").length,sW=(sv.A||0)+(sv.Sp||0),dF=sv.D||0;
+  const mt=N.map(n=>{const r=rowOf(n),hasW=!!r.w||r.W===0,hasU=!!r.u||r.U===0,sv=r.sv||{},rW=(r.w||{}).R||0,rU=(r.u||{}).R||0,wE=sm(r.w)-rW,uE=sm(r.u)-rU,wR=ev.filter(e=>e.h===n&&e.k==="w").length,uR=ev.filter(e=>e.h===n&&e.k==="e").length,sW=(sv.A||0)+(sv.Sp||0),dF=sv.D||0;
     const st=(rec,exp,ok)=>!ok?`<span style="color:var(--muted)">엑셀 없음</span>`:rec===exp?`<b style="color:#16a34a">${rec}/${exp} ✓</b>`:rec<exp?`<b style="color:#d97706">${rec}/${exp} (${exp-rec}개 미기록)</b>`:`<b style="color:#dc2626">${rec}/${exp} (${rec-exp}개 초과)</b>`;
-    const det=(k,exp)=>{const o={};Object.entries(exp||{}).forEach(([t,v])=>{const c=anCanon(t);o[c]=(o[c]||0)+(+v||0)});const tg={};let un=0;ev.filter(e=>e.h===n&&e.k===k).forEach(e=>{if(e.s)tg[e.s]=(tg[e.s]||0)+1;else un++});const nm=t=>POSSHN[t]||t,left=Object.keys(o).map(t=>[t,o[t]-(tg[t]||0)]).filter(x=>x[1]>0),over=Object.keys(tg).map(t=>[t,tg[t]-(o[t]||0)]).filter(x=>x[1]>0);
+    const det=(k,exp)=>{const o={};Object.entries(exp||{}).forEach(([t,v])=>{const c=anCanon(t);if(c==="R")return;o[c]=(o[c]||0)+(+v||0)});const tg={};let un=0;ev.filter(e=>e.h===n&&e.k===k).forEach(e=>{if(e.s)tg[e.s]=(tg[e.s]||0)+1;else un++});const nm=t=>POSSHN[t]||t,left=Object.keys(o).map(t=>[t,o[t]-(tg[t]||0)]).filter(x=>x[1]>0),over=Object.keys(tg).map(t=>[t,tg[t]-(o[t]||0)]).filter(x=>x[1]>0);
       return (left.length?`아직 안 찍은 샷: <b>${left.map(([t,v])=>nm(t)+" "+v).join(", ")}</b>${un?` (샷 종류를 안 단 장면 ${un}개가 이 중 일부일 수 있어요)`:""}`:"")+(over.length?`${left.length?"<br>":""}<span style="color:#dc2626">⚠ 엑셀보다 많은 샷: ${over.map(([t,v])=>nm(t)+" +"+v).join(", ")}</span>`:"")};
     const dW=r.w?det("w",r.w):"",dU=r.u?det("e",r.u):"";
-    return `<tr><td style="padding:5px 4px;font-weight:700;white-space:nowrap">${esc(n)}</td><td style="padding:5px 4px">${st(wR,wE,hasW&&r.w)}<div style="font-size:11px;color:var(--muted)">서브득점 ${sW}개 제외</div></td><td style="padding:5px 4px">${st(uR,uE,hasU&&r.u)}<div style="font-size:11px;color:var(--muted)">더블폴트 ${dF}개 제외</div></td></tr>${dW||dU?`<tr><td colspan="3" style="padding:0 4px 8px;font-size:12px;line-height:1.6">${dW?`✅ 위닝 — ${dW}`:""}${dW&&dU?"<br>":""}${dU?`❌ 에러 — ${dU}`:""}</td></tr>`:""}`}).join("");
+    return `<tr><td style="padding:5px 4px;font-weight:700;white-space:nowrap">${esc(n)}</td><td style="padding:5px 4px">${st(wR,wE,hasW&&r.w)}<div style="font-size:11px;color:var(--muted)">서브득점 ${sW}·리턴 ${rW}개 제외</div></td><td style="padding:5px 4px">${st(uR,uE,hasU&&r.u)}<div style="font-size:11px;color:var(--muted)">더블폴트 ${dF}·리턴 ${rU}개 제외</div></td></tr>${dW||dU?`<tr><td colspan="3" style="padding:0 4px 8px;font-size:12px;line-height:1.6">${dW?`✅ 위닝 — ${dW}`:""}${dW&&dU?"<br>":""}${dU?`❌ 에러 — ${dU}`:""}</td></tr>`:""}`}).join("");
   const W=N[Math.min(posVW,N.length-1)],mine=ev.filter(e=>e.h===W&&e.pp&&e.pp[W]);
   const Z=k=>{const a=mine.filter(e=>e.k===k),c=[0,0,0];a.forEach(e=>c[zn(e.pp[W].y)]++);return {n:a.length,c}};
   const zw=Z("w"),ze=Z("e");
@@ -660,14 +660,14 @@ function posAnal(g,N,ev){
     const byG=(idx,fn)=>{const o={};idx.forEach(a=>{const gg=A.E[a][0];(o[gg]=o[gg]||[]).push(fn(a))});return Object.keys(o).map(k=>o[k].join("<br>")).join("<br>")};
     const ok=A.E.length-A.miss.length;
     ordSec=`<div style="margin:14px 0 4px;padding:10px;border-radius:10px;background:rgba(128,128,128,.08)"><div style="font-weight:800;font-size:14px">📑 엑셀 순서 대조</div><p style="margin:4px 0 6px;font-size:13px">엑셀 장면 ${A.E.length}개 중 <b style="color:#16a34a">${ok}개 짝 맞음</b>${A.miss.length?` · <b style="color:#d97706">빠진 장면 ${A.miss.length}개</b>`:""}${A.extra.length?` · <b style="color:#dc2626">엑셀에 없는 장면 ${A.extra.length}개</b>`:""}${A.diff.length?` · 샷 종류 다름 ${A.diff.length}개`:""}${A.ord.length?` · 순서 다름 ${A.ord.length}개`:""}</p>
-    <p style="margin:0 0 6px;font-size:11px;color:var(--muted)">엑셀의 위→아래 진행 순서와 저장한 장면 순서를 맞춰 봅니다. 서브 득점(A·Sp)·더블폴트(D) 줄은 제외돼요.</p>
+    <p style="margin:0 0 6px;font-size:11px;color:var(--muted)">엑셀의 위→아래 진행 순서와 저장한 장면 순서를 맞춰 봅니다. 서브 득점(A·Sp)·더블폴트(D)·리턴(R) 줄은 제외돼요.</p>
     ${A.miss.length?`<div style="font-size:12px;font-weight:700;margin-top:6px">❗ 빠진 장면 (엑셀 순서)</div><div style="font-size:12px;line-height:1.7">${byG(A.miss,pl)}</div>`:`<div style="font-size:13px;color:#16a34a;font-weight:700">빠진 장면이 없어요 🎉</div>`}
     ${A.diff.length?`<div style="font-size:12px;font-weight:700;margin-top:8px">⚠ 샷 종류가 엑셀과 달라요</div><div style="font-size:12px;line-height:1.7">${A.diff.map(a=>pl(a)+` → 장면에는 <b>${SH(ev[A.em[a]].s)}</b>`).join("<br>")}</div>`:""}
     ${A.ord.length?`<div style="font-size:12px;font-weight:700;margin-top:8px">↕ 순서가 달리 저장돼 짝지은 장면</div><div style="font-size:12px;line-height:1.7">${A.ord.map(pl).join("<br>")}</div>`:""}
     ${A.extra.length?`<div style="font-size:12px;font-weight:700;margin-top:8px;color:#dc2626">➕ 엑셀에 짝이 없는 장면</div><div style="font-size:12px;line-height:1.7">${A.extra.map(b=>`장면 ${b+1}번째 저장 · ${esc(ev[b].h)} · ${ev[b].s?SH(ev[b].s)+" · ":""}${ev[b].k==="w"?"위닝":"에러"}`).join("<br>")}</div>`:""}</div>`}
   else ordSec=`<p style="margin:12px 0 0;font-size:12px;color:var(--muted)">이 경기는 엑셀 포인트 순서가 저장돼 있지 않아 개수로만 비교해요. 엑셀을 다시 올리면 순서 대조가 켜져요.</p>`;
   const exp=posExp?`<textarea readonly onclick="this.select()" style="width:100%;box-sizing:border-box;height:120px;margin-top:6px;font-size:11px">${esc(JSON.stringify({date:g.date,court:g.court,rows:(g.rows||[]).map(r=>({name:r.name||mname(r.pid),W:r.W,U:r.U,w:r.w,u:r.u,sv:r.sv})),scenes:ev}))}</textarea>`:"";
-  return `<p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">엑셀의 위닝·에러 개수와 위치 기록을 맞춰 봐요. 서브 득점(A·Sp)과 더블폴트(D)는 위치 기록 대상이 아니라서 엑셀 숫자에서 뺀 값과 비교합니다.</p>
+  return `<p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">엑셀의 위닝·에러 개수와 위치 기록을 맞춰 봐요. 서브 관련(A·Sp·D)과 리턴(R)은 위치 기록 대상이 아니라서 엑셀 숫자에서 뺀 값과 비교합니다.</p>
   <table style="width:100%;border-collapse:collapse"><tr style="font-size:12px;color:var(--muted)"><td style="padding:4px"></td><td style="padding:4px">위닝 기록/엑셀</td><td style="padding:4px">에러 기록/엑셀</td></tr>${mt}</table>
   ${ordSec}
   <div style="font-size:12px;color:var(--muted);margin:12px 0 3px">위치 분석을 볼 선수</div><div style="display:flex;flex-wrap:wrap;gap:6px">${N.map((n,i)=>`<button class="btn ${n===W?"":"ghost"}" style="padding:6px 10px;font-size:13px" onclick="posSet('vw',${i})">${esc(n)}</button>`).join("")}</div>
