@@ -645,15 +645,16 @@ function posAnal(g,N,ev){
   const zw=Z("w"),ze=Z("e");
   const mv=k=>{const a=mine.filter(e=>e.k===k);return [a.filter(e=>!e.pp[W].m).length,a.filter(e=>e.pp[W].m).length]};
   const [sw,mw]=mv("w"),[se,me]=mv("e");
-  const fm=k=>{const o={"둘 다 전위":0,"전위 1명·후위 1명":0,"둘 다 후위":0,"확인 불가":0};mine.filter(e=>e.k===k).forEach(e=>{const myTop=e.pp[W].y<237.7,mates=Object.keys(e.pp).filter(n=>(e.pp[n].y<237.7)===myTop);if(mates.length<2){o["확인 불가"]++;return}const up=mates.filter(n=>zn(e.pp[n].y)===0).length;o[up>=2?"둘 다 전위":up===1?"전위 1명·후위 1명":"둘 다 후위"]++});return o};
-  const fW=fm("w"),fE=fm("e");
-  const fr=(o,t)=>Object.entries(o).filter(([k,v])=>v).map(([k,v])=>`${k} ${v}회(${pc(v,t)})`).join(" · ")||"-";
+  const FL=e=>{const myTop=e.pp[W].y<237.7,mate=Object.keys(e.pp).find(n=>n!==W&&(e.pp[n].y<237.7)===myTop);if(!mate)return null;const z=[0,0,0];z[zn(e.pp[W].y)]++;z[zn(e.pp[mate].y)]++;return [["전",z[0]],["중",z[1]],["후",z[2]]].filter(x=>x[1]).map(x=>x[1]+x[0]).join("")};
+  const FG={};mine.forEach(e=>{const l=FL(e);if(!l)return;const o=FG[l]=FG[l]||{w:0,e:0};e.k==="w"?o.w++:o.e++});
+  const FE=Object.entries(FG).map(([l,o])=>({l,w:o.w,e:o.e,n:o.w+o.e})),fT=x=>`${x.l} ${pc(x.w,x.n)}(${x.w}/${x.n})`;
+  const fWin=FE.filter(x=>x.w/x.n>=.5).sort((a,b)=>b.w/b.n-a.w/a.n||b.n-a.n).slice(0,3),fErr=FE.filter(x=>x.e/x.n>.5).sort((a,b)=>b.e/b.n-a.e/a.n||b.n-a.n).slice(0,3),fErrT=x=>`${x.l} ${pc(x.e,x.n)}(${x.e}/${x.n})`;
   const td="padding:4px 6px;border-top:1px solid var(--line);font-size:13px";
   const stat=mine.length?`<table style="width:100%;border-collapse:collapse;margin-top:6px"><tr style="font-size:12px;color:var(--muted)"><td style="padding:4px 6px"></td><td style="padding:4px 6px">✅ 위닝 ${zw.n}</td><td style="padding:4px 6px">❌ 에러 ${ze.n}</td></tr>
     ${ZN.map((z,i)=>`<tr><td style="${td}">${z}</td><td style="${td}">${zw.c[i]}회 (${pc(zw.c[i],zw.n)})</td><td style="${td}">${ze.c[i]}회 (${pc(ze.c[i],ze.n)})</td></tr>`).join("")}
     <tr><td style="${td}">서서 친 샷</td><td style="${td}">${sw}회</td><td style="${td}">${se}회</td></tr>
     <tr><td style="${td}">달리며 친 샷</td><td style="${td}">${mw}회</td><td style="${td}">${me}회</td></tr></table>
-    <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b>${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:#dc2626">${pc(me,mw+me)}</b>`:""}<br>위닝 때 우리 팀 대형: ${fr(fW,zw.n)}<br>에러 때 우리 팀 대형: ${fr(fE,ze.n)}</p>`
+    <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b>${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:#dc2626">${pc(me,mw+me)}</b>`:""}</p><p style="margin:8px 0 0;font-size:13px;line-height:1.7"><b style="color:#16a34a">위닝비율이 높은 포지션</b> ${fWin.map(fT).join(", ")||"-"}<br><b style="color:#dc2626">에러비율이 높은 포지션</b> ${fErr.map(fErrT).join(", ")||"-"}</p><p style="margin:2px 0 0;font-size:11px;color:var(--muted)">우리 팀 두 명의 위치 조합이에요 · 전=서비스라인 안, 중=서비스라인~베이스라인 사이, 후=베이스라인 쪽 · 괄호는 (해당 횟수/전체 횟수)</p>`
     :`<p class="empty" style="margin:8px 0 0">${esc(W)} 선수가 친 장면이 아직 없어요.</p>`;
   let ordSec="";
   if(g.pts&&g.pts.length){const A=posAlign(g,ev),SH=t=>POSSHN[anCanon(t)]||t,pl=a=>{const e=A.E[a];return `엑셀 <b>${e[0]}게임 ${e[1]}번째 줄</b> · ${esc(e[2])} · ${SH(e[3])} · ${e[4]==="W"?"위닝":"에러"}`};
