@@ -628,7 +628,7 @@ function posAnal(g,N,ev){
   const zw=Z("w"),ze=Z("e");
   const mv=k=>{const a=mine.filter(e=>e.k===k);return [a.filter(e=>!e.pp[W].m).length,a.filter(e=>e.pp[W].m).length]};
   const [sw,mw]=mv("w"),[se,me]=mv("e");
-  const fm=k=>{const o={"2-up(둘 다 전위)":0,"1-up 1-back":0,"2-back(둘 다 후위)":0,"확인 불가":0};mine.filter(e=>e.k===k).forEach(e=>{const myTop=e.pp[W].y<237.7,mates=Object.keys(e.pp).filter(n=>(e.pp[n].y<237.7)===myTop);if(mates.length<2){o["확인 불가"]++;return}const up=mates.filter(n=>zn(e.pp[n].y)===0).length;o[up>=2?"2-up(둘 다 전위)":up===1?"1-up 1-back":"2-back(둘 다 후위)"]++});return o};
+  const fm=k=>{const o={"둘 다 전위":0,"전위 1명·후위 1명":0,"둘 다 후위":0,"확인 불가":0};mine.filter(e=>e.k===k).forEach(e=>{const myTop=e.pp[W].y<237.7,mates=Object.keys(e.pp).filter(n=>(e.pp[n].y<237.7)===myTop);if(mates.length<2){o["확인 불가"]++;return}const up=mates.filter(n=>zn(e.pp[n].y)===0).length;o[up>=2?"둘 다 전위":up===1?"전위 1명·후위 1명":"둘 다 후위"]++});return o};
   const fW=fm("w"),fE=fm("e");
   const fr=(o,t)=>Object.entries(o).filter(([k,v])=>v).map(([k,v])=>`${k} ${v}회(${pc(v,t)})`).join(" · ")||"-";
   const td="padding:4px 6px;border-top:1px solid var(--line);font-size:13px";
