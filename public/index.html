@@ -643,16 +643,8 @@ function posAlign(g,ev){
   const late=new Set();   /* 순서가 달라 남은 것끼리 선수·구분이 같으면 짝지음 */
   for(let a=0;a<n;a++){if(em[a]>=0)continue;let f=-1;for(let b=0;b<m;b++){if(sm[b]>=0||sc(a,b)===0)continue;if(f<0||(ev[b].s&&ev[b].s===E[a][3]&&!(ev[f].s===E[a][3])))f=b}if(f>=0){em[a]=f;sm[f]=a;late.add(a)}}
   return {E,em,sm,late,miss:E.map((e,a)=>a).filter(a=>em[a]<0),extra:ev.map((e,b)=>b).filter(b=>sm[b]<0),diff:E.map((e,a)=>a).filter(a=>em[a]>=0&&ev[em[a]].s&&ev[em[a]].s!==E[a][3]),ord:[...late]}}
-function posAnal(g,N,ev){
-  const sm=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0),pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y=>Math.abs(y-237.7)/20,zn=y=>dep(y)<=6.4?0:dep(y)<=11.9?1:2,ZN=["전위(서비스라인 안)","중위","후위(베이스라인 쪽)"];
-  const rowOf=n=>(g.rows||[]).find(r=>(r.name||(r.pid?mname(r.pid):""))===n)||{};
-  const mt=N.map(n=>{const r=rowOf(n),hasW=!!r.w||r.W===0,hasU=!!r.u||r.U===0,sv=r.sv||{},rW=(r.w||{}).R||0,rU=(r.u||{}).R||0,wE=sm(r.w)-rW,uE=sm(r.u)-rU,wR=ev.filter(e=>e.h===n&&e.k==="w").length,uR=ev.filter(e=>e.h===n&&e.k==="e").length,sW=(sv.A||0)+(sv.Sp||0),dF=sv.D||0;
-    const st=(rec,exp,ok)=>!ok?`<span style="color:var(--muted)">엑셀 없음</span>`:rec===exp?`<b style="color:#16a34a">${rec}/${exp} ✓</b>`:rec<exp?`<b style="color:#d97706">${rec}/${exp} (${exp-rec}개 미기록)</b>`:`<b style="color:#dc2626">${rec}/${exp} (${rec-exp}개 초과)</b>`;
-    const det=(k,exp)=>{const o={};Object.entries(exp||{}).forEach(([t,v])=>{const c=anCanon(t);if(c==="R")return;o[c]=(o[c]||0)+(+v||0)});const tg={};let un=0;ev.filter(e=>e.h===n&&e.k===k).forEach(e=>{if(e.s)tg[e.s]=(tg[e.s]||0)+1;else un++});const nm=t=>POSSHN[t]||t,left=Object.keys(o).map(t=>[t,o[t]-(tg[t]||0)]).filter(x=>x[1]>0),over=Object.keys(tg).map(t=>[t,tg[t]-(o[t]||0)]).filter(x=>x[1]>0);
-      return (left.length?`아직 안 찍은 샷: <b>${left.map(([t,v])=>nm(t)+" "+v).join(", ")}</b>${un?` (샷 종류를 안 단 장면 ${un}개가 이 중 일부일 수 있어요)`:""}`:"")+(over.length?`${left.length?"<br>":""}<span style="color:#dc2626">⚠ 엑셀보다 많은 샷: ${over.map(([t,v])=>nm(t)+" +"+v).join(", ")}</span>`:"")};
-    const dW=r.w?det("w",r.w):"",dU=r.u?det("e",r.u):"";
-    return `<tr><td style="padding:5px 4px;font-weight:700;white-space:nowrap">${esc(n)}</td><td style="padding:5px 4px">${st(wR,wE,hasW&&r.w)}<div style="font-size:11px;color:var(--muted)">서브득점 ${sW}·리턴 ${rW}개 제외</div></td><td style="padding:5px 4px">${st(uR,uE,hasU&&r.u)}<div style="font-size:11px;color:var(--muted)">더블폴트 ${dF}·리턴 ${rU}개 제외</div></td></tr>${dW||dU?`<tr><td colspan="3" style="padding:0 4px 8px;font-size:12px;line-height:1.6">${dW?`✅ 위닝 — ${dW}`:""}${dW&&dU?"<br>":""}${dU?`❌ 에러 — ${dU}`:""}</td></tr>`:""}`}).join("");
-  const W=N[Math.min(posVW,N.length-1)],mine=ev.filter(e=>e.h===W&&e.pp&&e.pp[W]);
+function posAnalStat(N,ev,W){const pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y=>Math.abs(y-237.7)/20,zn=y=>dep(y)<=6.4?0:dep(y)<=11.9?1:2,ZN=["전위(서비스라인 안)","중위","후위(베이스라인 쪽)"];
+  const mine=ev.filter(e=>e.h===W&&e.pp&&e.pp[W]);
   const Z=k=>{const a=mine.filter(e=>e.k===k),c=[0,0,0];a.forEach(e=>c[zn(e.pp[W].y)]++);return {n:a.length,c}};
   const zw=Z("w"),ze=Z("e");
   const mv=k=>{const a=mine.filter(e=>e.k===k);return [a.filter(e=>!e.pp[W].m).length,a.filter(e=>e.pp[W].m).length]};
@@ -668,6 +660,17 @@ function posAnal(g,N,ev){
     <tr><td style="${td}">달리며 친 샷</td><td style="${td}">${mw}회</td><td style="${td}">${me}회</td></tr></table>
     <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b>${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:#dc2626">${pc(me,mw+me)}</b>`:""}</p><p style="margin:8px 0 0;font-size:13px;line-height:1.7"><b style="color:#16a34a">팀 위닝비율이 높은 포지션</b> ${fWin.map(fT).join(", ")||"-"}<br><b style="color:#dc2626">팀 에러비율이 높은 포지션</b> ${fErr.map(fErrT).join(", ")||"-"}</p><p style="margin:2px 0 0;font-size:11px;color:var(--muted)">우리 팀 두 명의 위치 조합이에요 · 전=서비스라인 안, 중=서비스라인~베이스라인 사이, 후=베이스라인 쪽 · 괄호는 (해당 횟수/전체 횟수)</p>`
     :`<p class="empty" style="margin:8px 0 0">${esc(W)} 선수가 친 장면이 아직 없어요.</p>`;
+  return stat}
+function posAnal(g,N,ev){
+  const sm=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0),pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y=>Math.abs(y-237.7)/20,zn=y=>dep(y)<=6.4?0:dep(y)<=11.9?1:2,ZN=["전위(서비스라인 안)","중위","후위(베이스라인 쪽)"];
+  const rowOf=n=>(g.rows||[]).find(r=>(r.name||(r.pid?mname(r.pid):""))===n)||{};
+  const mt=N.map(n=>{const r=rowOf(n),hasW=!!r.w||r.W===0,hasU=!!r.u||r.U===0,sv=r.sv||{},rW=(r.w||{}).R||0,rU=(r.u||{}).R||0,wE=sm(r.w)-rW,uE=sm(r.u)-rU,wR=ev.filter(e=>e.h===n&&e.k==="w").length,uR=ev.filter(e=>e.h===n&&e.k==="e").length,sW=(sv.A||0)+(sv.Sp||0),dF=sv.D||0;
+    const st=(rec,exp,ok)=>!ok?`<span style="color:var(--muted)">엑셀 없음</span>`:rec===exp?`<b style="color:#16a34a">${rec}/${exp} ✓</b>`:rec<exp?`<b style="color:#d97706">${rec}/${exp} (${exp-rec}개 미기록)</b>`:`<b style="color:#dc2626">${rec}/${exp} (${rec-exp}개 초과)</b>`;
+    const det=(k,exp)=>{const o={};Object.entries(exp||{}).forEach(([t,v])=>{const c=anCanon(t);if(c==="R")return;o[c]=(o[c]||0)+(+v||0)});const tg={};let un=0;ev.filter(e=>e.h===n&&e.k===k).forEach(e=>{if(e.s)tg[e.s]=(tg[e.s]||0)+1;else un++});const nm=t=>POSSHN[t]||t,left=Object.keys(o).map(t=>[t,o[t]-(tg[t]||0)]).filter(x=>x[1]>0),over=Object.keys(tg).map(t=>[t,tg[t]-(o[t]||0)]).filter(x=>x[1]>0);
+      return (left.length?`아직 안 찍은 샷: <b>${left.map(([t,v])=>nm(t)+" "+v).join(", ")}</b>${un?` (샷 종류를 안 단 장면 ${un}개가 이 중 일부일 수 있어요)`:""}`:"")+(over.length?`${left.length?"<br>":""}<span style="color:#dc2626">⚠ 엑셀보다 많은 샷: ${over.map(([t,v])=>nm(t)+" +"+v).join(", ")}</span>`:"")};
+    const dW=r.w?det("w",r.w):"",dU=r.u?det("e",r.u):"";
+    return `<tr><td style="padding:5px 4px;font-weight:700;white-space:nowrap">${esc(n)}</td><td style="padding:5px 4px">${st(wR,wE,hasW&&r.w)}<div style="font-size:11px;color:var(--muted)">서브득점 ${sW}·리턴 ${rW}개 제외</div></td><td style="padding:5px 4px">${st(uR,uE,hasU&&r.u)}<div style="font-size:11px;color:var(--muted)">더블폴트 ${dF}·리턴 ${rU}개 제외</div></td></tr>${dW||dU?`<tr><td colspan="3" style="padding:0 4px 8px;font-size:12px;line-height:1.6">${dW?`✅ 위닝 — ${dW}`:""}${dW&&dU?"<br>":""}${dU?`❌ 에러 — ${dU}`:""}</td></tr>`:""}`}).join("");
+  const W=N[Math.min(posVW,N.length-1)],stat=posAnalStat(N,ev,W);
   let ordSec="";
   if(g.pts&&g.pts.length){const A=posAlign(g,ev),SH=t=>POSSHN[anCanon(t)]||t,pl=a=>{const e=A.E[a];return `엑셀 <b>${e[0]}게임 ${e[1]}번째 줄</b> · ${esc(e[2])} · ${SH(e[3])} · ${e[4]==="W"?"위닝":"에러"}`};
     const byG=(idx,fn)=>{const o={};idx.forEach(a=>{const gg=A.E[a][0];(o[gg]=o[gg]||[]).push(fn(a))});return Object.keys(o).map(k=>o[k].join("<br>")).join("<br>")};
@@ -758,11 +761,12 @@ function posPopView(){if(!posPop||!isAdmin()||isGuest())return"";const nm=posPop
     const w=L.filter(e=>e.k==="w").length;info=`${esc(posGl(gm))} · 내가 친 샷 ${L.length}개 (위닝 ${w} · 에러 ${L.length-w})`;stat=`<p style="margin:4px 0 0;font-size:12px;color:var(--muted)">점 = 샷을 친 순간 내 위치 · 테두리 <b style="color:#22a85a">초록 위닝</b> / <b style="color:#e5484d">빨강 에러</b> · 삼각형 = 달리며 친 샷</p>`}
   else if(tab==="h"){const P=all.filter(e=>K==="all"||e.k===K).map(e=>({x:e.pp[nm].x,y:e.pp[nm].y,k:e.k}));dots=posHeatDots(P);const dep=y=>Math.abs(y-237.7)/20,zc=[0,0,0];P.forEach(q=>{const d=dep(q.y);zc[d<=6.4?0:d<=11.9?1:2]++});const pc=n=>P.length?Math.round(n/P.length*100)+"%":"-";
     info=`${new Set(all.map(e=>e.g)).size}경기 누적 · 내가 친 샷 ${P.length}개`;stat=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 0;font-size:11px;color:var(--muted)"><span style="flex:0 0 60px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(22,163,74,.1),rgba(22,163,74,.95))"></span><span style="color:#16a34a;font-weight:700">위닝</span> · <span style="flex:0 0 60px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(220,38,38,.1),rgba(220,38,38,.95))"></span><span style="color:#dc2626;font-weight:700">에러</span> · 진할수록 많음 · 겹치면 더 많은 쪽 색이 이겨요</div><p style="margin:4px 0 0;font-size:12px">위치 비중: 전위 ${pc(zc[0])} · 중위 ${pc(zc[1])} · 후위 ${pc(zc[2])}</p>`}
+  const ana=tab==="g"&&gm?`<div style="margin:14px 0 0;padding:10px;border-radius:10px;background:rgba(128,128,128,.08)"><div style="font-weight:800;font-size:14px">🔎 위치 분석 · ${esc(nm)}</div>${posAnalStat(posNames(gm),(S.pos||[]).filter(e=>e.g===gId&&e.pp),nm)}</div>`:"";
   return `<div class="modal" onclick="if(event.target===this)posPopClose()"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 10px;padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)"><h2 style="margin:0">📍 ${esc(nm)} · 내가 친 샷 위치</h2><button class="btn ghost" style="padding:4px 10px" onclick="posPopClose()">✕</button></div>
   <div style="display:flex;gap:6px;margin-bottom:8px">${btn(tab==="g","posPopSet('tab','g')","경기별 위치 기록")}${btn(tab==="h","posPopSet('tab','h')","🔥 누적 히트맵")}</div>
   ${all.length?`${tab==="g"?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${gs.map(g=>btn(g.id===gId,`posPopSet('g','${g.id}')`,esc(posGl(g)))).join("")}</div>`:""}
   <div style="display:flex;flex-wrap:wrap;gap:6px">${btn(K==="all","posPopSet('k','all')","전체")}${btn(K==="w","posPopSet('k','w')","✅ 위닝","#22a85a")}${btn(K==="e","posPopSet('k','e')","❌ 에러","#e5484d")}</div>
-  <p style="margin:6px 0 0;font-size:12px;font-weight:700">${info}</p>${posCourt(dots,false,true)}${stat}<p style="margin:4px 0 0;font-size:11px;color:var(--muted)">내가 뛴 쪽 반코트만 보여줘요 (코트 끝이 바뀐 경기는 방향을 맞춰 합쳤어요 · 아래쪽이 베이스라인)</p>`:`<p class="empty">이 선수가 직접 친 위치 기록이 아직 없어요.</p>`}<div style="height:110px" aria-hidden="true"></div></div></div>`}
+  <p style="margin:6px 0 0;font-size:12px;font-weight:700">${info}</p>${posCourt(dots,false,true)}${stat}<p style="margin:4px 0 0;font-size:11px;color:var(--muted)">내가 뛴 쪽 반코트만 보여줘요 (코트 끝이 바뀐 경기는 방향을 맞춰 합쳤어요 · 아래쪽이 베이스라인)</p>${ana}`:`<p class="empty">이 선수가 직접 친 위치 기록이 아직 없어요.</p>`}<div style="height:110px" aria-hidden="true"></div></div></div>`}
 function posPanel(){return posPanel0("in")+posPanel0("out")}
 function anView(){return anView0()+posPanel()}
 function anView0(){
