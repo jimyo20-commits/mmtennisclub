@@ -617,7 +617,7 @@ const POSSH=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매�
 const posGames=()=>(S.analysis||[]).filter(g=>g&&g.rows&&g.rows.length).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 const posNames=g=>g?(g.rows||[]).map(r=>r.name||(r.pid?mname(r.pid):"")).filter(Boolean):[];
 const posGl=g=>(g.date||"").slice(5).replace("-",".")+" "+posNames(g).join("·");
-const POSC=["#2f6fe4","#f08a24","#8e44d6","#0fa3a3"];
+const POSC=["#1f5fd6","#4aaeea","#7a2fc4","#b18cee"];   /* 같은 팀 = 같은 계통 (파랑·하늘 / 보라·연보라) */
 function posTog(o,i){if(i)posOpenI=o;else posOpen=o}
 function posSet(k,v){if(k==="g"){posG=v;posD={};posB=null;posCl=[];posCm=0;posC=0;posH=0;posVW=0;posSel=""}else if(k==="k")posK=v;else if(k==="h")posH=+v;else if(k==="c"){posC=+v;const n0=posNames(posGames().find(x=>x.id===posG)),d0=posD[n0[posC]];posMo=d0?d0.m||0:0}else if(k==="sh")posSh=posSh===v?"":v;else if(k==="ex")posExp=posExp?0:1;else if(k==="cm")posCm=posCm?0:1;else if(k==="vb")posVB=posVB?0:1;else if(k==="mo"){posMo=+v;const n1=posNames(posGames().find(x=>x.id===posG)),c1=n1[Math.min(posC,n1.length-1)];if(c1&&posD[c1])posD[c1].m=posMo}else if(k==="m"){posMode=v;posSel=""}else if(k==="vw")posVW=+v;else if(k==="vk")posVK=v;else if(k==="vt")posVT=v;else if(k==="vh")posVH=posVH?0:1;else if(k==="sel")posSel=posSel===v?"":v;render()}
 function posTap(ev){if(!isAdmin()||isGuest())return;const g=posGames().find(x=>x.id===posG);if(!g)return;const n=posNames(g);if(!n.length)return;posSel="";
