@@ -204,7 +204,7 @@ const fmtT=t=>{const h=+t.slice(0,2);return (h<12?"오전 ":"오후 ")+(h>12?h-1
 const nextDate=d=>{const n=new Date();n.setHours(0,0,0,0);n.setDate(n.getDate()+(d-n.getDay()+7)%7);return n};
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const spT=(s,br)=>{const t=fmtT(s.start)+(br?"<br>":" ")+"~ "+fmtT(s.end);return s.special?`<b style="color:#fff;background:#e8590c;border-radius:6px;padding:1px 7px;display:inline-block;line-height:1.5">${t}</b>`:t};
-const sessOn=ds=>{const d0=new Date(ds+"T00:00");const d=d0.getDay();const dt=d0.getDate();const second=(d===6||d===0)&&dt>=8&&dt<=14;return S.schedule.filter(s=>s.day===d).map(s=>second?{...s,start:"19:00",end:"21:00",special:1}:s)};
+const sessOn=ds=>{const d0=new Date(ds+"T00:00");const d=d0.getDay();const dt=d0.getDate();const second=(d===6||d===0)&&dt>=8&&dt<=14;return S.schedule.filter(s=>s.day===d).map(s=>second?{...s,start:"19:00",end:"22:00",special:1}:s)};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const mname=id=>(S.members.find(m=>m.id===id)||(S.guests||[]).find(g=>g.id===id)||{name:"탈퇴 회원"}).name;
