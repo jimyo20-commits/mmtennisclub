@@ -1863,14 +1863,14 @@ function autoClassify(){let ch=false;const t=new Date();t.setHours(0,0,0,0);
   if(ch)save()}
 const rateColor=p=>{const h=Math.round(Math.max(0,Math.min(100,p))*1.2);return `background:hsl(${h} 70% 86%);color:hsl(${h} 75% 20%);border:1px solid hsl(${h} 55% 55%)`};
 function relStats(m){const P={},O={};
-  S.matches.forEach(g=>{const [A,B]=teams(g);const inA=A.includes(m.id),inB=B.includes(m.id);if(!inA&&!inB)return;const mine=inA?A:B,opp=inA?B:A;if(g.s1===g.s2)return;const win=inA?g.s1>g.s2:g.s2>g.s1;
-    mine.filter(id=>id!==m.id).forEach(id=>{const p=P[id]=P[id]||{w:0,l:0};win?p.w++:p.l++});
-    opp.forEach(id=>{const o=O[id]=O[id]||{w:0,l:0};win?o.w++:o.l++})});
-  const arr=o=>Object.entries(o).map(([id,v])=>({m:S.members.find(x=>x.id===id),...v,n:v.w+v.l,r:v.w/(v.w+v.l)})).filter(x=>x.m);
+  S.matches.forEach(g=>{const [A,B]=teams(g);const inA=A.includes(m.id),inB=B.includes(m.id);if(!inA&&!inB)return;const mine=inA?A:B,opp=inA?B:A;const dr=g.s1===g.s2,win=!dr&&(inA?g.s1>g.s2:g.s2>g.s1);   /* 무승부·짧은 경기 포함, 전체 경기 누적 */
+    mine.filter(id=>id!==m.id).forEach(id=>{const p=P[id]=P[id]||{w:0,l:0,d:0};dr?p.d++:win?p.w++:p.l++});
+    opp.forEach(id=>{const o=O[id]=O[id]||{w:0,l:0,d:0};dr?o.d++:win?o.w++:o.l++})});
+  const arr=o=>Object.entries(o).map(([id,v])=>({m:S.members.find(x=>x.id===id),...v,n:v.w+v.l+v.d,r:v.w/(v.w+v.l+v.d)})).filter(x=>x.m);
   const P2=arr(P),O2=arr(O);
   return{bp:[...P2].sort((a,b)=>b.r-a.r||b.n-a.n||b.w-a.w)[0]||null,bo:[...O2].sort((a,b)=>b.r-a.r||b.n-a.n||b.w-a.w)[0]||null,wo:[...O2].sort((a,b)=>a.r-b.r||b.n-a.n||b.l-a.l)[0]||null}}
 function recPanel(m,inModal){const {bp,bo,wo}=relStats(m);
-  const item=(icon,label,sub,x)=>x?`<li style="padding:10px 0${inModal?"":";cursor:pointer"}"${inModal?"":` role="button" tabindex="0" onclick="openProfile('${x.m.id}')"`}><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span>${av(x.m,40)}<div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><b>${esc(x.m.name)}</b><small>${x.w}승 ${x.l}패 (${x.n}경기)</small></div><span class="tag" style="font-weight:700;${rateColor(Math.round(x.r*100))}">${Math.round(x.r*100)}%</span></li>`:`<li style="padding:10px 0"><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span><div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><span style="color:var(--muted)">기록 없음</span></div></li>`;
+  const item=(icon,label,sub,x)=>x?`<li style="padding:10px 0${inModal?"":";cursor:pointer"}"${inModal?"":` role="button" tabindex="0" onclick="openProfile('${x.m.id}')"`}><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span>${av(x.m,40)}<div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><b>${esc(x.m.name)}</b><small>${x.w}승 ${x.d?x.d+"무 ":""}${x.l}패 (${x.n}경기)</small></div><span class="tag" style="font-weight:700;${rateColor(Math.round(x.r*100))}">${Math.round(x.r*100)}%</span></li>`:`<li style="padding:10px 0"><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span><div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><span style="color:var(--muted)">기록 없음</span></div></li>`;
   return `<div class="panel"${inModal?' style="margin-top:10px"':""}><h2>${inModal&&m.id!==me?"":"나의 "}파트너·상대 기록</h2><ul class="list">${item("🤝","최강파트너","함께 뛴 승률 최고",bp)}${item("💪","극강상대","상대전적 승률 최고",bo)}${item("😱","나의천적","상대전적 승률 최저",wo)}</ul></div>`}
 function totalRate(m){const keys=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).sort();const start=m.joined||keys[0];if(!start)return null;
   const s=new Date(start+"T00:00");if(isNaN(s))return null;const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;
