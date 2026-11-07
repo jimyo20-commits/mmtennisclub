@@ -1781,7 +1781,9 @@ function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 �
   if(recoDone(ds,cur[i])){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
   if(!S.recoRedoK)S.recoRedoK={};const seen=((S.recoRedoK[ds]=S.recoRedoK[ds]||{})[i]=S.recoRedoK[ds][i]||[]);if(!seen.includes(recoGKey(cur[i])))seen.push(recoGKey(cur[i]));   // 이미 나왔던 조합은 다시 안 나오게
-  const pk=recoGender(c.ps,c.rate,base,{fix:cur[o],ex:seen});
+  const exAll=()=>{const R=S.recoRedoK[ds]||{};return [...new Set([...seen,...(R[o]||[]),recoGKey(cur[o])])]};   // 두 게임 모두 이미 나왔던 조합은 제외
+  let pk=recoGender(c.ps,c.rate,base,{fix:cur[o],ex:exAll()});
+  if(pk&&exAll().includes(recoGKey(pk))){seen.length=0;seen.push(recoGKey(cur[i]));pk=recoGender(c.ps,c.rate,base+"r",{fix:cur[o],ex:[...seen,recoGKey(cur[o])]})||pk;alert("이 인원으로 나올 수 있는 조합을 한 번씩 다 봤어요.\n이제부터 처음 나온 조합부터 다시 돌아요.")}
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
