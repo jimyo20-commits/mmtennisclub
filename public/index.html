@@ -1776,7 +1776,7 @@ const recoRedoCnt=(ds,i)=>{const v=((S.recoRedoG||{})[ds]||{})[i]||0;return Math
 const recoRedoOkG=(u,i)=>voteClosed(u.ds)&&Date.now()<recoStartMs(u);   // 투표 마감 후 ~ 경기 시작 전, 횟수 제한 없음
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
-function recoRedoG(i){if(!isAdmin())return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
+function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
   const cur=c.games,o=1-i;
   if(recoDone(ds,cur[i])){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
