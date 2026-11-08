@@ -1529,7 +1529,7 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
     <p style="margin:4px 0 8px;font-size:13px;line-height:1.65">${esc(cm)}</p>${tools}<div style="font-size:11px;color:var(--muted);margin-top:6px">Winning ${r.W} · Unforced ${r.U} · 툴 그레이드는 20~80 스케일 (50=평균)</div></details></div>`}
 /* ===== 가상 대회 시뮬레이터 (예선 2경기 + 본선 128강 토너먼트, 경기마다 5초 랠리 연출) ===== */
 let rpSim={a:"",b:"",g:"",seed:1},rpPlay=null;
-const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":40},RP_RD=["128강","64강","32강","16강","8강","4강","결승"];
+const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":60},RP_RD=["128강","64강","32강","16강","8강","4강","결승"];
 function rpStop(){if(rpPlay&&rpPlay.t)clearTimeout(rpPlay.t);rpPlay=null}
 function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim.b=a;rpSim.seed=1;render()}
 function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1;render()}
