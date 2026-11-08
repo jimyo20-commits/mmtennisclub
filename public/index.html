@@ -810,6 +810,10 @@ let posPop=null;
 function posPopOpen(id){const nm=mname(id);if(!nm)return;const gs=posGames().filter(g=>(S.pos||[]).some(e=>e.g===g.id&&e.h===nm&&e.pp&&e.pp[nm]));posPop={nm,tab:"g",g:gs.length?gs[gs.length-1].id:"",k:"all"};render()}
 function posPopClose(){posPop=null;render()}
 function posPopSet(k,v){if(!posPop)return;posPop[k]=v;render()}
+/* 이 선수 기록 현황: 경기별로 '직접 친 샷'과 '위치만 찍힌 장면'을 나눠 보여줘 빠진 기록을 찾기 쉽게 */
+function posPopDiag(nm){const R=posGames().map(g=>{const ev=(S.pos||[]).filter(e=>e.g===g.id&&e.pp),hit=ev.filter(e=>e.h===nm&&e.pp[nm]).length,hm=ev.filter(e=>e.h===nm&&!e.pp[nm]).length,oth=ev.filter(e=>e.h!==nm&&e.pp[nm]).length;return {g,hit,hm,oth,tot:ev.length}}).filter(x=>x.hit||x.hm||x.oth);
+  const tH=R.reduce((t,x)=>t+x.hit,0);
+  return `<details style="margin:0 0 8px;font-size:12px"><summary style="cursor:pointer;color:var(--muted)">📋 ${esc(nm)} 기록 현황 · 직접 친 샷 ${tH}개 (${R.filter(x=>x.hit).length}경기)</summary><ul class="list" style="margin-top:4px">${R.length?R.map(x=>`<li style="padding:4px 0;display:block">${esc(posGl(x.g))}<div style="color:var(--muted)">직접 친 샷 ${x.hit}개${x.oth?` · 다른 선수가 친 장면에서 위치만 찍힘 ${x.oth}개`:""}${x.hm?` · 친 선수로는 지정됐지만 본인 위치가 없는 장면 ${x.hm}개`:""}</div></li>`).join(""):`<li class="empty">${esc(nm)} 선수가 나온 위치 기록이 없어요.</li>`}</ul></details>`}
 function posPopView(){if(!posPop||isGuest())return"";const nm=posPop.nm,FM={1:4,4:1,2:3,3:2},fold=q=>q.y<237.7?{x:+(219.4-q.x).toFixed(1),y:+(475.4-q.y).toFixed(1),m:FM[q.m||0]||0}:{x:q.x,y:q.y,m:q.m||0},all=(S.pos||[]).filter(e=>e.h===nm&&e.pp&&e.pp[nm]).map(e=>({...e,pp:{[nm]:fold(e.pp[nm])}})),gs=posGames().filter(g=>all.some(e=>e.g===g.id)),tab=posPop.tab,K=posPop.k;
   const btn=(on,fn,t,c)=>`<button class="btn ${on?"":"ghost"}" style="padding:6px 10px;font-size:13px;${on&&c?"background:"+c+";border-color:"+c+";color:#fff":""}" onclick="${fn}">${t}</button>`;
   const gId=gs.find(g=>g.id===posPop.g)?posPop.g:(gs[0]||{}).id,gm=gs.find(g=>g.id===gId);
@@ -822,6 +826,7 @@ function posPopView(){if(!posPop||isGuest())return"";const nm=posPop.nm,FM={1:4,
   const ana=tab==="g"&&gm?`<div style="margin:14px 0 0;padding:10px;border-radius:10px;background:rgba(128,128,128,.08)"><div style="font-weight:800;font-size:14px">🔎 위치 분석 · ${esc(nm)}</div>${posAnalStat(posNames(gm),(S.pos||[]).filter(e=>e.g===gId&&e.pp),nm)}</div>`:"";
   return `<div class="modal" onclick="if(event.target===this)posPopClose()"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 10px;padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)"><h2 style="margin:0">📍 ${esc(nm)} · 내가 친 샷 위치</h2><button class="btn ghost" style="padding:4px 10px" onclick="posPopClose()">✕</button></div>
   <div style="display:flex;gap:6px;margin-bottom:8px">${btn(tab==="g","posPopSet('tab','g')","경기별 위치 기록")}${btn(tab==="h","posPopSet('tab','h')","🔥 누적 히트맵")}</div>
+  ${posPopDiag(nm)}
   ${all.length?`${tab==="g"?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${gs.map(g=>btn(g.id===gId,`posPopSet('g','${g.id}')`,esc(posGl(g)))).join("")}</div>`:""}
   <div style="display:flex;flex-wrap:wrap;gap:6px">${btn(K==="all","posPopSet('k','all')","전체")}${btn(K==="w","posPopSet('k','w')","✅ 위닝","#22a85a")}${btn(K==="e","posPopSet('k','e')","❌ 에러","#e5484d")}</div>
   <p style="margin:6px 0 0;font-size:12px;font-weight:700">${info}</p>${posCourt(dots,false,true,tab==="h")}${stat}<p style="margin:4px 0 0;font-size:11px;color:var(--muted)">내가 뛴 쪽 반코트만 보여줘요 (코트 끝이 바뀐 경기는 방향을 맞춰 합쳤어요 · 아래쪽이 베이스라인)</p>${ana}`:`<p class="empty">이 선수가 직접 친 위치 기록이 아직 없어요.</p>`}<div style="height:110px" aria-hidden="true"></div></div></div>`}
