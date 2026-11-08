@@ -287,6 +287,11 @@ function anImportPreset(){
       if(g.sc&&JSON.stringify(ex.sc||null)!==JSON.stringify(g.sc)){ex.sc=g.sc;ch=true}
       if(g.pts&&JSON.stringify(ex.pts||null)!==JSON.stringify(g.pts)){ex.pts=g.pts;ch=true}
       if(row&&sg(row)!==sg(pr)){["w","u","c","sv","svp","ph","sq","so","ast","sg"].forEach(k=>delete row[k]);Object.assign(row,pr);delete row.name;if(!row.pid)row.name=pr.name;ch=true}})});   /* 프리셋 데이터가 정정되면 이미 올라간 경기도 맞춰 갱신 */
+  /* 11/7 두 경기: 위치 장면이 한쪽에 몰려 있으면 엑셀과 가장 잘 맞게 한 번만 자동으로 나눈다 */
+  if(!S.imports.rs_1107){const A=(S.analysis||[]).find(x=>x.id==="p-1107-1"),B=(S.analysis||[]).find(x=>x.id==="p-1107-2");
+    if(A&&B){S.imports.rs_1107=1;ch=true;try{posLink();const R=posSplitCalc(A,B);
+      if(R&&R.n>=10&&R.v>=R.n*0.85&&R.v>R.cur){R.h.forEach(e=>{e.g=R.first.id});R.t.forEach(e=>{e.g=R.second.id});
+        posLinkMsg+=(posLinkMsg?"\n":"")+"✅ 11월 7일 두 경기의 위치 장면 "+R.n+"개를 엑셀과 맞게 다시 나눴어요 ("+posGl(R.first)+" "+R.h.length+"개 / "+posGl(R.second)+" "+R.t.length+"개)"}}catch(e){}}}
   if(ch){try{posLink()}catch(e){}}if(ch)save();
 }
 /* 분석 대상 = 회원 + 등록된 게스트 */
@@ -723,18 +728,21 @@ function posAnal(g,N,ev){
   <button class="btn ghost" style="margin-top:8px;padding:5px 10px;font-size:12px" onclick="posSet('ex',0)">📋 데이터 보기(복사용)</button>${exp}`}
 function posShSet(id,c){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id===id);if(!e)return;if(e.s===c)delete e.s;else e.s=c;save();render()}
 function posEdit(id){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id===id),el=document.getElementById("posEd");if(!e||!el)return;const v=el.value.trim().slice(0,80);if(v)e.n=v;else delete e.n;save();render()}
-function posResplit(){if(!isAdmin())return;const gs=posGames(),cur=gs.find(x=>x.id===posG);if(!cur)return;
-  const key=g=>posNames(g).slice().sort().join(",");const mate=gs.filter(x=>x.id!==cur.id&&x.date===cur.date&&key(x)===key(cur));
-  if(mate.length!==1){alert("같은 날·같은 4명이 한 경기 더 있을 때만 쓸 수 있어요.");return}
-  const A=cur,B=mate[0];if(!(A.pts&&A.pts.length&&B.pts&&B.pts.length)){alert("두 경기 모두 엑셀 기록이 있어야 자동으로 나눌 수 있어요.");return}
-  const pool=(S.pos||[]).filter(e=>e.g===A.id||e.g===B.id),n=pool.length;if(!n){alert("나눌 장면이 없어요.");return}
+function posSplitCalc(A,B){const pool=(S.pos||[]).filter(e=>e.g===A.id||e.g===B.id),n=pool.length;if(!n)return null;
   const mc=(g,ev)=>ev.length?posAlign(g,ev).sm.filter(x=>x>=0).length:0;
   let best=null;for(let k=0;k<=n;k++){const h=pool.slice(0,k),t=pool.slice(k);
     const o1=mc(A,h)+mc(B,t),o2=mc(B,h)+mc(A,t);
     if(!best||o1>best.v)best={v:o1,k,first:A,second:B};if(o2>best.v)best={v:o2,k,first:B,second:A}}
   const h=pool.slice(0,best.k),t=pool.slice(best.k);
-  const msg="장면 "+n+"개를 입력 순서대로 나눴을 때 가장 잘 맞는 배치예요.\n\n· ["+posGl(best.first)+"] ← "+h.length+"개 (엑셀과 일치 "+mc(best.first,h)+"개)\n· ["+posGl(best.second)+"] ← "+t.length+"개 (엑셀과 일치 "+mc(best.second,t)+"개)\n\n이대로 옮길까요?";
-  if(!confirm(msg))return;h.forEach(e=>{e.g=best.first.id});t.forEach(e=>{e.g=best.second.id});save();render()}
+  const cur=mc(A,pool.filter(e=>e.g===A.id))+mc(B,pool.filter(e=>e.g===B.id));
+  return {n,h,t,first:best.first,second:best.second,v:best.v,cur,m1:mc(best.first,h),m2:mc(best.second,t)}}
+function posResplit(){if(!isAdmin())return;const gs=posGames(),cur=gs.find(x=>x.id===posG);if(!cur)return;
+  const key=g=>posNames(g).slice().sort().join(",");const mate=gs.filter(x=>x.id!==cur.id&&x.date===cur.date&&key(x)===key(cur));
+  if(mate.length!==1){alert("같은 날·같은 4명이 한 경기 더 있을 때만 쓸 수 있어요.");return}
+  const A=cur,B=mate[0];if(!(A.pts&&A.pts.length&&B.pts&&B.pts.length)){alert("두 경기 모두 엑셀 기록이 있어야 자동으로 나눌 수 있어요.");return}
+  const R=posSplitCalc(A,B);if(!R){alert("나눌 장면이 없어요.");return}
+  const msg="장면 "+R.n+"개를 입력 순서대로 나눴을 때 가장 잘 맞는 배치예요.\n\n· ["+posGl(R.first)+"] ← "+R.h.length+"개 (엑셀과 일치 "+R.m1+"개)\n· ["+posGl(R.second)+"] ← "+R.t.length+"개 (엑셀과 일치 "+R.m2+"개)\n\n이대로 옮길까요?";
+  if(!confirm(msg))return;R.h.forEach(e=>{e.g=R.first.id});R.t.forEach(e=>{e.g=R.second.id});save();render()}
 function posMoveAll(to){if(!isAdmin())return;const from=posG,gs=posGames(),T=gs.find(x=>x.id===to),F=gs.find(x=>x.id===from);if(!T||!F||to===from)return;const L=(S.pos||[]).filter(x=>x.g===from);if(!L.length){alert("옮길 장면이 없어요.");return}
   const ex=(S.pos||[]).filter(x=>x.g===to).length;
   if(!confirm("["+posGl(F)+"]\n장면 "+L.length+"개를\n["+posGl(T)+"]\n로 옮길까요?"+(ex?"\n(받는 경기에 이미 장면 "+ex+"개가 있어 함께 합쳐져요)":"")))return;
