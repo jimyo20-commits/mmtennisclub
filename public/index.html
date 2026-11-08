@@ -1494,7 +1494,7 @@ function anRank(flat){anUsedQ.clear();const kgm=anKingMap();
 /* ===== 리포트(운영자 전용): 분석 데이터를 모아 스카우팅 리포트 · 가상 드래프트/계약 ===== */
 const RP_SK={Fs:["포핸드","포핸드가 확실한 무기예요","포핸드 범실 관리가 과제예요"],Bs:["백핸드","백핸드가 안정적인 득점원이에요","백핸드 안정감을 더 키우면 좋아요"],V:["발리","네트 앞 감각이 돋보여요","발리 마무리 정확도를 높여야 해요"],O:["스매싱","스매싱 마무리가 날카로워요","스매싱 성공률 보완이 필요해요"],sv:["서브","서브가 경기를 여는 열쇠예요","서브 확률을 끌어올리면 한 단계 더 올라가요"],R:["리턴","리턴으로 상대 서버를 괴롭혀요","리턴 대응이 숙제예요"]};
 const RP_ST={Fs:"베이스라인 포핸드 슬러거",Bs:"백핸드 장인",V:"네트 플레이어",O:"스매시 피니셔",sv:"서브 스페셜리스트",R:"리턴 머신"};
-const rpBig=n=>n>=10000?Math.floor(n/10000)+"조 "+(n%10000?(n%10000)+"억":""):n+"억";
+const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+"억"+(r?" "+r.toLocaleString("ko-KR")+"만":"")}return n.toLocaleString("ko-KR")+"만"};   /* 금액 단위: 만원 */
 function rpData(){const fl=anFlat(),by={};fl.forEach(e=>{if(e.pid)(by[e.pid]=by[e.pid]||[]).push(e)});
   const cmp=(a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g);
   const out=S.members.filter(m=>by[m.id]&&by[m.id].length).map(m=>{const L=by[m.id].slice().sort(cmp),st=anStats(L),lv=anHexLv(L,10).lv,sk=AN_HEX.map(([k])=>[k,+lv[k]||0]);
@@ -1503,7 +1503,7 @@ function rpData(){const fl=anFlat(),by={};fl.forEach(e=>{if(e.pid)(by[e.pid]=by[
     const sorted=have.slice().sort((a,b)=>b[1]-a[1]),best=sorted[0],worst=have.length>1?sorted[sorted.length-1]:null;
     const gc=L.map(anGr).map(v=>v*100),half=Math.floor(gc.length/2),rec=gc.slice(0,Math.max(1,Math.ceil(gc.length/2))),old=gc.slice(Math.max(1,Math.ceil(gc.length/2))),
       trend=gc.length>=3&&old.length?Math.round(rec.reduce((a,b)=>a+b,0)/rec.length-old.reduce((a,b)=>a+b,0)/old.length):null;
-    const t=Math.max(0,(ovr-20)/60),sal=Math.round(3+97*t*t),yrs=n>=5&&trend!==null&&trend>=0?3:n>=3?2:1,bonus=Math.round(sal*yrs*.4);
+    const t=Math.max(0,(ovr-20)/60),sal=Math.round((3+97*t*t)*100),yrs=n>=5&&trend!==null&&trend>=0?3:n>=3?2:1,bonus=Math.round(sal*yrs*.4);
     return {m,L,st,n,ovr,lv,sk,best,worst,trend,sal,yrs,bonus,p1:st.p1,W:st.W,U:st.U}});
   out.sort((a,b)=>b.ovr-a.ovr||(b.st.contrib||0)-(a.st.contrib||0)||b.n-a.n);return out}
 const rpGrade=o=>o>=72?"S":o>=62?"A":o>=52?"B":o>=42?"C":"D";
@@ -1515,7 +1515,7 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
   const trendTxt=r.trend===null?"표본이 아직 적어 흐름은 판단 보류":r.trend>=15?`최근 상승세 (+${r.trend}p) — 몸값 급등 예상`:r.trend<=-15?`최근 하락세 (${r.trend}p) — 컨디션 점검 필요`:"꾸준한 흐름을 유지 중";
   const cm=[opener,bs?SK(bs[0])[1]+"."+(ws&&ws[0]!==bs[0]?" 반면 "+SK(ws[0])[2]+".":""):"",`종합 승리기여도 ${r.st.contrib??"-"}%, ${trendTxt}.`].filter(Boolean).join(" ");
   const tools=r.sk.map(([k,v])=>{const g=v?Math.round(20+v*6):0;const hu=Math.round(arH(g?(g-20)/60*100:0));return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin:3px 0"><span style="width:44px;color:var(--muted)">${RP_SK[k][0]}</span><span style="flex:1;height:8px;border-radius:4px;background:rgba(128,128,128,.15);overflow:hidden"><span style="display:block;height:100%;width:${g?Math.round((g-20)/60*100):0}%;background:hsl(${hu},75%,48%);border-radius:4px"></span></span><b style="width:26px;text-align:right;font-variant-numeric:tabular-nums">${g||"-"}</b></div>`}).join("");
-  const inc=[];if(r.p1!==null&&r.p1!==undefined)inc.push(`1st 서브 ${Math.min(95,Math.max(60,Math.ceil((r.p1+5)/5)*5))}% 이상 시 연봉 +${Math.max(1,Math.round(r.sal*.08))}억`);inc.push(`승리기여도 ${Math.max(100,Math.ceil(((r.st.contrib||80)+20)/10)*10)}% 달성 시 +${Math.max(1,Math.round(r.sal*.1))}억`);if(r.n<3)inc.push("표본 3경기 이상 쌓이면 재계약 협상");
+  const inc=[];if(r.p1!==null&&r.p1!==undefined)inc.push(`1st 서브 ${Math.min(95,Math.max(60,Math.ceil((r.p1+5)/5)*5))}% 이상 시 연봉 +${rpBig(Math.max(10,r.sal*.08))}`);inc.push(`승리기여도 ${Math.max(100,Math.ceil(((r.st.contrib||80)+20)/10)*10)}% 달성 시 +${rpBig(Math.max(10,r.sal*.1))}`);if(r.n<3)inc.push("표본 3경기 이상 쌓이면 재계약 협상");
   return `<div style="border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff);margin:0 0 12px;overflow:hidden">
   <div style="display:flex;align-items:center;gap:10px;padding:12px 12px 8px">
     <div style="flex:none;width:42px;height:42px;border-radius:12px;background:${medal};display:flex;flex-direction:column;align-items:center;justify-content:center;color:${rank<=3?"#3b2a00":"#475569"};line-height:1"><span style="font-size:9px;font-weight:700">PICK</span><span style="font-size:19px;font-weight:900">${rank}</span></div>
@@ -1531,7 +1531,7 @@ function reportView(){if(!isAdmin())return`<div class="panel"><p class="empty">�
   const games=(S.analysis||[]).length,tot=R.reduce((t,r)=>t+r.sal,0),top=R[0],avg=Math.round(R.reduce((t,r)=>t+r.ovr,0)/R.length);
   const best=AN_HEX.map(([k,l])=>{const c=R.filter(r=>r.lv[k]>0).sort((a,b)=>b.lv[k]-a.lv[k])[0];return c?`<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(212,160,23,.14);border:1px solid rgba(212,160,23,.4);font-size:12px">${l} 👑 <b>${esc(c.m.name)}</b></span>`:""}).join("");
   return `<div class="panel" style="padding:0;overflow:hidden"><div style="padding:16px;background:linear-gradient(135deg,#0f2a1d,#14532d 60%,#1d6b3d);color:#fff"><div style="font-size:11px;letter-spacing:2px;opacity:.75">MUMYEONGHOE SCOUTING REPORT</div><h2 style="margin:2px 0 4px;color:#fff;font-size:22px">📋 무명회 스카우팅 리포트</h2><div style="font-size:12px;opacity:.85;line-height:1.6">분석된 ${games}경기 · 선수 ${R.length}명 · 평균 OVR ${avg}<br>가상 샐러리 총액 <b>${rpBig(tot)}</b> · 재미로 보는 가상 계약입니다 ⚾🎾</div></div>
-  <div style="padding:12px 14px"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">🏆 툴 부문 1위</div>${best}<div style="margin-top:8px;font-size:12px;color:var(--muted);line-height:1.6">OVR = 승리기여도(50%) + 6개 스킬 평균(50%)을 20~80 스케일로 환산, 경기 수가 적으면 평균(50) 쪽으로 보정해요. 연봉은 OVR에 비례해 3~100억, 계약금은 연봉×계약기간×40%예요.</div></div></div>
+  <div style="padding:12px 14px"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">🏆 툴 부문 1위</div>${best}<div style="margin-top:8px;font-size:12px;color:var(--muted);line-height:1.6">OVR = 승리기여도(50%) + 6개 스킬 평균(50%)을 20~80 스케일로 환산, 경기 수가 적으면 평균(50) 쪽으로 보정해요. 연봉은 OVR에 비례해 약 300만~1억, 계약금은 연봉×계약기간×40%예요.</div></div></div>
   <div style="font-size:14px;font-weight:800;margin:14px 2px 8px">🎯 드래프트 보드 · 전체 ${R.length}명</div>${R.map(rpCard).join("")}`}
 const V={
 report(){return reportView()},
