@@ -691,11 +691,12 @@ function posAnalStat(N,ev,W){const pc=(a,b)=>b?Math.round(a/b*100)+"%":"-",dep=y
   const FE=Object.entries(FG).map(([l,o])=>({l,w:o.w,e:o.e,n:o.w+o.e}));
   const TW=FE.reduce((t,x)=>t+x.w,0),TE=FE.reduce((t,x)=>t+x.e,0),fWin=FE.filter(x=>x.w>0).sort((a,b)=>b.w-a.w||b.w/b.n-a.w/a.n).slice(0,4),fErr=FE.filter(x=>x.e>0).sort((a,b)=>b.e-a.e||b.e/b.n-a.e/a.n).slice(0,4),fT=x=>`${x.l} ${pc(x.w,TW)}(${x.w}/${TW})`,fErrT=x=>`${x.l} ${pc(x.e,TE)}(${x.e}/${TE})`;
   const td="padding:4px 6px;border-top:1px solid var(--line);font-size:13px";
+  const erC=r=>`hsl(${Math.round(135*(1-Math.min(1,Math.max(0,r))))},80%,${r<.5?26:30}%)`;
   const stat=mine.length?`<table style="width:100%;border-collapse:collapse;margin-top:6px"><tr style="font-size:12px;color:var(--muted)"><td style="padding:4px 6px"></td><td style="padding:4px 6px">✅ 위닝 ${zw.n}</td><td style="padding:4px 6px">❌ 에러 ${ze.n}</td></tr>
     ${ZN.map((z,i)=>`<tr><td style="${td}">${z}</td><td style="${td}">${zw.c[i]}회 (${pc(zw.c[i],zw.n)})</td><td style="${td}">${ze.c[i]}회 (${pc(ze.c[i],ze.n)})</td></tr>`).join("")}
     <tr><td style="${td}">서서 친 샷</td><td style="${td}">${sw}회</td><td style="${td}">${se}회</td></tr>
     <tr><td style="${td}">달리며 친 샷</td><td style="${td}">${mw}회</td><td style="${td}">${me}회</td></tr></table>
-    <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b>${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:#dc2626">${pc(me,mw+me)}</b>`:""}</p><div style="margin:12px 0 0;font-weight:800;font-size:13px">팀포지셔닝 분석</div><div style="display:flex;gap:10px;margin-top:6px">${gridT("w","#16a34a")}${gridT("e","#dc2626")}</div><p style="margin:2px 0 0;font-size:11px;color:var(--muted)">세로(왼쪽 글자)=내 위치 · 가로(위쪽 글자)=파트너 위치 · 칸의 숫자=그 포지션 조합에서 나온 샷 횟수 · 1개=연한 색, 2개=중간 색, 3개 이상=진한 색 · 전=서비스라인 안, 중=서비스라인~베이스라인 사이, 후=베이스라인 쪽</p>`
+    <p style="margin:8px 0 0;font-size:13px;line-height:1.6">${(sw+se)?`서서 친 샷의 에러 비율 <b style="color:${erC(se/(sw+se))}">${pc(se,sw+se)}</b>`:""}${(mw+me)?` · 달리며 친 샷의 에러 비율 <b style="color:${erC(me/(mw+me))}">${pc(me,mw+me)}</b>`:""}</p><div style="margin:12px 0 0;font-weight:800;font-size:13px">팀포지셔닝 분석</div><div style="display:flex;gap:10px;margin-top:6px">${gridT("w","#16a34a")}${gridT("e","#dc2626")}</div><p style="margin:2px 0 0;font-size:11px;color:var(--muted)">세로(왼쪽 글자)=내 위치 · 가로(위쪽 글자)=파트너 위치 · 칸의 숫자=그 포지션 조합에서 나온 샷 횟수 · 1개=연한 색, 2개=중간 색, 3개 이상=진한 색 · 전=서비스라인 안, 중=서비스라인~베이스라인 사이, 후=베이스라인 쪽</p>`
     :`<p class="empty" style="margin:8px 0 0">${esc(W)} 선수가 친 장면이 아직 없어요.</p>`;
   return stat}
 function posAnal(g,N,ev){
