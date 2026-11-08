@@ -1526,40 +1526,63 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
   <div style="margin:0 12px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,rgba(212,160,23,.14),rgba(212,160,23,.05));border:1px solid rgba(212,160,23,.35);font-size:12.5px;line-height:1.6"><div style="display:flex;flex-wrap:wrap;gap:4px 14px"><span>💰 계약금 <b>${rpBig(r.bonus)}</b></span><span>📈 연봉 <b>${rpBig(r.sal)}</b></span><span>📝 ${r.yrs}년 계약</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">${inc.join(" · ")}</div></div>
   <details style="padding:6px 12px 10px"><summary style="cursor:pointer;font-size:12px;color:var(--muted);list-style:none;padding:4px 0">🔎 스카우팅 노트 · 툴 그레이드 보기 ▾</summary>
     <p style="margin:4px 0 8px;font-size:13px;line-height:1.65">${esc(cm)}</p>${tools}<div style="font-size:11px;color:var(--muted);margin-top:6px">Winning ${r.W} · Unforced ${r.U} · 툴 그레이드는 20~80 스케일 (50=평균)</div></details></div>`}
-/* ===== 가상 대회 시뮬레이터 ===== */
-let rpSim={a:"",b:"",g:"개나리부",seed:1};
-const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":40};
-function rpSet(k,v){rpSim[k]=v;if(k==="a"||k==="b"||k==="g")rpSim.seed=1;render()}
-function rpTeam(A,B){const sk=AN_HEX.map(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0,hi=Math.max(x,y),lo=Math.min(x,y);return lo>0?.65*hi+.35*lo:hi*.85}),sa=sk.reduce((t,v)=>t+v,0)/sk.length,comp=AN_HEX.filter(([k])=>Math.max(A.lv[k]||0,B.lv[k]||0)>=6&&Math.min(A.lv[k]||0,B.lv[k]||0)<5&&Math.min(A.lv[k]||0,B.lv[k]||0)>0).length;
+/* ===== 가상 대회 시뮬레이터 (예선 2경기 + 본선 128강 토너먼트, 경기마다 5초 랠리 연출) ===== */
+let rpSim={a:"",b:"",g:"",seed:1},rpPlay=null;
+const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":40},RP_RD=["128강","64강","32강","16강","8강","4강","결승"];
+function rpStop(){if(rpPlay&&rpPlay.t)clearTimeout(rpPlay.t);rpPlay=null}
+function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1;render()}
+function rpTeam(A,B){const sk=AN_HEX.map(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0,hi=Math.max(x,y),lo=Math.min(x,y);return lo>0?.65*hi+.35*lo:hi*.85}),sa=sk.reduce((t,v)=>t+v,0)/sk.length,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length;
   const base=.5*(A.ovr+B.ovr)/2+.5*(20+6*sa);return {r:Math.round((base+Math.min(3,comp)*.8)*10)/10,comp,sa}}
 function rpRng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function rpRun(me,g,rnd,detail){const mean=RP_GB[g]||50,RN=["16강","8강","4강","결승"],log=[];
-  const gauss=()=>{let u=0;for(let i=0;i<6;i++)u+=rnd();return(u-3)/.7071};
-  for(let r=0;r<4;r++){const opp=mean+2.5*r+6*gauss(),p=1/(1+Math.exp(-(me-opp)/9)),win=rnd()<p;
-    if(detail){const lo=win?Math.max(0,Math.min(5,Math.round((1-p)*9+(rnd()-.5)*3))):6,sc=win?`6:${lo}`:`${Math.max(0,Math.min(5,Math.round(p*9+(rnd()-.5)*3)))}:6`;log.push({rd:RN[r],opp:Math.round(opp),p:Math.round(p*100),win,sc})}
-    if(!win)return {exit:r,log};}
-  return {exit:4,log}}
+/* 한 대회 전체를 미리 굴려서 경기 목록으로 만든다. exit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 결승 패(준우승) · 7 우승 */
+function rpRun(me,g,rnd){const mean=RP_GB[g]||50,gauss=()=>{let u=0;for(let i=0;i<6;i++)u+=rnd();return(u-3)/.7071},list=[];
+  const play=(opp)=>{const p=1/(1+Math.exp(-(me-opp)/9)),win=rnd()<p,w=win?6:Math.max(0,Math.min(5,Math.round(p*9+(rnd()-.5)*3))),l=win?Math.max(0,Math.min(5,Math.round((1-p)*9+(rnd()-.5)*3))):6;return {opp:Math.round(opp),p:Math.round(p*100),win,sc:win?`6:${l}`:`${w}:6`}};
+  let qw=0;for(let q=0;q<2;q++){const m=play(mean-4+6*gauss());m.kind="q";m.n=q+1;if(m.win)qw++;m.qw=qw;list.push(m)}
+  if(!qw)return {list,exit:-1};
+  for(let r=0;r<7;r++){const m=play(mean+2*r+6*gauss());m.kind="m";m.r=r;list.push(m);if(!m.win)return {list,exit:r===6?6:r}}
+  return {list,exit:7}}
+function rpMsg(m){if(m.kind==="q"){if(m.n===1)return m.win?"예선 1승! 🎉":"예선 1패 😢";const q=m.qw;return q===2?"예선 2승! 본선 진출 🎉":q===1?"예선 1승 1패 · 본선 진출! 🙌":"예선 2패 · 예선 탈락 😭"}
+  if(m.win)return m.r===6?"우승!!! 🏆🎉":m.r===5?"결승 진출! 🔥":`${RP_RD[m.r+1]} 진출! 🎉`;return m.r===6?"준우승 🥈":`${RP_RD[m.r]} 탈락 😭`}
+function rpLabel(m){return m.kind==="q"?`예선 ${m.n}경기`:RP_RD[m.r]}
+function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.seed++;const T=rpTeam(A,B),res=rpRun(T.r,rpSim._g,rpRng(rpHash(A.m.id+B.m.id+rpSim._g)+rpSim.seed*7919));
+  rpPlay={res,i:0,ph:"rally",done:[],t:null};rpStep(true)}
+function rpStep(first){if(!rpPlay||tab!=="report"){rpStop();return}
+  const P=rpPlay;P.ph="rally";render();
+  P.t=setTimeout(()=>{if(!rpPlay)return;P.ph="result";P.done.push(P.res.list[P.i]);render();
+    P.t=setTimeout(()=>{if(!rpPlay)return;P.i++;if(P.i>=P.res.list.length){P.ph="end";render();return}rpStep()},1800)},5000)}
+function rpSkip(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);P.done=P.res.list.slice();P.i=P.res.list.length;P.ph="end";render()}
 function rpSimView(R){if(!R.length)return"";
   const ok=id=>R.find(r=>r.m.id===id),A=ok(rpSim.a)||R[0],B=ok(rpSim.b)&&rpSim.b!==A.m.id?ok(rpSim.b):R.find(r=>r.m.id!==A.m.id);if(!B)return"";
-  const T=rpTeam(A,B),N=3000,cnt=[0,0,0,0,0],rng=rpRng(rpHash(A.m.id+B.m.id+rpSim.g)+1);
-  for(let i=0;i<N;i++)cnt[rpRun(T.r,rpSim.g,rng).exit]++;
-  const pc=cnt.map(c=>Math.round(c/N*1000)/10),reach=[100,0,0,0,0];let cum=100;pc.slice(0,4).forEach((v,i)=>{cum-=v;reach[i+1]=Math.round(cum*10)/10});
-  const LAB=["16강 탈락","8강 탈락","4강 탈락","준우승","우승"],COL=["#94a3b8","#64748b","#f59e0b","#94a3b8","#eab308"];
-  const exp=cnt.reduce((t,c,i)=>t+c*i,0)/N,likely=cnt.indexOf(Math.max(...cnt)),verdict=pc[4]>=25?"🏆 우승 후보! 대진만 잘 풀리면 트로피가 보여요.":pc[4]+pc[3]>=30?"🥈 결승 무대도 노려볼 만한 강팀이에요.":reach[2]>=45?"🔥 4강 단골! 한 번만 터지면 대형 사고도 가능해요.":reach[1]>=55?"💪 8강 안정권, 조 추첨 운이 따르면 더 갈 수 있어요.":"🌱 첫 승부터 집중! 호흡을 맞추면 이변을 만들 수 있어요.";
-  const run=rpRun(T.r,rpSim.g,rpRng(rpHash(A.m.id+B.m.id)+rpSim.seed*7919),true),fin=["16강 탈락","8강 탈락","4강 탈락","준우승","우승 🏆"][run.exit];
+  const fem=gdOf(A.m)==="여"&&gdOf(B.m)==="여",GR=fem?["개나리부","국화부"]:["지역신인부","전국신인부","오픈부"],g=GR.includes(rpSim.g)?rpSim.g:GR[0];rpSim._A=A;rpSim._B=B;rpSim._g=g;
+  const T=rpTeam(A,B),N=3000,cnt=new Array(9).fill(0),rng=rpRng(rpHash(A.m.id+B.m.id+g)+1);
+  for(let i=0;i<N;i++)cnt[rpRun(T.r,g,rng).exit+1]++;
+  const pc=i=>Math.round(cnt[i]/N*1000)/10,reach=k=>Math.round(cnt.slice(k+1).reduce((t,c)=>t+c,0)/N*1000)/10;   /* k: 0=본선진출 1=64강 2=32강 3=16강 4=8강 5=4강 6=결승 7=우승 (exit>=k) */
+  const stage=["예선 탈락","128강 탈락","64강 탈락","32강 탈락","16강 탈락","8강 탈락","4강 탈락","준우승","우승"],likely=cnt.indexOf(Math.max(...cnt)),
+    verdict=pc(8)>=15?"🏆 우승 후보! 대진만 잘 풀리면 트로피가 보여요.":pc(8)+pc(7)>=25?"🥈 결승 무대도 노려볼 만한 강팀이에요.":reach(5)>=30?"🔥 4강 단골! 한 번만 터지면 대형 사고도 가능해요.":reach(3)>=40?"💪 16강 안정권, 대진 운이 따르면 더 갈 수 있어요.":"🌱 예선부터 집중! 호흡을 맞추면 이변을 만들 수 있어요.";
   const sel=(k,cur,ex)=>`<select onchange="rpSet('${k}',this.value)" style="flex:1;min-width:0;padding:8px;border-radius:10px;border:1px solid var(--line);font:inherit;font-size:14px">${R.filter(r=>r.m.id!==ex).map(r=>`<option value="${r.m.id}"${r.m.id===cur?" selected":""}>${esc(r.m.name)} (OVR ${r.ovr})</option>`).join("")}</select>`;
   const best=(()=>{let bp=null;for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const t=rpTeam(R[i],R[j]);if(!bp||t.r>bp.t.r)bp={a:R[i],b:R[j],t}}return bp})();
-  return `<div class="panel" style="margin-top:14px;padding:0;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,#1e1b4b,#3730a3 70%,#4f46e5);color:#fff"><h2 style="margin:0;color:#fff">🏟️ 가상 대회 시뮬레이터</h2><div style="font-size:12px;opacity:.85;margin-top:2px">두 사람이 파트너가 되어 16강 토너먼트에 나가면? 3,000번 가상 대회를 돌려 봤어요.</div></div>
+  const P=rpPlay,cur=P&&P.ph==="rally"?P.res.list[P.i]:null,names=esc(A.m.name)+" · "+esc(B.m.name);
+  const sty=`<style>@keyframes rpX{from{left:10%}to{left:82%}}@keyframes rpY{0%,100%{transform:translateY(0)}50%{transform:translateY(-34px)}}@keyframes rpB{from{width:0}to{width:100%}}@keyframes rpD{0%{opacity:.2}50%{opacity:1}100%{opacity:.2}}</style>`;
+  const stageBox=P?(cur?`<div style="border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-top:10px"><div style="padding:8px 12px;background:#1e1b4b;color:#fff;font-size:13px;font-weight:800;display:flex;justify-content:space-between"><span>${rpLabel(cur)}</span><span style="opacity:.8;font-weight:500">상대 전력 ${cur.opp}</span></div>
+    <div style="position:relative;height:110px;background:linear-gradient(#3f8f5a,#2f7a49);overflow:hidden"><div style="position:absolute;left:50%;top:8px;bottom:8px;width:3px;background:rgba(255,255,255,.85)"></div><div style="position:absolute;left:6%;right:6%;top:18px;bottom:18px;border:2px solid rgba(255,255,255,.55)"></div>
+    <div style="position:absolute;left:4%;bottom:12px;font-size:11px;color:#fff;font-weight:800;text-shadow:0 1px 2px #000">${names}</div><div style="position:absolute;right:4%;bottom:12px;font-size:11px;color:#fff;font-weight:800;text-shadow:0 1px 2px #000">상대팀</div>
+    <div style="position:absolute;top:50px;left:10%;width:24px;animation:rpX .7s linear infinite alternate"><div style="font-size:22px;animation:rpY .7s linear infinite">🎾</div></div></div>
+    <div style="padding:8px 12px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">랠리 중<span style="animation:rpD 1s infinite"> ●</span><span style="animation:rpD 1s .25s infinite"> ●</span><span style="animation:rpD 1s .5s infinite"> ●</span></div><div style="height:6px;border-radius:3px;background:rgba(128,128,128,.2);overflow:hidden"><div style="height:100%;background:#4f46e5;animation:rpB 5s linear forwards"></div></div></div></div>`
+   :P.ph==="result"?(()=>{const m=P.res.list[P.i];return `<div style="margin-top:10px;padding:18px 12px;border-radius:14px;text-align:center;background:${m.win?"linear-gradient(135deg,rgba(22,163,74,.18),rgba(22,163,74,.06))":"linear-gradient(135deg,rgba(220,38,38,.18),rgba(220,38,38,.06))"};border:1px solid ${m.win?"rgba(22,163,74,.5)":"rgba(220,38,38,.5)"}"><div style="font-size:12px;color:var(--muted)">${rpLabel(m)} · ${m.win?"승":"패"} ${m.sc}</div><div style="font-size:24px;font-weight:900;margin-top:4px;color:${m.win?"#15803d":"#dc2626"}">${rpMsg(m)}</div></div>`})()
+   :`<div style="margin-top:10px;padding:16px 12px;border-radius:14px;text-align:center;background:linear-gradient(135deg,#312e81,#4f46e5);color:#fff"><div style="font-size:12px;opacity:.85">최종 결과</div><div style="font-size:26px;font-weight:900;margin-top:2px">${stage[P.res.exit+1]}${P.res.exit===7?" 🏆":""}</div><div style="font-size:12px;opacity:.85;margin-top:2px">${names} 조 · ${g}</div></div>`):"";
+  const hist=P&&P.done.length?`<div style="margin-top:8px">${P.done.map(m=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 8px;margin:3px 0;border-radius:8px;background:${m.win?"rgba(22,163,74,.1)":"rgba(220,38,38,.1)"}"><b style="width:74px;flex:none">${rpLabel(m)}</b><span style="flex:1;color:var(--muted)">상대 ${m.opp} · 승률 ${m.p}%</span><b style="color:${m.win?"#15803d":"#dc2626"}">${m.win?"승":"패"} ${m.sc}</b></div>`).join("")}</div>`:"";
+  return sty+`<div class="panel" style="margin-top:14px;padding:0;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,#1e1b4b,#3730a3 70%,#4f46e5);color:#fff"><h2 style="margin:0;color:#fff">🏟️ 가상 대회 시뮬레이터</h2><div style="font-size:12px;opacity:.85;margin-top:2px">예선 2경기 → 본선 128강 토너먼트! 경기마다 5초 랠리 끝에 결과가 나와요.</div></div>
   <div style="padding:12px 14px"><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><span style="flex:none;font-size:12px;color:var(--muted);width:34px">선수1</span>${sel("a",A.m.id,B.m.id)}</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><span style="flex:none;font-size:12px;color:var(--muted);width:34px">선수2</span>${sel("b",B.m.id,A.m.id)}</div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${Object.keys(RP_GB).map(g=>`<button class="btn ${g===rpSim.g?"":"ghost"}" style="padding:5px 10px;font-size:12px" onclick="rpSet('g','${g}')">${g}</button>`).join("")}</div>
-  <div style="padding:10px;border-radius:12px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.3);text-align:center"><div style="font-size:13px;font-weight:800">${esc(A.m.name)} · ${esc(B.m.name)} 조</div><div style="font-size:12px;color:var(--muted);margin-top:2px">팀 전력 ${T.r}${T.comp?` · 서로 보완되는 스킬 ${T.comp}개 (케미 +)`:""} · ${rpSim.g} 평균 상대 ${RP_GB[rpSim.g]}</div><div style="font-size:13px;margin-top:6px;font-weight:700">${verdict}</div></div>
-  <div style="font-size:12px;font-weight:800;margin:12px 0 6px">📊 예상 최종 성적 (가장 가능성 높은 결과: ${LAB[likely]})</div>
-  ${[4,3,2,1,0].map(i=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin:3px 0"><span style="width:62px">${LAB[i]}</span><span style="flex:1;height:12px;border-radius:6px;background:rgba(128,128,128,.14);overflow:hidden"><span style="display:block;height:100%;width:${Math.min(100,pc[i]*1.6)}%;background:${COL[i]};border-radius:6px"></span></span><b style="width:44px;text-align:right;font-variant-numeric:tabular-nums">${pc[i]}%</b></div>`).join("")}
-  <div style="font-size:11px;color:var(--muted);margin-top:6px">라운드 진출 확률 · 8강 ${reach[1]}% · 4강 ${reach[2]}% · 결승 ${reach[3]}% · 우승 ${pc[4]}%</div>
-  <div style="font-size:12px;font-weight:800;margin:14px 0 6px;display:flex;justify-content:space-between;align-items:center"><span>🎬 이번 대회 시나리오 → <span style="color:#4f46e5">${fin}</span></span><button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="rpSim.seed++;render()">🎲 다시 돌리기</button></div>
-  ${run.log.map(l=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 8px;margin:3px 0;border-radius:8px;background:${l.win?"rgba(22,163,74,.1)":"rgba(220,38,38,.1)"}"><b style="width:38px">${l.rd}</b><span style="flex:1">상대 전력 ${l.opp} · 승률 예상 ${l.p}%</span><b style="color:${l.win?"#15803d":"#dc2626"}">${l.win?"승":"패"} ${l.sc}</b></div>`).join("")}
-  <div style="margin-top:12px;padding:8px 10px;border-radius:10px;background:rgba(212,160,23,.12);border:1px solid rgba(212,160,23,.4);font-size:12.5px">⭐ 추천 드림팀: <b>${esc(best.a.m.name)} · ${esc(best.b.m.name)}</b> (팀 전력 ${best.t.r}) <button class="btn ghost" style="padding:3px 8px;font-size:11px;margin-left:4px" onclick="rpSim.a='${best.a.m.id}';rpSim.b='${best.b.m.id}';rpSim.seed=1;render()">적용</button></div>
-  <p style="margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.6">팀 전력 = 두 사람 OVR 평균과 스킬 조합(강한 쪽 65% + 약한 쪽 35%)을 합산하고, 서로 약점을 메우면 가산해요. 상대 전력은 ${rpSim.g} 기준 평균에 라운드가 올라갈수록 높아지는 무작위 값이고, 승패는 전력 차에 따른 확률로 정해요. 분석 기록이 적은 선수일수록 오차가 커요. 재미로만 보세요 😄</p></div></div>`}
+  <div style="font-size:11px;color:var(--muted);margin:8px 0 4px">출전 등급 · ${fem?"여자부":"남자부"}${!fem&&(gdOf(A.m)==="여"||gdOf(B.m)==="여"||!gdOf(A.m)||!gdOf(B.m))?" (혼성·성별 미등록은 남자부 기준)":""}</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${GR.map(x=>`<button class="btn ${x===g?"":"ghost"}" style="padding:5px 12px;font-size:13px" onclick="rpSet('g','${x}')">${x}</button>`).join("")}</div>
+  <div style="padding:10px;border-radius:12px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.3);text-align:center"><div style="font-size:13px;font-weight:800">${names} 조</div><div style="font-size:12px;color:var(--muted);margin-top:2px">팀 전력 ${T.r}${T.comp?` · 보완되는 스킬 ${T.comp}개 (케미 +)`:""} · ${g} 평균 상대 ${RP_GB[g]}</div><div style="font-size:13px;margin-top:6px;font-weight:700">${verdict}</div></div>
+  <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="flex:1;padding:12px;font-size:15px;font-weight:800" onclick="rpStart()" ${P&&P.ph!=="end"?"disabled":""}>🎾 ${P?(P.ph==="end"?"다시 출전하기":"대회 진행 중…"):"대회 출전!"}</button>${P&&P.ph!=="end"?`<button class="btn ghost" style="flex:none;padding:12px" onclick="rpSkip()">⏭ 건너뛰기</button>`:""}</div>
+  ${stageBox}${hist}
+  <div style="font-size:12px;font-weight:800;margin:14px 0 6px">📊 3,000번 돌려 본 예상 성적 (가장 가능성 높은 결과: ${stage[likely]})</div>
+  ${[8,7,6,5,4,3,2,1,0].map(i=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin:2px 0"><span style="width:64px">${stage[i]}</span><span style="flex:1;height:10px;border-radius:5px;background:rgba(128,128,128,.14);overflow:hidden"><span style="display:block;height:100%;width:${Math.min(100,pc(i)*2)}%;background:${i===8?"#eab308":i===7?"#94a3b8":i>=4?"#f59e0b":"#64748b"};border-radius:5px"></span></span><b style="width:44px;text-align:right;font-variant-numeric:tabular-nums">${pc(i)}%</b></div>`).join("")}
+  <div style="font-size:11px;color:var(--muted);margin-top:6px">본선 진출 ${reach(0)}% · 16강 ${reach(3)}% · 8강 ${reach(4)}% · 4강 ${reach(5)}% · 결승 ${reach(6)}% · 우승 ${pc(8)}%</div>
+  <div style="margin-top:12px;padding:8px 10px;border-radius:10px;background:rgba(212,160,23,.12);border:1px solid rgba(212,160,23,.4);font-size:12.5px">⭐ 추천 드림팀: <b>${esc(best.a.m.name)} · ${esc(best.b.m.name)}</b> (팀 전력 ${best.t.r}) <button class="btn ghost" style="padding:3px 8px;font-size:11px;margin-left:4px" onclick="rpStop();rpSim.a='${best.a.m.id}';rpSim.b='${best.b.m.id}';rpSim.seed=1;render()">적용</button></div>
+  <p style="margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.6">예선 2경기 중 1승 이상이면 본선(128강)에 올라가요. 팀 전력은 두 사람 OVR 평균과 스킬 조합(강한 쪽 65% + 약한 쪽 35%)에 보완 가산을 더해 계산하고, 상대 전력은 출전 등급 평균에 라운드가 올라갈수록 높아지는 무작위 값이에요. 승패는 전력 차에 따른 확률로 정해요. 분석 기록이 적은 선수일수록 오차가 커요. 재미로만 보세요 😄</p></div></div>`}
 function reportView(){if(!isAdmin())return`<div class="panel"><p class="empty">운영자만 볼 수 있어요.</p></div>`;
   const R=rpData();if(!R.length)return`<div class="panel"><h2>📋 리포트</h2><p class="empty">분석된 경기가 아직 없어요. 분석 탭에 엑셀을 올리면 스카우팅 리포트가 만들어져요.</p></div>`;
   const games=(S.analysis||[]).length,tot=R.reduce((t,r)=>t+r.sal,0),top=R[0],avg=Math.round(R.reduce((t,r)=>t+r.ovr,0)/R.length);
