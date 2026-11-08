@@ -274,10 +274,12 @@ function anImportPreset(){
     if(sc.length){const nid="px"+d.id;if(!(S.posExtra||[]).some(x=>x.id===nid)){if(!S.posExtra)S.posExtra=[];S.posExtra.push({id:nid,date:d.date,type:"위치만",court:"",rows:d.names.map(name=>({name})),posOnly:1,...(d.sc?{sc:d.sc}:{})})}sc.forEach(e=>{e.g=nid})}
     S.analysis=(S.analysis||[]).filter(x=>x.id!==d.id)});
   const sig=x=>[x.date,String(x.court||"").toUpperCase(),(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
+  const tm=x=>{const k=(x.rows||[]).map(r=>r.pid||r.name);if(k.length!==4)return"";return[[k[0],k[1]].sort().join("+"),[k[2],k[3]].sort().join("+")].sort().join("|")};
+  const scOk=(x,y)=>{if(!(x.sc&&y.sc))return true;const f=(q)=>{const k=(q.rows||[]).map(r=>r.pid||r.name);if(k.length!==4)return q.sc;return [k[0],k[1]].sort().join("+")<=[k[2],k[3]].sort().join("+")?q.sc:[q.sc[1],q.sc[0]]};const a=f(x),c=f(y);return +a[0]===+c[0]&&+a[1]===+c[1]};
   AN_PRESET.forEach(g=>{const k="p_"+g.id;if(S.imports[k])return;S.imports[k]=1;ch=true;
     const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o={...r};delete o.name;if(m)o.pid=m.id;else{o.pid="";o.name=r.name}return o});
     const rec={id:g.id,by:me,date:g.date,type:g.type,court:g.court,note:g.note||"",rows,...(g.pts?{pts:g.pts}:{}),...(g.sc?{sc:g.sc}:{})};
-    if(!(S.analysis||[]).some(x=>x.id===g.id||(!/^p-/.test(String(x.id))&&sig(x)===sig(rec)))){   /* 같은 날·코트·선수 4명이라도 다른 프리셋(p-…)이면 별개 경기 */if(!S.analysis)S.analysis=[];S.analysis.push(rec)}});
+    if(!(S.analysis||[]).some(x=>x.id===g.id||(!/^p-/.test(String(x.id))&&sig(x)===sig(rec)&&tm(x)===tm(rec)&&scOk(x,rec)))){   /* 같은 날·코트·선수 4명이라도 다른 프리셋(p-…)이면 별개 경기 */if(!S.analysis)S.analysis=[];S.analysis.push(rec)}});
   /* 이미 올라간 프리셋 경기에 세부 내역(w/u 등)이 비어 있으면 최신 프리셋으로 채운다 */
   AN_PRESET.forEach(g=>{const ex=(S.analysis||[]).find(x=>x.id===g.id);if(!ex||!ex.rows)return;
     g.rows.forEach(pr=>{const row=ex.rows.find(r=>(r.pid&&(S.members.find(m=>m.id===r.pid)||{}).name===pr.name)||r.name===pr.name);
@@ -494,7 +496,11 @@ function anAddGame(g,by){
   const rows=g.rows.map(r=>{const m=S.members.find(x=>x.name===r.name),o=m?{pid:m.id,s1:r.s1,s2:r.s2,W:r.W,U:r.U}:{pid:"",name:r.name,s1:r.s1,s2:r.s2,W:r.W,U:r.U};if(r.c)o.c=r.c;if(r.sv)o.sv=r.sv;if(r.w){o.w=r.w;o.u=r.u}if(r.ast)o.ast=r.ast;if(r.sg)o.sg=r.sg;if(r.svp)o.svp=1;if(r.ph)o.ph=r.ph;if(r.sq)o.sq=r.sq;if(r.so)o.so=r.so;return o});
   const sig=x=>[x.date,x.court,(x.rows||[]).map(r=>r.pid||r.name).sort().join(",")].join("|");
   const rec={date:g.date,type:g.type,court:g.court,note:g.note||"",rows,...(g.pts?{pts:g.pts}:{}),...(g.sc?{sc:g.sc}:{})};
-  const ex=(S.analysis||[]).find(x=>sig(x)===sig(rec));
+  /* 같은 날·코트·선수 4명이라도 팀 구성(누가 짝)이나 최종 점수가 다르면 별개 경기 */
+  const tk=x=>{const k=(x.rows||[]).map(r=>r.pid||r.name);if(k.length!==4)return null;const t1=[k[0],k[1]].sort().join("+"),t2=[k[2],k[3]].sort().join("+");return t1<=t2?[t1,t2,0]:[t2,t1,1]};
+  const same=x=>{if(sig(x)!==sig(rec))return false;const a=tk(x),b=tk(rec);if(a&&b){if(a[0]!==b[0]||a[1]!==b[1])return false;
+      if(x.sc&&x.sc.length===2&&rec.sc&&rec.sc.length===2){const cx=a[2]?[x.sc[1],x.sc[0]]:x.sc,cr=b[2]?[rec.sc[1],rec.sc[0]]:rec.sc;if(+cx[0]!==+cr[0]||+cx[1]!==+cr[1])return false}}return true};
+  const ex=(S.analysis||[]).find(same);
   if(ex){const key=r=>r.pid||r.name,sg=l=>JSON.stringify((l||[]).map(r=>[key(r),r.W,r.U,!!r.svp,JSON.stringify(r.ast||{})]).sort());
     if(sg(ex.rows)!==sg(rec.rows)){ex.rows=rec.rows;if(rec.pts)ex.pts=rec.pts;ex.type=rec.type||ex.type;ex.court=rec.court||ex.court;anUpd=true;return false}  // 같은 경기를 다시 올리면 최신 엑셀로 갱신
     let up=false;if(rec.sc&&JSON.stringify(ex.sc||null)!==JSON.stringify(rec.sc)){ex.sc=rec.sc;up=true}if(rec.pts&&JSON.stringify(ex.pts||null)!==JSON.stringify(rec.pts)){ex.pts=rec.pts;up=true}(ex.rows||[]).forEach((r,i)=>{const n=rec.rows.find(q=>(q.pid||q.name)===(r.pid||r.name));if(n&&n.c&&!r.c){r.c=n.c;up=true}if(n&&n.sv&&!r.sv){r.sv=n.sv;up=true}if(n&&n.w&&!r.w){r.w=n.w;r.u=n.u;up=true}if(n&&n.ast&&!r.ast){r.ast=n.ast;up=true}if(n&&n.sg&&!r.sg){r.sg=n.sg;up=true}if(n&&n.ph&&!r.ph){r.ph=n.ph;up=true}if(n&&n.sq&&!r.sq){r.sq=n.sq;up=true}if(n&&n.so&&!r.so){r.so=n.so;up=true}});if(up){anUpd=true}return false}
