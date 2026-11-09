@@ -1580,7 +1580,7 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
   const spend=(i,lg)=>{const G=6+lg,S=Math.round(G/2+(rnd()-.5)),f0=rnd()<.5?0:1,sv=[0,0];sv[f0]=Math.ceil(S/2);sv[1-f0]=Math.floor(S/2);
     if(pl[i]){for(let k=0;k<2;k++)pl[i][k]=Math.max(0,pl[i][k]-(1.05*G*T[i].role[k]+.9*sv[k])*(.9+.2*rnd())*CDS[T[i].cds[k]]);return sv}
     stm[i]=Math.max(0,stm[i]-(1.05*G+.45*S)*CDS[T[i].cds[0]]);return null};
-  const recov=a=>{for(let i=0;i<n;i++){if(pl[i]){pl[i][0]=Math.min(100,pl[i][0]+a);pl[i][1]=Math.min(100,pl[i][1]+a)}else stm[i]=Math.min(100,stm[i]+a)}};
+  const recov=a=>{for(let i=0;i<n;i++){if(i<2&&pl[i]&&(i===0?aEx!==null:bEx!==null&&bEx!==undefined))continue;if(pl[i]){pl[i][0]=Math.min(100,pl[i][0]+a);pl[i][1]=Math.min(100,pl[i][1]+a)}else stm[i]=Math.min(100,stm[i]+a)}};
   const groups=Array.from({length:G},()=>[]),gi=sh([...Array(G).keys()]),seeds=[],rest=[];for(let i=0;i<n;i++)(T[i].seed?seeds:rest).push(i);
   seeds.sort((x,y)=>T[x].seed-T[y].seed).forEach((t,k)=>groups[gi[k%G]].push(t));sh(rest);let ptr=0;
   rest.forEach(t=>{let c=0;while(groups[gi[ptr%G]].length>=3&&c<G){ptr++;c++}groups[gi[ptr%G]].push(t);ptr++});
@@ -1594,7 +1594,7 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
     for(let x=0;x<gr.length;x++)for(let y=x+1;y<gr.length;y++){const i=gr[x],j=gr[y],d=duel(i,j,0);rec[d.w].w++;rec[d.w].d+=6-d.lg;rec[d.l].d-=6-d.lg;
       if(i===0||j===0){const m=entry(i,j,d,"q");m.n=list.length+1;if(m.win)qw++;m.qw=qw;list.push(m)}}
     const sorted=gr.map(t=>rec[t]).sort((a,b)=>b.w-a.w||b.d-a.d||rnd()-.5);sorted.forEach((r,k)=>{rankOf[r.t]=k+1});W.push(sorted[0]);R.push(sorted[1])});
-  recov(10);const q2=list[list.length-1];q2.rank=rankOf[0];q2.first=RP_RD[br.off];if(rankOf[0]>2)aEx=-1;if(ob&&rankOf[1]>2)bEx=-1;
+  const q2=list[list.length-1];q2.rank=rankOf[0];q2.first=RP_RD[br.off];if(rankOf[0]>2)aEx=-1;if(ob&&rankOf[1]>2)bEx=-1;recov(10);
   const cmp=(a,b)=>b.w-a.w||b.d-a.d||rnd()-.5,order=W.slice().sort(cmp).concat(R.slice().sort(cmp)),byeT=order.slice(0,br.byes).map(r=>r.t),play=sh(order.slice(br.byes).map(r=>r.t));
   q2.bye=byeT.includes(0);
   const fl=[],bl=[];for(let i=0;i<play.length;i+=2)fl.push([play[i],play[i+1]]);byeT.forEach(t=>bl.push([t,-1]));sh(fl);sh(bl);
