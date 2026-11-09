@@ -1607,7 +1607,7 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
       if(a===0||b===0){const m=entry(a,b,d,"m");m.r=abs;list.push(m);if(!m.win&&aEx===null)aEx=abs===6?6:abs}
       if(ob&&(a===1||b===1)&&d.l===1&&bEx===null)bEx=abs===6?6:abs;
       if((a===0&&b===1)||(a===1&&b===0))meet={abs,aWin:d.w===0}}
-    teams=next;src=nsrc;recov(4)}
+    teams=next;src=nsrc;recov(4);if(r===0)byeT.forEach(t=>{if(pl[t])for(let k=0;k<2;k++)pl[t][k]=Math.min(100,pl[t][k]+2);else stm[t]=Math.min(100,stm[t]+2)})}
   const champ=teams[0];if(champ===0)aEx=7;if(ob&&champ===1)bEx=7;
   return {list,exit:aEx,bExit:bEx,br,aLast,T,meet,champ,stA:pl[0],stB:pl[1]||null}}
 /* ───── 내 대회 기록 · 축하 현수막 · 결과 카드 공유 ───── */
