@@ -1707,12 +1707,12 @@ function rpStep(first){if(!rpPlay||tab!=="tourney"){rpStop();return}
       P.t=setTimeout(()=>{if(!rpPlay)return;P.i++;if(P.i>=P.res.list.length){P.ph="end";rpFin(P);render();return}rpStep()},1800)},5000)},2300)}
 function rpSkip(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(P.tk||[]).forEach(clearTimeout);P.done=P.res.list.slice();P.i=P.res.list.length;P.ph="end";rpFin(P);render()}
 function rpSimView(R){if(!R.length)return"";
-  const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복","혼합복식"],pt0=PTS.includes(rpSim.pt)?rpSim.pt:(isF(R[0])?"여복":"남복"),
-    poolA=pt0==="여복"?R.filter(isF):pt0==="남복"?R.filter(r=>!isF(r)):R,ok=id=>R.find(r=>r.m.id===id),
+  const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복"],pt0=PTS.includes(rpSim.pt)?rpSim.pt:(isF(R[0])?"여복":"남복"),
+    poolA=pt0==="여복"?R.filter(isF):R.filter(r=>!isF(r)),ok=id=>R.find(r=>r.m.id===id),
     A=(poolA.find(r=>r.m.id===rpSim.a))||poolA[0],
-    poolB=A?(pt0==="여복"?R.filter(isF):pt0==="남복"?R.filter(r=>!isF(r)):R.filter(r=>isF(r)!==isF(A))).filter(r=>r.m.id!==A.m.id):[],
+    poolB=A?(pt0==="여복"?R.filter(isF):R.filter(r=>!isF(r))).filter(r=>r.m.id!==A.m.id):[],
     B=poolB.find(r=>r.m.id===rpSim.b)||poolB[0],
-    ptChips=`<div style="display:flex;gap:6px;margin-bottom:10px">${PTS.map(v=>`<button class="btn ${pt0===v?"":"ghost"}" style="flex:1;padding:8px 4px;font-size:13px;font-weight:800" onclick="rpSetPT('${v}')">${v==="남복"?"👨‍👨 남복":v==="여복"?"👩‍👩 여복":"👫 혼합"}</button>`).join("")}</div>`;
+    ptChips=`<div style="display:flex;gap:6px;margin-bottom:10px">${PTS.map(v=>`<button class="btn ${pt0===v?"":"ghost"}" style="flex:1;padding:8px 4px;font-size:13px;font-weight:800" onclick="rpSetPT('${v}')">${v==="남복"?"👨‍👨 남복":"👩‍👩 여복"}</button>`).join("")}</div>`;
   if(!A||!B)return`<div class="panel" style="margin-top:14px;padding:14px">${ptChips}<div class="empty">${pt0} 출전에 필요한 선수가 부족해요 (분석 기록이 있는 선수가 필요해요)</div></div>`;
   const fa=gdOf(A.m)==="여",fb=gdOf(B.m)==="여",fem=fa&&fb,PT=fem?"여복":(!fa&&!fb)?"남복":"혼합복식",GR=fem?["개나리부","국화부"]:["지역신인부","전국신인부","오픈부"],g=GR.includes(rpSim.g)?rpSim.g:GR[0];rpSim._A=A;rpSim._B=B;rpSim._g=g;
   const SZ=RP_SZ[rpSim.sz||"중"],BR=rpBr(SZ),T=rpTeam(A,B),T0=T,Tsw=rpTeam(B,A),N=700,rng=rpRng(rpHash(A.m.id+B.m.id+g)+1),pb=rpPickB(R,A,B),obj=pb?{r:pb.r,n1:pb.a.m.name,n2:pb.b.m.name,resK:[rpRes(pb.a.m),rpRes(pb.b.m)],role:[rpRole(pb.a.m).f,rpRole(pb.b.m).f]}:null,cdA=[rpCd(A.m.id),rpCd(B.m.id)],resKA=[rpRes(A.m),rpRes(B.m)],rlA=[rpRole(A.m),rpRole(B.m)],roleA=rlA.map(x=>x.f),mk=[T.r,obj?obj.r:0,g,SZ,cdA.join(""),resKA.join(),obj?obj.resK.join():"",roleA.join(),obj?obj.role.join():""].join();
