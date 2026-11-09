@@ -1534,7 +1534,7 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
     <p style="margin:4px 0 8px;font-size:13px;line-height:1.65">${esc(cm)}</p>${tools}<div style="font-size:11px;color:var(--muted);margin-top:6px">Winning ${r.W} · Unforced ${r.U} · 툴 그레이드는 20~80 스케일 (50=평균)</div></details></div>`}
 /* ===== 가상 대회 시뮬레이터 (예선 2경기 + 본선 128강 토너먼트, 경기마다 5초 랠리 연출) ===== */
 let rpSim={a:"",b:"",g:"",seed:1},rpPlay=null;
-const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":60},RP_RD=["128강","64강","32강","16강","8강","4강","결승"],RP_SZ={"소":60,"중":120,"대":192},RP_STG=["예선 탈락","128강 탈락","64강 탈락","32강 탈락","16강 탈락","8강 탈락","4강 탈락","준우승","우승"],rpMemo={},rpFC={};
+const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":60},RP_RD=["128강","64강","32강","16강","8강","4강","결승"],RP_SZ={"소":72,"중":111,"대":150},RP_STG=["예선 탈락","128강 탈락","64강 탈락","32강 탈락","16강 탈락","8강 탈락","4강 탈락","준우승","우승"],rpMemo={},rpFC={};
 /* 참가 N팀 → 3팀 조 G개(1·2위 진출) → 본선 B강. 부전승 B-Q팀은 조1위 우선, 남으면 조2위 */
 function rpBr(N){const G=Math.ceil(N/3),Q=2*G;let B=4;while(B<Q&&B<128)B*=2;const byes=Math.max(0,B-Q);return {G,Q,B,nR:Math.round(Math.log2(B)),off:7-Math.round(Math.log2(B)),byes,P:Q-byes}}
 /* 상대 팀: RP_TEAMS[부]에 실제 대회 팀({n1,n2,club,rate,seed,res})이 있으면 그중에서, 없으면 가상 팀 */
