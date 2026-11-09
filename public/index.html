@@ -1562,11 +1562,14 @@ function rpTeam(A,B){const sk=AN_HEX.map(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0
 function rpRng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* 한 대회 전체를 미리 굴려서 경기 목록으로 만든다. exit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 결승 패(준우승) · 7 우승 */
 function rpGauss(rnd){let u=0;for(let i=0;i<6;i++)u+=rnd();return(u-3)/.7071}
+/* 개나리부 실제 대회(대진표 스크린샷 32강 기준) — rate는 도달 라운드 기준 추정치, sd는 실제 시드 */
+RP_TEAMS["개나리부"]=[{n1:"전영신",n2:"이정란",club:"문경테사모",rate:68,sd:3},{n1:"김수경",n2:"박미령",club:"대구동그라미",rate:66,sd:1},{n1:"공현주",n2:"한지숙",club:"구미상록",rate:62,sd:8},{n1:"한수경",n2:"김희정",club:"테미사",rate:62,sd:6},{n1:"이미경",n2:"김은정",club:"포항국향",rate:58,sd:0},{n1:"류세은",n2:"조맑은",club:"울산테라",rate:58,sd:0},{n1:"박민지",n2:"이정민",club:"부산오렌지",rate:58,sd:0},{n1:"이선미",n2:"최진주",club:"포항국향",rate:58,sd:0},{n1:"최경희",n2:"김정희",club:"구미victory",rate:54,sd:0},{n1:"이수진",n2:"김민지",club:"대구퀸",rate:54,sd:0},{n1:"김수정",n2:"이점남",club:"울산진우",rate:54,sd:0},{n1:"임은영",n2:"박상미",club:"20퀸",rate:54,sd:0},{n1:"최수정",n2:"송숙경",club:"티프렌즈",rate:54,sd:0},{n1:"진수민",n2:"육해민",club:"티티클럽",rate:54,sd:7},{n1:"강명주",n2:"심주희",club:"삼원대원",rate:54,sd:0},{n1:"장소목",n2:"손선경",club:"양산하늘",rate:54,sd:0},{n1:"김미옥",n2:"한혜경",club:"구미대박",rate:50,sd:0},{n1:"고은지",n2:"정보배",club:"부산오렌지",rate:50,sd:0},{n1:"강미영",n2:"강수진",club:"해운대어프로치",rate:50,sd:0},{n1:"윤지은",n2:"박임선",club:"MSG",rate:50,sd:0},{n1:"이은주",n2:"김민혜",club:"대구탑",rate:50,sd:0},{n1:"최경화",n2:"안선희",club:"국화(경산)",rate:50,sd:0},{n1:"정미정",n2:"이은진",club:"포항미코",rate:50,sd:0},{n1:"윤재현",n2:"박상영",club:"북문산",rate:50,sd:0},{n1:"김혜지",n2:"전미애",club:"대구수국",rate:50,sd:0},{n1:"정선희",n2:"이경은",club:"부산금강",rate:50,sd:0},{n1:"도희경",n2:"백혜홍",club:"휴지TC",rate:50,sd:0},{n1:"김나현",n2:"하수진",club:"들국화",rate:50,sd:0},{n1:"배진숙",n2:"오혜진",club:"부산다은",rate:50,sd:0},{n1:"윤미정",n2:"박성미",club:"대구마녀",rate:50,sd:0},{n1:"최미진",n2:"이영진",club:"마리오",rate:50,sd:0},{n1:"이윤경",n2:"서원주",club:"부산이테",rate:50,sd:2}];
 /* 같은 부·규모에서는 항상 같은 상대 팀들(이름·전력·시드)이 나온다 → 복수전 가능. 실제 대회 데이터(RP_TEAMS)가 있으면 그것을 쓴다 */
 function rpField(g,M,N){const k=g+"|"+N+"|"+M;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
-  if(L&&L.length>=M)L.slice(0,M).forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:0,real:1}));
-  else for(let i=0;i<M;i++)out.push({n1:nm(),n2:nm(),club:pk(RP_RGN)+pk(RP_CL),r:mean+9*rpGauss(rng),seed:0,real:0});
-  out.map((t,i)=>[t.r,i]).sort((a,b)=>b[0]-a[0]).slice(0,8).forEach((x,k)=>{out[x[1]].seed=k+1});return rpFC[k]=out}
+  if(L)L.slice(0,M).forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1}));
+  while(out.length<M)out.push({n1:nm(),n2:nm(),club:pk(RP_RGN)+pk(RP_CL),r:(L?mean-2:mean)+8*rpGauss(rng),seed:0,real:0});
+  const used=new Set(out.map(t=>t.seed).filter(Boolean));let nx=1;
+  out.map((t,i)=>[t.r,i]).filter(x=>!out[x[1]].seed&&(!L||out[x[1]].real)).sort((a,b)=>b[0]-a[0]).forEach(x=>{while(used.has(nx))nx++;if(nx<=8){out[x[1]].seed=nx;used.add(nx)}});return rpFC[k]=out}
 /* 대회 전체를 굴린다. 0=우리 A팀, 1=우리 B팀(선택), 나머지=상대 팀. exit/bExit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 준우승 · 7 우승 */
 function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N-(ob?2:1),N),T=[{r:me,own:"A",n1:an?an.n1:"",n2:an?an.n2:"",club:"우리 클럽"}];
   if(ob)T.push({r:ob.r,own:"B",n1:ob.n1,n2:ob.n2,club:"우리 클럽"});for(const t of fld)T.push({...t});
