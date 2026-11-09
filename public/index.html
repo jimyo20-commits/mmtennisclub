@@ -1590,16 +1590,16 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
   const fl=[],bl=[];for(let i=0;i<play.length;i+=2)fl.push([play[i],play[i+1]]);byeT.forEach(t=>bl.push([t,-1]));sh(fl);sh(bl);
   const blocks=[];while(fl.length||bl.length){const x=fl.length?fl.pop():bl.pop(),y=bl.length?bl.pop():fl.pop();blocks.push(y?[x,y]:[x])}sh(blocks);
   let teams=[];blocks.forEach(b=>b.forEach(pr=>{teams.push(pr[0],pr[1])}));
-  const tree=[];
-  for(let r=0;r<br.nR;r++){const abs=r+br.off,next=[],ms=[];
-    for(let k=0;k<teams.length;k+=2){const a=teams[k],b=teams[k+1];if(b===undefined||b<0){next.push(a);continue}if(a<0){next.push(b);continue}
-      const d=duel(a,b);next.push(d.w);ms.push({a,b,w:d.w,lg:d.lg});
+  let src=teams.map(()=>null),aLast=null;
+  for(let r=0;r<br.nR;r++){const abs=r+br.off,next=[],nsrc=[];
+    for(let k=0;k<teams.length;k+=2){const a=teams[k],b=teams[k+1];if(b===undefined||b<0){next.push(a);nsrc.push(src[k]);continue}if(a<0){next.push(b);nsrc.push(src[k+1]);continue}
+      const d=duel(a,b),mm={a,b,w:d.w,lg:d.lg,abs,c:[src[k],src[k+1]]};next.push(d.w);nsrc.push(mm);if(a===0||b===0)aLast=mm;
       if(a===0||b===0){const m=entry(a,b,d,"m");m.r=abs;list.push(m);if(!m.win&&aEx===null)aEx=abs===6?6:abs}
       if(ob&&(a===1||b===1)&&d.l===1&&bEx===null)bEx=abs===6?6:abs;
       if((a===0&&b===1)||(a===1&&b===0))meet={abs,aWin:d.w===0}}
-    if(abs>=3)tree.push({abs,ms});teams=next}
+    teams=next;src=nsrc}
   const champ=teams[0];if(champ===0)aEx=7;if(ob&&champ===1)bEx=7;
-  return {list,exit:aEx,bExit:bEx,br,tree,T,meet,champ}}
+  return {list,exit:aEx,bExit:bEx,br,aLast,T,meet,champ}}
 /* ───── 내 대회 기록 · 축하 현수막 · 결과 카드 공유 ───── */
 const rpImgC={},rpShQ={},RP_GW={"오픈부":3,"전국신인부":2,"지역신인부":1,"국화부":2,"개나리부":1};
 function rpExLbl(e){return e>=7?"🏆 우승":e===6?"🥈 준우승":e<0?"예선 탈락":RP_RD[e]}
@@ -1646,23 +1646,23 @@ function rpPickB(R,A,B){const used=new Set([A.m.id,B.m.id]),pool=R.filter(r=>!us
   if(mixed){const F=pool.filter(r=>gdOf(r.m)==="여"),M=pool.filter(r=>gdOf(r.m)!=="여");F.forEach(x=>M.forEach(y=>cand(x,y)))}
   else{const P=pool.filter(r=>(gdOf(r.m)==="여")===fem);for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++)cand(P[i],P[j])}
   return best}
-function rpBracket(res,nm){const T=res.T,tr=res.tree.slice().sort((a,b)=>a.abs-b.abs),W=150,CW=30,RH=22,G="#16a34a";
-  if(!tr.length)return"";for(let k=1;k<tr.length;k++)if(tr[k-1].ms.length!==2*tr[k].ms.length)return tr.map(rd=>`<div style="font-size:12px;margin-top:6px"><b>${RP_RD[rd.abs]}</b>${rd.ms.map(m=>`<div>${nm(m.a)} ${m.w===m.a?"6:"+m.lg:m.lg+":6"} ${nm(m.b)}</div>`).join("")}</div>`).join("");
+function rpBracket(res,nm){const T=res.T,W=150,CW=30,RH=22,G="#16a34a",root=res.aLast;if(!root)return"";
+  const dep=(m,l)=>l>=3?0:Math.max(0,...(m.c||[]).filter(Boolean).map(c=>1+dep(c,l+1))),L=dep(root,0)+1;
   const row=(t,w,lg)=>{const x=T[t],c=x.own==="A"?"#4f46e5":x.own==="B"?"#15803d":"inherit";return `<div style="height:${RH}px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 6px;font-size:11px;${w?`font-weight:900;box-shadow:inset 0 0 0 2px ${G};background:rgba(22,163,74,.10)`:"opacity:.55"};${x.own?`color:${c};${w?"":`background:${x.own==="A"?"rgba(79,70,229,.12)":"rgba(21,128,61,.12)"}`}`:""}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${esc(x.n1)}·${esc(x.n2)}</span><span>${w?6:lg}</span></div>`};
   const card=m=>`<div style="width:${W}px;flex:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface,#fff);box-shadow:0 1px 3px rgba(0,0,0,.12)">${row(m.a,m.w===m.a,m.lg)}<div style="height:1px;background:var(--line)"></div>${row(m.b,m.w===m.b,m.lg)}</div>`;
-  const ln=(l,t,w,h)=>`<div style="position:absolute;left:${l};top:${t};width:${w};height:${h};background:${G};border-radius:1px"></div>`;
-  /* 자식 경기의 이긴 팀 줄 → 부모 박스의 해당 줄로 이어지는 초록 선 (자식1=윗줄, 자식2=아랫줄) */
-  const conn=(m1,m2)=>{const o1=m1.w===m1.a?-11.5:11.5,o2=m2.w===m2.a?-11.5:11.5,h=CW/2;
-    return `<div style="position:relative;width:${CW}px;flex:none">`+
-      ln("0",`calc(25% + ${o1}px - 1px)`,`${h}px`,"2px")+ln(`${h-1}px`,`calc(25% + ${o1}px - 1px)`,"2px",`calc(25% - 11.5px - ${o1}px + 2px)`)+ln(`${h-1}px`,"calc(50% - 11.5px - 1px)",`${h+1}px`,"2px")+
-      ln("0",`calc(75% + ${o2}px - 1px)`,`${h}px`,"2px")+ln(`${h-1}px`,"calc(50% + 11.5px - 1px)","2px",`calc(25% + ${o2}px - 11.5px + 2px)`)+ln(`${h-1}px`,"calc(50% + 11.5px - 1px)",`${h+1}px`,"2px")+`</div>`};
-  const node=(ri,k)=>{const m=tr[ri].ms[k];if(ri===0)return `<div style="display:flex;align-items:center;margin:4px 0">${card(m)}</div>`;
-    return `<div style="display:flex;align-items:stretch"><div style="display:flex;flex-direction:column;justify-content:center">${node(ri-1,2*k)}${node(ri-1,2*k+1)}</div>${conn(tr[ri-1].ms[2*k],tr[ri-1].ms[2*k+1])}<div style="display:flex;align-items:center">${card(m)}</div></div>`};
-  const last=tr.length-1,labels=tr.map(rd=>`<div style="width:${W+CW}px;flex:none;font-size:11px;font-weight:800;color:var(--muted)">${RP_RD[rd.abs]}</div>`).join("");
-  return `<div style="overflow-x:auto;padding:4px 0 8px"><div style="display:inline-block;min-width:max-content"><div style="display:flex;margin-bottom:4px">${labels}</div>${node(last,0)}</div></div>`}
+  const ln=(l,t,w,h)=>`<div style="position:absolute;left:${l};top:${t};width:${w};height:${h};background:${G};border-radius:1px"></div>`,h=CW/2;
+  /* 자식 경기의 이긴 팀 줄 → 부모 박스의 해당 줄(자식1=윗줄, 자식2=아랫줄)로 이어지는 초록 선 */
+  const conn=(m1,m2)=>{let o="";if(m1){const o1=m1.w===m1.a?-11.5:11.5;o+=ln("0",`calc(25% + ${o1}px - 1px)`,`${h}px`,"2px")+ln(`${h-1}px`,`calc(25% + ${o1}px - 1px)`,"2px",`calc(25% - 11.5px - ${o1}px + 2px)`)+ln(`${h-1}px`,"calc(50% - 11.5px - 1px)",`${h+1}px`,"2px")}
+    if(m2){const o2=m2.w===m2.a?-11.5:11.5;o+=ln("0",`calc(75% + ${o2}px - 1px)`,`${h}px`,"2px")+ln(`${h-1}px`,"calc(50% + 11.5px - 1px)","2px",`calc(25% + ${o2}px - 11.5px + 2px)`)+ln(`${h-1}px`,"calc(50% + 11.5px - 1px)",`${h+1}px`,"2px")}
+    return `<div style="position:relative;width:${CW}px;flex:none">${o}</div>`};
+  const bye=()=>`<div style="display:flex;align-items:center;margin:4px 0"><div style="width:${W}px;height:${RH*2+3}px;box-sizing:border-box;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">부전승</div></div>`;
+  const node=(m,d)=>{if(!m)return bye();const ch=(m.c||[]).some(Boolean);if(d>=3||!ch)return `<div style="display:flex;align-items:center;margin:4px 0">${card(m)}</div>`;
+    return `<div style="display:flex;align-items:stretch"><div style="display:grid;grid-template-rows:1fr 1fr;align-items:center;justify-items:end">${node(m.c[0],d+1)}${node(m.c[1],d+1)}</div>${conn(m.c[0],m.c[1])}<div style="display:flex;align-items:center">${card(m)}</div></div>`};
+  const labels=Array.from({length:L},(_,k)=>`<div style="width:${W+CW}px;flex:none;font-size:11px;font-weight:800;color:var(--muted)">${RP_RD[root.abs-L+1+k]||""}</div>`).join("");
+  return `<div style="overflow-x:auto;padding:4px 0 8px"><div style="display:inline-block;min-width:max-content"><div style="display:flex;margin-bottom:4px">${labels}</div>${node(root,0)}</div></div>`}
 function rpExtra(res){const T=res.T,nm=t=>{const x=T[t],c=x.own==="A"?"#4f46e5":x.own==="B"?"#15803d":"inherit";return `<span style="color:${c};${x.own?"font-weight:800":""}">${esc(x.n1)}·${esc(x.n2)}</span>`};let h="";
   if(res.bExit!=null)h+=`<div style="margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface,#fff);font-size:12.5px;line-height:1.6">🤝 같은 대회에 출전한 우리 클럽 <b style="color:#15803d">B팀</b> ${nm(1)}<br>결과: <b>${RP_STG[res.bExit+1]}</b> · ${res.meet?`<b>${RP_RD[res.meet.abs]}</b>에서 클럽 내 대결! ${res.meet.aWin?"A팀 승리":"B팀 승리"}`:"두 팀은 서로 만나지 못했어요"}</div>`;
-  h+=`<details style="margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface,#fff)"><summary style="cursor:pointer;font-size:13px;font-weight:800">🗺️ 대진표 한눈에 보기 (16강 → 결승)</summary><div style="font-size:11px;color:var(--muted);margin:6px 0 4px">왼쪽 16강에서 시작해 오른쪽 결승까지 흘러가요 · 옆으로 밀어서 확인 → · 초록 테두리·선이 이긴 팀이에요</div>${rpBracket(res,nm)}<div style="margin-top:8px;font-size:13px;font-weight:800">🏆 우승 · ${nm(res.champ)}</div></details>`;
+  if(res.aLast)h+=`<details style="margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface,#fff)"><summary style="cursor:pointer;font-size:13px;font-weight:800">🗺️ 대진표 한눈에 보기 (내 경기 복기)</summary><div style="font-size:11px;color:var(--muted);margin:6px 0 4px">우리 팀이 마지막으로 치른 경기까지만, 최대 4개 라운드를 보여줘요 · 옆으로 밀어서 확인 → · 초록 테두리·선이 이긴 팀이에요</div>${rpBracket(res,nm)}${res.champ===0?`<div style="margin-top:8px;font-size:13px;font-weight:800">🏆 우승 · ${nm(0)}</div>`:""}</details>`;
   return h}
 const rpTn=m=>{const k=m.kind==="q"&&m.rank?(m.rank===1?"g":m.rank===2?"o":"r"):m.win?"g":"r";return {g:["22,163,74","#15803d"],o:["234,88,12","#c2410c"],r:["220,38,38","#dc2626"]}[k]};
 function rpMsg(m){const x=rpMsg0(m);return m.kind==="m"&&m.oi&&m.oi.own?x+(m.win?" · 클럽 내 대결 승리! 🤝":" · 클럽 내 대결 패배, B팀이 올라가요 🤝"):x}
