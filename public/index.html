@@ -1508,9 +1508,9 @@ const RP_SK={Fs:["포핸드","포핸드가 확실한 무기예요","포핸드 �
 const RP_ST={Fs:"베이스라인 포핸드 슬러거",Bs:"백핸드 장인",V:"네트 플레이어",O:"스매시 피니셔",sv:"서브 스페셜리스트",R:"리턴 머신"};
 const RP_LB={"오픈부":6,"전신부":4,"지신부":2,"비입상":0,"국화부":5,"개나리부":2};   /* 실력 등급 가점(OVR): 남자 오픈부>전신부>지신부>비입상 · 여자 국화부>개나리부 */
 const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+"억"+(r?" "+r.toLocaleString("ko-KR")+"만":"")}return n.toLocaleString("ko-KR")+"만"};   /* 금액 단위: 만원 */
-/* 가상대회 성적 보너스: 우승 4·준우승 2·공동3위 1·8강 진출(8강 탈락) 0.5점을 쌓되 포화 곡선(최대 +8). 몸값은 점수 1점당 +3%씩 상한 없이 누적, OVR(시뮬 전력)에는 포화 곡선의 1/10만 반영 */
-const RP_SAL0=3000; /* 몸값 시작점: 기준 3000에서 실력(OVR)에 따라 ±10%만 차이, 이후 대회 성적(점수 1점당 +3%, 상한 없음)으로 벌어진다 */
-function rpTB(id){let w=0,f=0,s=0,q=0;(S.rpRec||[]).forEach(r=>(r.teams||[]).forEach((t,k)=>{if(k===0&&!t.guest&&(t.ids||[]).includes(id)){if(t.exit>=7)w++;else if(t.exit===6)f++;else if(t.exit===5)s++;else if(t.exit===4)q++}}));const pts=w*4+f*2+s+q*.5,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,q,pts,b}}
+/* 가상대회 성적 보너스: 우승 4·준우승 2·공동3위 1·8강 진출(8강 탈락) 0.5점을 쌓되 포화 곡선(최대 +8). 몸값은 우승 +3%·준우승 +1%·공동3위 +0.5%·8강 +0.2%씩 상한 없이 누적, OVR(시뮬 전력)에는 포화 곡선의 1/10만 반영 */
+const RP_SAL0=3000; /* 몸값 시작점: 기준 3000에서 실력(OVR)에 따라 ±10%만 차이, 이후 대회 성적(우승 3%·준우승 1%·공동3위 0.5%·8강 0.2%, 상한 없음)으로 벌어진다 */
+function rpTB(id){let w=0,f=0,s=0,q=0;(S.rpRec||[]).forEach(r=>(r.teams||[]).forEach((t,k)=>{if(k===0&&!t.guest&&(t.ids||[]).includes(id)){if(t.exit>=7)w++;else if(t.exit===6)f++;else if(t.exit===5)s++;else if(t.exit===4)q++}}));const pts=w*4+f*2+s+q*.5,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,q,pts,b,sp:Math.round((w*3+f*1+s*.5+q*.2)*10)/10}}
 /* 실제 경기 랭킹 → 가상대회 전력: 랭킹 1위 +3 ~ 꼴찌 −3 OVR(순위 백분율에 선형), 경기 수가 10경기 미만이면 그만큼 비례해 줄인다 */
 const RP_RKW=3;
 function rpRk(){const st=stats(),L=S.members.filter(m=>{const x=st[m.id];return x&&x.w+x.l+x.d>0}).sort((a,b)=>rkCmp(st[a.id],st[b.id])||a.name.localeCompare(b.name,"ko")),n=L.length,o={};
@@ -1523,7 +1523,7 @@ function rpData(){const fl=anFlat(),by={},RK=rpRk();fl.forEach(e=>{if(e.pid)(by[
     const sorted=have.slice().sort((a,b)=>b[1]-a[1]),best=sorted[0],worst=have.length>1?sorted[sorted.length-1]:null;
     const gc=L.map(anGr).map(v=>v*100),half=Math.floor(gc.length/2),rec=gc.slice(0,Math.max(1,Math.ceil(gc.length/2))),old=gc.slice(Math.max(1,Math.ceil(gc.length/2))),
       trend=gc.length>=3&&old.length?Math.round(rec.reduce((a,b)=>a+b,0)/rec.length-old.reduce((a,b)=>a+b,0)/old.length):null;
-    const t=Math.max(0,(ovr-20)/60),sal=Math.round(RP_SAL0*(1+.1*Math.max(-1,Math.min(1,(ovr-50)/30)))*(1+.03*tb.pts)),yrs=n>=5&&trend!==null&&trend>=0?3:n>=3?2:1,bonus=Math.round(sal*yrs*.4);
+    const t=Math.max(0,(ovr-20)/60),sal=Math.round(RP_SAL0*(1+.1*Math.max(-1,Math.min(1,(ovr-50)/30)))*(1+tb.sp/100)),yrs=n>=5&&trend!==null&&trend>=0?3:n>=3?2:1,bonus=Math.round(sal*yrs*.4);
     return {m,L,st,n,ovr,lb,tb,rk,lv,sk,best,worst,trend,sal,yrs,bonus,p1:st.p1,W:st.W,U:st.U}});
   out.sort((a,b)=>b.ovr-a.ovr||(b.st.contrib||0)-(a.st.contrib||0)||b.n-a.n);return out}
 /* 시뮬레이터용: 분석 기록이 없는 회원도 고를 수 있게 평균(스킬 4.5) 수준의 임시 능력치로 포함한다 */
@@ -1554,7 +1554,7 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
   <div style="display:flex;align-items:center;gap:10px;padding:12px 12px 8px">
     <div style="flex:none;width:42px;height:42px;border-radius:12px;background:${medal};display:flex;flex-direction:column;align-items:center;justify-content:center;color:${rank<=3?"#3b2a00":"#475569"};line-height:1"><span style="font-size:9px;font-weight:700">PICK</span><span style="font-size:19px;font-weight:900">${rank}</span></div>
     ${av0(m,40)}
-    <div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:900">${esc(m.name)} <span style="font-size:11px;font-weight:700;color:var(--muted)">${rd}라운드</span></div><div style="font-size:12px;color:var(--muted)">${style} · ${r.n}경기 분석${r.n<3?" · 표본 적음":""}${m.level?` · <span style="white-space:nowrap">${esc(m.level)}${r.lb?` <b style="color:#15803d">+${r.lb}</b>`:""}</span>`:""}${r.rk&&r.rk.adj?` · <span style="white-space:nowrap;color:${r.rk.adj>0?"#1d4ed8":"#b91c1c"};font-weight:700">랭킹 ${r.rk.rank}위 <b>${r.rk.adj>0?"+":""}${r.rk.adj}</b></span>`:""}${r.tb&&r.tb.pts?` · <span style="white-space:nowrap;color:#b45309;font-weight:700">🏆 ${[r.tb.w?"우승 "+r.tb.w:"",r.tb.f?"준우승 "+r.tb.f:"",r.tb.s?"공동3위 "+r.tb.s:"",r.tb.q?"8강 "+r.tb.q:""].filter(Boolean).join("·")} <b>몸값 +${Math.round(30*r.tb.pts)/10}%${r.tb.b*.1>=.05?` · OVR +${(r.tb.b*.1).toFixed(1)}`:""}</b></span>`:""}</div></div>
+    <div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:900">${esc(m.name)} <span style="font-size:11px;font-weight:700;color:var(--muted)">${rd}라운드</span></div><div style="font-size:12px;color:var(--muted)">${style} · ${r.n}경기 분석${r.n<3?" · 표본 적음":""}${m.level?` · <span style="white-space:nowrap">${esc(m.level)}${r.lb?` <b style="color:#15803d">+${r.lb}</b>`:""}</span>`:""}${r.rk&&r.rk.adj?` · <span style="white-space:nowrap;color:${r.rk.adj>0?"#1d4ed8":"#b91c1c"};font-weight:700">랭킹 ${r.rk.rank}위 <b>${r.rk.adj>0?"+":""}${r.rk.adj}</b></span>`:""}${r.tb&&r.tb.pts?` · <span style="white-space:nowrap;color:#b45309;font-weight:700">🏆 ${[r.tb.w?"우승 "+r.tb.w:"",r.tb.f?"준우승 "+r.tb.f:"",r.tb.s?"공동3위 "+r.tb.s:"",r.tb.q?"8강 "+r.tb.q:""].filter(Boolean).join("·")} <b>몸값 +${r.tb.sp}%${r.tb.b*.1>=.05?` · OVR +${(r.tb.b*.1).toFixed(1)}`:""}</b></span>`:""}</div></div>
     <div style="text-align:center;flex:none"><div style="font-size:9px;color:var(--muted)">OVR · ${rpGrade(r.ovr)}</div>${arB(r.ovr,20,2,Math.round((r.ovr-20)/60*100))}</div>
   </div>
   <div style="margin:0 12px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,rgba(212,160,23,.14),rgba(212,160,23,.05));border:1px solid rgba(212,160,23,.35);font-size:12.5px;line-height:1.6"><div style="display:flex;flex-wrap:wrap;gap:4px 14px"><span>💰 계약금 <b>${rpBig(r.bonus)}</b></span><span>📈 연봉 <b>${rpBig(r.sal)}</b></span><span>📝 ${r.yrs}년 계약</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">${inc.join(" · ")}</div></div>
