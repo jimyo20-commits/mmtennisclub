@@ -1519,7 +1519,7 @@ function rpDataAll(){const R=rpData(),have=new Set(R.map(r=>r.m.id));
   const stub=S.members.filter(m=>!have.has(m.id)).map(m=>{const lb=RP_LB[m.level]||0,lv={};AN_HEX.forEach(([k])=>{lv[k]=4.5});return {m,L:[],st:{},n:0,ovr:Math.round(Math.max(20,Math.min(80,50+lb))),lb,lv,sk:AN_HEX.map(([k])=>[k,4.5]),best:null,worst:null,trend:null,sal:0,yrs:1,bonus:0,nd:1}});
   const gs=(S.rpGuests||[]).map(g=>{const lv={},v=Math.round((g.ovr-25)/6*10)/10;AN_HEX.forEach(([k])=>{lv[k]=v});return {m:g,L:[],st:{},n:0,ovr:g.ovr,lb:0,lv,sk:AN_HEX.map(([k])=>[k,v]),best:null,worst:null,trend:null,sal:0,yrs:1,bonus:0,nd:1,guest:1}});
   return R.concat(typeof koSort==="function"?koSort(stub.map(x=>x.m)).map(m=>stub.find(x=>x.m===m)):stub).concat(gs)}
-const RP_GLM=[["지역신인부 하",46],["지역신인부 중",52],["지역신인부 상",58],["전국신인부 하",52],["전국신인부 중",58],["전국신인부 상",64],["오픈부 하",60],["오픈부 중",66],["오픈부 상",72]];
+const RP_GLM=[["지역신인부 하",48],["지역신인부 중",51],["지역신인부 상",54],["전국신인부 하",56],["전국신인부 중",59],["전국신인부 상",62],["오픈부 하",64],["오픈부 중",67],["오픈부 상",70]];
 const rpGL=fem=>fem?RP_GL:RP_GLM;
 const RP_GL=[["개나리부 하",40],["개나리부 중",46],["개나리부 상",52],["국화부 하",55],["국화부 중",60],["국화부 상",66]];
 let rpGuestMsg="";
