@@ -1519,9 +1519,10 @@ function rpDataAll(){const R=rpData(),have=new Set(R.map(r=>r.m.id));
   return R.concat(typeof koSort==="function"?koSort(stub.map(x=>x.m)).map(m=>stub.find(x=>x.m===m)):stub).concat(gs)}
 const RP_GL=[["개나리부 하",40],["개나리부 중",46],["개나리부 상",52],["국화부 하",55],["국화부 중",60],["국화부 상",66]];
 let rpGuestMsg="";
+function rpPT(R){if(rpSim.pt==="남복"||rpSim.pt==="여복")return rpSim.pt;const mm=(S.members||[]).find(x=>x.id===me);if(mm)return gdOf(mm)==="여"?"여복":"남복";return R&&R[0]&&gdOf(R[0].m)==="여"?"여복":"남복"}
 function rpAddGuest(){rpGuestMsg="";const n=(document.getElementById("rpgn")||{}).value||"",l=+((document.getElementById("rpgl")||{}).value)||46,nm=n.trim().slice(0,8);if(!nm){rpGuestMsg="이름을 입력해 주세요";render();return}
   if(S.members.some(m=>m.name===nm)||(S.rpGuests||[]).some(g=>g.name===nm)){rpGuestMsg="이미 있는 이름이에요";render();return}
-  const fem=(rpSim.pt||"남복")==="여복",id="g"+Date.now().toString(36);S.rpGuests=S.rpGuests||[];S.rpGuests.push({id,name:nm,gender:fem?"여":"남",level:(RP_GL.find(x=>x[1]===l)||["개나리부 중"])[0],ovr:l,guest:1});try{save()}catch(e){}rpStop();rpSim.b=id;rpSim.seed=1;render()}
+  const fem=rpPT(rpDataAll())==="여복",id="g"+Date.now().toString(36);S.rpGuests=S.rpGuests||[];S.rpGuests.push({id,name:nm,gender:fem?"여":"남",level:(RP_GL.find(x=>x[1]===l)||["개나리부 중"])[0],ovr:l,guest:1});try{save()}catch(e){}rpStop();rpSim.b=id;rpSim.seed=1;render()}
 function rpDelGuest(id){S.rpGuests=(S.rpGuests||[]).filter(g=>g.id!==id);try{save()}catch(e){}if(rpSim.a===id)rpSim.a=null;if(rpSim.b===id)rpSim.b=null;rpStop();rpSim.seed=1;render()}
 const rpGrade=o=>o>=72?"S":o>=62?"A":o>=52?"B":o>=42?"C":"D";
 const rpHash=s=>[...s].reduce((t,c)=>t+c.charCodeAt(0),0);
@@ -1728,7 +1729,7 @@ function rpSkipAll(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(
 /* 건너뛰기: 지금 보이는 화면(소개 → 경기 → 결과 → 다음 경기)만 넘긴다 */
 function rpSkip(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(P.tk||[]).forEach(clearTimeout);P.tk=[];if(P.ph==="intro")rpRally();else if(P.ph==="rally")rpResult();else if(P.ph==="result")rpNext()}
 function rpSimView(R){if(!R.length)return"";
-  const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복"],pt0=PTS.includes(rpSim.pt)?rpSim.pt:(isF(R[0])?"여복":"남복"),
+  const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복"],pt0=rpPT(R),
     poolA=pt0==="여복"?R.filter(isF):R.filter(r=>!isF(r)),ok=id=>R.find(r=>r.m.id===id),
     A=(poolA.find(r=>r.m.id===rpSim.a))||poolA[0],
     poolB=A?(pt0==="여복"?R.filter(isF):R.filter(r=>!isF(r))).filter(r=>r.m.id!==A.m.id):[],
