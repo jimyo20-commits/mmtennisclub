@@ -1597,13 +1597,23 @@ RP_TEAMS["국화부"]=[{n1:"장추자",n2:"마채은",club:"팀이오",rate:60,s
 /* 여러 대회 기록에 이름이 자주 보이는 선수는 그 부의 강자 → 소속 팀 전력 가산(선수별 등장 횟수-1의 합×0.7, 최대 +3 · 동명이인 가능성 때문에 완만하게) */
 (function(){const c={},all=[];["개나리부","국화부"].forEach(g=>(RP_TEAMS[g]||[]).forEach(t=>{all.push(t);[t.n1,t.n2].forEach(n=>{c[n]=(c[n]||0)+1})}));all.forEach(t=>{const b=Math.min(3,Math.round(10*.7*((c[t.n1]-1)+(c[t.n2]-1)))/10);t.fb=b;t.rate=Math.min(70,t.rate+b)})})();
 /* 같은 부·규모에서는 항상 같은 상대 팀들(이름·전력·시드)이 나온다 → 복수전 가능. 실제 대회 데이터(RP_TEAMS)가 있으면 그것을 쓴다 */
-function rpField(g,M,N){const k=g+"|"+N+"|"+M;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
-  if(L){const th=L.map(t=>t.rate).sort((a,b)=>b-a)[Math.floor(L.length/4)]||99;L.slice(0,M).forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1,strong:(t.sd||t.rate>=th)?1:0}))}
+function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)+v*131),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
+  if(L){const th=L.map(t=>t.rate).sort((a,b)=>b-a)[Math.floor(L.length/4)]||99,LL=L.slice(0,M);
+    if(!v)LL.forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1,strong:(t.sd||t.rate>=th)?1:0}));
+    else{ /* 판마다 상대 선수를 개인 단위로 풀어 새 조합으로 묶는다: 시드 팀과 무작위 절반의 팀은 그대로 두고, 나머지 선수들을 섞어 새 페어를 만든다. 선수 한 명은 한 팀에만 나온다 */
+      const rate={},club={},keep=[],kept=new Set(),pool=[];
+      LL.forEach(t=>{[t.n1,t.n2].forEach(n=>{(rate[n]=rate[n]||[]).push(t.rate);if(!club[n])club[n]=t.club})});
+      const avg=n=>rate[n].reduce((a,b)=>a+b,0)/rate[n].length;
+      LL.forEach(t=>{if((t.sd||rng()<.5)&&!kept.has(t.n1)&&!kept.has(t.n2)){keep.push(t);kept.add(t.n1);kept.add(t.n2)}});
+      keep.forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1,strong:(t.sd||t.rate>=th)?1:0}));
+      Object.keys(rate).forEach(n=>{if(!kept.has(n))pool.push(n)});
+      for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+      for(let i=0;i+1<pool.length;i+=2){const a=pool[i],b=pool[i+1],r=(avg(a)+avg(b))/2;out.push({n1:a,n2:b,club:club[a]===club[b]?club[a]:club[a]+"·"+club[b],r,seed:0,real:1,strong:r>=th?1:0,mix:1})}}}
   while(out.length<M)out.push({n1:nm(),n2:nm(),club:pk(RP_RGN)+pk(RP_CL),r:(L?mean-2:mean)+8*rpGauss(rng),seed:0,real:0});
   const used=new Set(out.map(t=>t.seed).filter(Boolean));let nx=1;
   out.map((t,i)=>[t.r,i]).filter(x=>!out[x[1]].seed&&(!L||out[x[1]].real)).sort((a,b)=>b[0]-a[0]).forEach(x=>{while(used.has(nx))nx++;if(nx<=8){out[x[1]].seed=nx;used.add(nx)}});return rpFC[k]=out}
 /* 대회 전체를 굴린다. 0=우리 A팀, 1=우리 B팀(선택), 나머지=상대 팀. exit/bExit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 준우승 · 7 우승 */
-function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N-(ob?2:1),N),T=[{r:me,own:"A",n1:an?an.n1:"",n2:an?an.n2:"",club:"우리 클럽"}];
+function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N-(ob?2:1),N,o.fv),T=[{r:me,own:"A",n1:an?an.n1:"",n2:an?an.n2:"",club:"우리 클럽"}];
   if(ob)T.push({r:ob.r,own:"B",n1:ob.n1,n2:ob.n2,club:"우리 클럽"});for(const t of fld)T.push({...t});
   const n=T.length,G=Math.floor(n/3),sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
   /* 컨디션(1별로·2보통·3좋음) · 체력 · 긴장도. 상대/B팀 컨디션은 80% 보통·10% 별로·10% 좋음 */
@@ -1744,7 +1754,7 @@ function rpMsg0(m){if(m.kind==="q"){if(m.n===1)return m.win?"예선 1승! 🎉":
   if(m.win)return m.r===6?"우승!!! 🏆🎉":m.r===5?"결승 진출! 🔥":`${RP_RD[m.r+1]} 진출! 🎉`;return m.r===6?"준우승 🥈":`${RP_RD[m.r]} 탈락 😭`}
 function rpLabel(m){return m.kind==="q"?`예선 ${m.n}경기`:RP_RD[m.r]}
 function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.seed++;const T=rpTeam(A,B),SZ=RP_SZ[rpSim.sz||"대"],g0=rpSim._g,rk=[A.m.id,B.m.id].sort().join("+")+"|"+g0;S.rpRev=S.rpRev||{};const prev=new Set(S.rpRev[rk]||[]),
-    res=rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,rev:prev}),lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
+    res=rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,fv:rpSim.seed,rev:prev}),lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
   if(lost.length){S.rpRev[rk]=[...new Set([...prev,...lost])].slice(-30);try{save()}catch(e){}}
   rpPlay={res,i:0,ph:"rally",done:[],t:null};rpStep(true)}
 function rpStep(first){if(!rpPlay||tab!=="tourney"){rpStop();return}
