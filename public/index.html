@@ -1648,9 +1648,12 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
       if(i===0||j===0){const m=entry(i,j,d,"q");m.n=list.length+1;if(m.win)qw++;m.qw=qw;list.push(m)}}
     const sorted=gr.map(t=>rec[t]).sort((a,b)=>b.w-a.w||b.d-a.d||rnd()-.5);sorted.forEach((r,k)=>{rankOf[r.t]=k+1});W.push(sorted[0]);R.push(sorted[1])});
   const q2=list[list.length-1];q2.rank=rankOf[0];q2.first=RP_RD[br.off];if(rankOf[0]>2)aEx=-1;if(ob&&rankOf[1]>2)bEx=-1;recov(10);
-  const cmp=(a,b)=>b.w-a.w||b.d-a.d||rnd()-.5,order=W.slice().sort(cmp).concat(R.slice().sort(cmp)),byeT=order.slice(0,br.byes).map(r=>r.t),play=sh(order.slice(br.byes).map(r=>r.t));
+  const cmp=(a,b)=>b.w-a.w||b.d-a.d||rnd()-.5,order=W.slice().sort(cmp).concat(R.slice().sort(cmp)),byeT=order.slice(0,br.byes).map(r=>r.t),rem=order.slice(br.byes).map(r=>r.t);
   q2.bye=byeT.includes(0);
-  const fl=[],bl=[];for(let i=0;i<play.length;i+=2)fl.push([play[i],play[i+1]]);byeT.forEach(t=>bl.push([t,-1]));sh(fl);sh(bl);
+  /* 첫 토너먼트 라운드: 조 2위는 다른 조 1위와 맞붙는다(1위는 시드 효과). 남는 팀은 가급적 다른 조끼리 */
+  const gOf={};groups.forEach((gr,k)=>gr.forEach(t=>{gOf[t]=k}));const isW=t=>W.some(r=>r.t===t),rW=sh(rem.filter(isW)),rR=sh(rem.filter(t=>!isW(t))),fl=[],bl=[];
+  for(const r of rR){const k=rW.findIndex(w=>gOf[w]!==gOf[r]);if(k>=0){fl.push([r,rW.splice(k,1)[0]])}else{rW.push(r)}}
+  {const lf=sh(rW.slice());while(lf.length>1){const a=lf.pop(),k=lf.findIndex(x=>gOf[x]!==gOf[a]),b=lf.splice(k>=0?k:0,1)[0];fl.push([a,b])}}byeT.forEach(t=>bl.push([t,-1]));sh(fl);sh(bl);
   const blocks=[];while(fl.length||bl.length){const x=fl.length?fl.pop():bl.pop(),y=bl.length?bl.pop():fl.pop();blocks.push(y?[x,y]:[x])}sh(blocks);
   let teams=[];blocks.forEach(b=>b.forEach(pr=>{teams.push(pr[0],pr[1])}));
   let src=teams.map(()=>null),aLast=null;
@@ -1662,7 +1665,7 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
       if((a===0&&b===1)||(a===1&&b===0))meet={abs,aWin:d.w===0}}
     teams=next;src=nsrc;recov(4);if(r===0)byeT.forEach(t=>{if(pl[t])for(let k=0;k<2;k++)pl[t][k]=Math.min(100,pl[t][k]+2);else stm[t]=Math.min(100,stm[t]+2)})}
   const champ=teams[0];if(champ===0)aEx=7;if(ob&&champ===1)bEx=7;
-  return {list,exit:aEx,bExit:bEx,br,aLast,T,meet,champ,stA:pl[0],stB:pl[1]||null}}
+  return {list,exit:aEx,bExit:bEx,br,aLast,T,meet,champ,stA:pl[0],stB:pl[1]||null,wk:W.map(r=>T[r.t].n1+T[r.t].n2+T[r.t].club)}}
 /* ───── 내 대회 기록 · 축하 현수막 · 결과 카드 공유 ───── */
 const rpImgC={},rpShQ={},RP_GW={"오픈부":3,"전국신인부":2,"지역신인부":1,"국화부":2,"개나리부":1};
 function rpRole(m){const P=(S.pos||[]).filter(e=>e.h===m.name&&e.pp&&e.pp[m.name]).map(e=>Math.abs(e.pp[m.name].y-237.7)/20),n=P.length;if(n<10)return {f:1,n,t:"기록 부족",rb:0,rf:0};
