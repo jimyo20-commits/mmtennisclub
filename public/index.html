@@ -1587,8 +1587,10 @@ function rpFit(A,B){const d=x=>(x.lv.Fs||0)-(x.lv.Bs||0);return Math.max(-3,Math
 function rpDrP(m){const c={};let t=0;AN_HEX.forEach(([k])=>{const dk=k==="sv"?"Sv":k,x=AN_DRILL.find(y=>y.k===dk),v=x&&x.d.length?drillCnt(m.id,dk)/x.d.length:0;c[k]=v;t+=v});return {c,p:t/AN_HEX.length}}
 /* 드릴 이행은 팀이 아니라 선수 개인 단위: 본인의 이행률 1.0 → 본인 OVR +2.4(팀 평균에는 절반 반영) */
 function rpDB(p){return Math.round(2.4*p*10)/10}
-function rpTeam(A,B){const dA=rpDrP(A.m),dB=rpDrP(B.m),sk=AN_HEX.map(([k])=>{const x=(A.lv[k]||0)>0?A.lv[k]+.8*dA.c[k]:0,y=(B.lv[k]||0)>0?B.lv[k]+.8*dB.c[k]:0,hi=Math.max(x,y),lo=Math.min(x,y);return lo>0?.65*hi+.35*lo:hi*.85}),sa=sk.reduce((t,v)=>t+v,0)/sk.length,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length,dr=0,pbA=rpDB(dA.p),pbB=rpDB(dB.p);
-  const base=.5*((A.ovr+pbA)+(B.ovr+pbB))/2+.5*(20+6*sa);const fit=rpFit(A,B);return {r:Math.round((base+Math.min(3,comp)*.8+fit+dr)*10)/10,comp,sa,fit,dr}}
+/* 모든 스탯은 선수 개인 단위로 먼저 계산한다: 개인 전력 = 0.5×(OVR+드릴 보정) + 0.5×(20+6×개인 스킬 평균, 드릴 이행 반영). 팀 전력 = 강한 쪽 0.6 + 약한 쪽 0.4 + 스킬 보완 + 자리 궁합 */
+function rpPers(P){const d=rpDrP(P.m),xs=AN_HEX.map(([k])=>(P.lv[k]||0)>0?P.lv[k]+.8*d.c[k]:null),ok=xs.filter(x=>x!==null),mn=ok.length?ok.reduce((t,v)=>t+v,0)/ok.length:0,sa=xs.reduce((t,v)=>t+(v===null?.85*mn:v),0)/xs.length,db=rpDB(d.p);return {sa,db,r:.5*(P.ovr+db)+.5*(20+6*sa)}}
+function rpTeam(A,B){const pa=rpPers(A),pb=rpPers(B),hi=Math.max(pa.r,pb.r),lo=Math.min(pa.r,pb.r),sa=(pa.sa+pb.sa)/2,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length,dr=0;
+  const base=.6*hi+.4*lo;const fit=rpFit(A,B);return {r:Math.round((base+Math.min(3,comp)*.8+fit)*10)/10,comp,sa,fit,dr,pa:pa.r,pb:pb.r}}
 function rpRng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* 한 대회 전체를 미리 굴려서 경기 목록으로 만든다. exit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 결승 패(준우승) · 7 우승 */
 function rpGauss(rnd){let u=0;for(let i=0;i<6;i++)u+=rnd();return(u-3)/.7071}
