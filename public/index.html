@@ -1607,10 +1607,9 @@ function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N
   rest.forEach(t=>{let c=0;while(groups[gi[ptr%G]].length>=3&&c<G){ptr++;c++}groups[gi[ptr%G]].push(t);ptr++});
   if(ob){const f=t=>groups.findIndex(x=>x.includes(t)),ga=f(0);if(f(1)===ga){for(const g2 of sh([...Array(G).keys()])){if(g2===ga)continue;const k=groups[g2].findIndex(x=>x>1&&!T[x].seed);if(k>=0){const x=groups[g2][k];groups[g2][k]=1;groups[ga][groups[ga].indexOf(1)]=x;break}}}}
   const duel0=(i,j,abs)=>{const p=1/(1+Math.exp(-(ef(i,abs)-ef(j,abs))/11)),wi=rnd()<p,pw=wi?p:1-p,lg=Math.max(0,Math.min(5,Math.round((1-pw)*9+(rnd()-.5)*3))),mine=i===0||j===0,os=mine?Math.round(stT(i===0?j:i)):null,sb=mine?pl[0].slice():null,nvk=T[0].resK.map(x=>Math.round(NV[abs]*x*10)/10),nv=Math.round(NV[abs]*(.6*Math.max(...T[0].resK)+.4*Math.min(...T[0].resK))*10)/10;let sv=null;const s1=spend(i,lg),s2=spend(j,lg);if(i===0)sv=s1;else if(j===0)sv=s2;return {w:wi?i:j,l:wi?j:i,lg,p,sb,sa:mine?pl[0].slice():null,nv,nvk,sv,os}};
-  /* 체력 30% 이하 팀은 경기 중 5% 확률로 다리에 쥐가 나 기권한다 (우리 팀·상대 팀 공통) */
-  const lowSt=t=>pl[t]?Math.min(pl[t][0],pl[t][1]):stm[t];
-  const duel=(i,j,abs)=>{let cr=null;for(const t of [i,j])if(cr===null&&lowSt(t)<=30&&rnd()<.05)cr=t;
-    const k=cr===null?0:(pl[cr]?(pl[cr][0]<=pl[cr][1]?0:1):Math.floor(rnd()*2)),d=duel0(i,j,abs);if(cr===null)return d;
+  /* 체력 30% 이하인 선수는 개인별로 경기 중 5% 확률로 다리에 쥐가 나 기권한다 (우리 팀·상대 팀 공통, 상대 팀은 두 선수 체력을 같게 본다) */
+  const duel=(i,j,abs)=>{let cr=null,k=0;for(const t of [i,j])for(const q of [0,1])if(cr===null&&(pl[t]?pl[t][q]:stm[t])<=30&&rnd()<.05){cr=t;k=q}
+    const d=duel0(i,j,abs);if(cr===null)return d;
     const wg=2+Math.floor(rnd()*4),lgm=Math.max(0,wg-1-Math.floor(rnd()*2));d.w=cr===i?j:i;d.l=cr;d.lg=lgm;d.cr={t:cr,nm:T[cr]["n"+(k+1)]||"",wg,lgm};return d};
   const mkOi=t=>({n1:T[t].n1,n2:T[t].n2,club:T[t].club,seed:T[t].seed||0,real:T[t].real||0,strong:T[t].strong||0,own:T[t].own==="B"?1:0,key:T[t].n1+T[t].n2+T[t].club});
   const list=[];let qw=0,aEx=null,bEx=ob?null:undefined,meet=null;
