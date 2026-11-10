@@ -103,7 +103,7 @@ input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid
 </head>
 <body>
 <header><div class="wrap">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h1><img class="logo" id="logo" alt="무명회 로고">무명회</h1><button id="votebtn" class="btn" style="display:none;flex:none;padding:9px 14px" onclick="showVote=true;render()">참석 투표</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h1><img class="logo" id="logo" alt="무명회 로고">무명회</h1><div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:none"><button id="votebtn" class="btn" style="display:none;flex:none;padding:9px 14px" onclick="showVote=true;render()">참석 투표</button><button id="tbtn" class="btn" style="display:none;flex:none;padding:8px 14px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border:2px solid transparent" onclick="tab='tourney';render()">🏆 대회</button></div></div>
 <p class="sub">즐겁게 실력향상을 할 수 있는 클럽</p>
 <div id="who" class="sub" style="display:flex;gap:10px;align-items:center;margin-top:-6px"></div>
 <div id="navw"><button id="navless" type="button" aria-label="이전 탭 보기" onclick="navMore(-1)">‹</button><nav id="nav"></nav><button id="navmore" type="button" aria-label="다음 탭 보기" onclick="navMore()">›</button></div>
@@ -2547,10 +2547,10 @@ function navUpd(){const n=document.getElementById("nav"),b=document.getElementBy
 function navMore(d){const n=document.getElementById("nav");if(n)n.scrollBy({left:(d||1)*Math.max(120,n.clientWidth*.6),behavior:"smooth"})}
 function render(){
   const u=S.members.find(m=>m.id===me)||(isGuest()?(S.guests||[]).find(g=>g.id===me):null);
-  $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u&&!isGuest()?"":"none";$("#who").innerHTML=u?`${esc(u.name)}님${isGuest()?" (게스트)":""}${isAdmin()?" · 운영자":""} ${isGuest()?"":`<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button>`}<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
+  $("#logo").src=LOGO;if(isAdmin())autoClassify();$("#votebtn").style.display=u&&!isGuest()?"":"none";$("#tbtn").style.display=u&&isAdmin()?"":"none";$("#tbtn").style.outline=tab==="tourney"?"3px solid #fff":"none";$("#who").innerHTML=u?`${esc(u.name)}님${isGuest()?" (게스트)":""}${isAdmin()?" · 운영자":""} ${isGuest()?"":`<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="openPw()">비밀번호 변경</button>`}<button class="btn ghost" style="color:#cfe3d8;border-color:#3d6a58" onclick="logout()">로그아웃</button>`:"";
   if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML="";return}
-  const tabs=isGuest()?TABS.filter(([k])=>["home","club","drill","matches","analysis"].includes(k)):TABS.filter(([k])=>isAdmin()||!["members","dues","report","tourney"].includes(k));
-  if(!tabs.some(([k])=>k===tab))tab=tabs[0][0];
+  const tabs=isGuest()?TABS.filter(([k])=>["home","club","drill","matches","analysis"].includes(k)):TABS.filter(([k])=>k!=="tourney"&&(isAdmin()||!["members","dues","report"].includes(k)));
+  if(!tabs.some(([k])=>k===tab)&&!(tab==="tourney"&&isAdmin()))tab=tabs[0][0];
   $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
   setTimeout(navUpd,0);
   $("#view").innerHTML=V[tab]();
