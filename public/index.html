@@ -1704,9 +1704,9 @@ function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.s
 function rpStep(first){if(!rpPlay||tab!=="tourney"){rpStop();return}
   const P=rpPlay,m=P.res.list[P.i];P.ph="intro";render();
   P.t=setTimeout(()=>{if(!rpPlay)return;P.ph="rally";P.path=rpPath(m);P.tk=[];render();const n=P.path.length;
-    P.path.forEach((st,k)=>P.tk.push(setTimeout(()=>{const e1=document.getElementById("rpLiveSc"),e2=document.getElementById("rpLiveMsg");if(e1)e1.textContent=st.a+" : "+st.b;if(e2)e2.textContent=st.msg},400+k*(9200/n))));
+    P.path.forEach((st,k)=>P.tk.push(setTimeout(()=>{const e1=document.getElementById("rpLiveSc"),e2=document.getElementById("rpLiveMsg");if(e1)e1.textContent=st.a+" : "+st.b;if(e2)e2.textContent=st.msg},400+k*(14200/n))));
     P.t=setTimeout(()=>{if(!rpPlay)return;P.ph="result";P.done.push(m);render();setTimeout(()=>{document.querySelectorAll(".rpg").forEach(e=>{e.style.width=e.dataset.to+"%"})},120);
-      P.t=setTimeout(()=>{if(!rpPlay)return;P.i++;if(P.i>=P.res.list.length){P.ph="end";rpFin(P);render();return}rpStep()},3000)},10000)},3000)}
+      P.t=setTimeout(()=>{if(!rpPlay)return;P.i++;if(P.i>=P.res.list.length){P.ph="end";rpFin(P);render();return}rpStep()},7000)},15000)},7000)}
 function rpSkip(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(P.tk||[]).forEach(clearTimeout);P.done=P.res.list.slice();P.i=P.res.list.length;P.ph="end";rpFin(P);render()}
 function rpSimView(R){if(!R.length)return"";
   const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복"],pt0=PTS.includes(rpSim.pt)?rpSim.pt:(isF(R[0])?"여복":"남복"),
