@@ -210,6 +210,10 @@ const spT=(s,br)=>{const t=fmtT(s.start)+(br?"<br>":" ")+"~ "+fmtT(s.end);return
 const sessOn=ds=>{const d0=new Date(ds+"T00:00");const d=d0.getDay();const dt=d0.getDate();const second=(d===6||d===0)&&dt>=8&&dt<=14;return S.schedule.filter(s=>s.day===d).map(s=>second?{...s,start:"19:00",end:"22:00",special:1}:s)};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* 앱 안 확인창(브라우저 confirm은 미리보기에서 막히므로 직접 그림). 취소하면 화면을 다시 그려 선택 상자를 원래 값으로 되돌린다 */
+function cfm(msg,fn){const old=document.getElementById("cfmBox");if(old)old.remove();const d=document.createElement("div");d.id="cfmBox";d.setAttribute("role","dialog");d.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px";
+  d.innerHTML=`<div style="background:var(--surface,#fff);color:var(--fg,#111);border-radius:14px;padding:18px 16px 14px;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.35)"><div style="font-size:15px;font-weight:800;line-height:1.5;margin-bottom:14px;word-break:keep-all"></div><div style="display:flex;gap:8px"><button class="btn ghost" id="cfmNo" style="flex:1;padding:10px">취소</button><button class="btn" id="cfmOk" style="flex:1;padding:10px">확인</button></div></div>`;
+  d.firstChild.firstChild.textContent=msg;document.body.appendChild(d);const close=()=>d.remove();document.getElementById("cfmNo").onclick=()=>{close();render()};d.onclick=e=>{if(e.target===d){close();render()}};document.getElementById("cfmOk").onclick=()=>{close();fn()}}
 const mname=id=>(S.members.find(m=>m.id===id)||(S.guests||[]).find(g=>g.id===id)||{name:"탈퇴 회원"}).name;
 const memberOpts=sel=>S.members.map(m=>`<option value="${m.id}"${m.id===sel?" selected":""}>${esc(m.name)}</option>`).join("");
 
@@ -1994,7 +1998,7 @@ function addMember(){const n=$("#nm").value.trim();if(!n){$("#nm").focus();retur
     else note="이름이 같은 게스트("+n+")가 있지만 전화번호 뒷 4자리가 확인되지 않아 경기 기록과 분석은 이어받지 않았어요."+(mp?"":" (회원 정보에 전화번호 뒷 4자리를 넣으면 같은 번호일 때 이어받을 수 있어요)")}
   if(g)guestToMember(g,m);
   save();render();if(g)alert(n+" 님의 게스트 시절 경기 기록과 분석을 회원으로 이어받았어요."+(note?"\n("+note+")":""));else if(note)alert(note)}
-function delMember(id){if(!confirm(mname(id)+" 회원을 삭제할까요?"))return;S.members=S.members.filter(m=>m.id!==id);S.bookings=S.bookings.filter(b=>b.member!==id);save();render()}
+function delMember(id){cfm(mname(id)+" 회원을 삭제할까요?\n(되돌릴 수 없어요)",()=>{S.members=S.members.filter(m=>m.id!==id);S.bookings=S.bookings.filter(b=>b.member!==id);save();render()})}
 function book(t,c){const m=$("#bm").value;if(!m){alert("먼저 회원을 추가하세요.");return}
   S.bookings.push({id:uid(),date:S.date,time:t,court:c,member:m});save();render()}
 function cancelBooking(id){S.bookings=S.bookings.filter(b=>b.id!==id);save();render()}
@@ -2125,7 +2129,7 @@ function savePw(){const m=S.members.find(x=>x.id===me);if(!m)return;const a=$("#
   if(!/^\d{4,8}$/.test(b)){e("새 비밀번호는 숫자 4~8자리여야 합니다.");return}
   if(b!==c){e("새 비밀번호 확인이 일치하지 않습니다.");return}
   m.pw=b;save();$("#pwe").style.color="var(--court)";e("변경되었습니다.");setTimeout(closePw,900)}
-function resetPw(id){const m=S.members.find(x=>x.id===id);if(m){delete m.pw;save();render()}}
+function resetPw(id){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 비밀번호를 초기화할까요?",()=>{delete m.pw;save();render()})}
 function resetPhoto(id){const m=S.members.find(x=>x.id===id);if(m){delete m.photo;save();render()}}
 function voteMe(ds,k){voter=me;vote(ds,k)}
 let rkMore=false;
@@ -2277,9 +2281,9 @@ function addSponsor(){const name=$("#spn").value.trim();if(!name){$("#spn").focu
 let spDelId=null;
 function askDelSponsor(id){spDelId=id;render()}
 function delSponsor(id){spDelId=null;S.sponsors=S.sponsors.filter(x=>x.id!==id);save();render()}
-function setLesson(id,v){const m=S.members.find(x=>x.id===id);if(m){if(v)m.lesson=true;else delete m.lesson;save();render()}}
-function setRejoin(id,v){const m=S.members.find(x=>x.id===id);if(m){m.rejoin=!!v;save();render()}}
-function setJoined(id,v){const m=S.members.find(x=>x.id===id);if(m){m.joined=v;save()}}
+function setLesson(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 레슨 표시를 "+(v?"켤까요?":"끌까요?"),()=>{if(v)m.lesson=true;else delete m.lesson;save();render()})}
+function setRejoin(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원을 '재가입' "+(v?"으로 표시":"에서 해제")+"할까요?",()=>{m.rejoin=!!v;save();render()})}
+function setJoined(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 가입일을 "+(v||"비움")+"(으)로 바꿀까요?",()=>{m.joined=v;save();render()})}
 const POINT=10;
 const voteCnt=m=>Object.values(S.votes).filter(v=>v&&v[m.id]).length;
 const POINT_ATT=20;
@@ -2351,8 +2355,8 @@ function finishAtt(ds){S.attDone[ds]=true;save();render()}
 function reopenAtt(ds){delete S.attDone[ds];save();render()}
 function toggleAttend(ds,id){const ss=sessOn(ds)[0];if(ss&&!attOpen(ds,ss.start)){alert("모임 시작 시간("+ss.start+") 이후부터 출석 확인이 가능합니다.");return}const a=S.attend[ds]=S.attend[ds]||{};if(a[id])delete a[id];else a[id]=true;save();render()}
 async function refreshPerm(b){if(b){b.disabled=true;b.textContent="확인 중…"}try{if(SYNC.on){SYNC.busy=false;await syncPull()}}catch(e){}render();if(!isAdmin()){alert("아직 운영자로 지정되지 않았어요. 운영자(윤준식)가 회원관리에서 운영자 지정을 눌러야 해요.")}}
-function toggleAdmin(id){const m=S.members.find(x=>x.id===id);if(!m||!isAdmin())return;m.admin=!m.admin;save();render()}   /* 확인창(confirm)은 미리보기에서 막혀 버튼이 안 먹히므로 사용하지 않음 */
-function setRole(id,v){const m=S.members.find(x=>x.id===id);if(m){m.role=v;save();render()}}
+function toggleAdmin(id){const m=S.members.find(x=>x.id===id);if(!m||!isAdmin())return;cfm(m.name+" 회원을 운영자"+(m.admin?"에서 해제":"로 지정")+"할까요?",()=>{m.admin=!m.admin;save();render()})}
+function setRole(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 직책을 '"+(v||"없음")+"'(으)로 바꿀까요?",()=>{m.role=v;save();render()})}
 const gav=(g,z)=>g.photo?`<img src="${g.photo}" alt="" style="width:${z}px;height:${z}px;border-radius:50%;object-fit:cover;display:block">`:`<span style="width:${z}px;height:${z}px;border-radius:50%;background:var(--line);color:var(--muted);display:grid;place-items:center;font-weight:700;font-size:${Math.round(z/3)}px">${esc(g.name.slice(0,1))}</span>`;
 function readPhoto(f,cb){const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=c.height=192;const s=Math.min(im.width,im.height);c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,192,192);cb(c.toDataURL("image/jpeg",0.8))};im.src=rd.result};rd.readAsDataURL(f)}
 let editGuestId=null;
@@ -2541,9 +2545,9 @@ function buyView(){const p=PRODUCTS.find(x=>x.id===buyPid);const m=S.members.fin
   return `<div class="modal tipc" onclick="if(event.target===this)cancelBuy()"><div class="sheet"><h2 style="margin:0 0 10px">구매 확인</h2><p style="margin:0 0 4px;font-size:15px"><b>${esc(p.name)}</b>을(를) <b>${p.cost}P</b>로 구매할까요?</p><p style="margin:0;font-size:13px;color:var(--muted)">내 포인트 ${pts}P → 구매 후 <b style="color:var(--ink)">${pts-p.cost}P</b>가 남습니다.</p><div class="row" style="margin-top:16px;gap:8px"><button class="btn" style="flex:1" onclick="confirmBuy()">확인</button><button class="btn off" style="flex:1" onclick="cancelBuy()">취소</button></div></div></div>`}
 function copyPurchase(id){const x=S.purchases.find(y=>y.id===id);if(!x)return;const t=`[무명회] ${mname(x.by)} 님 ${x.name} 구매 (${x.cost}P 사용) ${x.date}`;
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("복사했습니다. 카톡방에 붙여넣으세요.")).catch(()=>prompt("아래 내용을 복사하세요",t))}
-function setStatus(id,v){const m=S.members.find(x=>x.id===id);if(m){m.status=v;save();render()}}
-function setGender(id,v){const m=S.members.find(x=>x.id===id);if(m&&isAdmin()){if(v)m.gender=v;else delete m.gender;save();render()}}
-function setLevel(id,v){const m=S.members.find(x=>x.id===id);if(m){m.level=v;save();render()}}
+function setStatus(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 상태를 '"+v+"'(으)로 바꿀까요?",()=>{m.status=v;save();render()})}
+function setGender(id,v){const m=S.members.find(x=>x.id===id);if(m&&isAdmin())cfm(m.name+" 회원의 성별을 "+(v?"'"+v+"'(으)로 바꿀까요?":"해제(미등록)할까요?"),()=>{if(v)m.gender=v;else delete m.gender;save();render()})}
+function setLevel(id,v){const m=S.members.find(x=>x.id===id);if(m)cfm(m.name+" 회원의 등급을 '"+v+"'(으)로 바꿀까요?",()=>{m.level=v;save();render()})}
 const inGameTime=()=>{const n=new Date(),ds=iso(n),t=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");return sessOn(ds).some(s=>t>=s.start&&t<=s.end)};
 const canAddMatch=()=>!isGuest()&&(isAdmin()||inGameTime());
 const canEditMatch=g=>isAdmin()||(!!g&&g.by===me&&inGameTime());
