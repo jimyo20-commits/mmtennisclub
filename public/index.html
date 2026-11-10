@@ -1502,7 +1502,7 @@ const RP_ST={Fs:"베이스라인 포핸드 슬러거",Bs:"백핸드 장인",V:"�
 const RP_LB={"오픈부":6,"전신부":4,"지신부":2,"비입상":0,"국화부":5,"개나리부":2};   /* 실력 등급 가점(OVR): 남자 오픈부>전신부>지신부>비입상 · 여자 국화부>개나리부 */
 const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+"억"+(r?" "+r.toLocaleString("ko-KR")+"만":"")}return n.toLocaleString("ko-KR")+"만"};   /* 금액 단위: 만원 */
 /* 가상대회 성적 보너스: 우승 4·준우승 2·공동3위 1점을 쌓되, 점수가 쌓일수록 OVR 상승폭이 줄어드는 포화 곡선(최대 +8) */
-function rpTB(id){let w=0,f=0,s=0;(S.rpRec||[]).forEach(r=>(r.teams||[]).forEach(t=>{if(!t.guest&&(t.ids||[]).includes(id)){if(t.exit>=7)w++;else if(t.exit===6)f++;else if(t.exit===5)s++}}));const pts=w*4+f*2+s,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,pts,b}}
+function rpTB(id){let w=0,f=0,s=0;(S.rpRec||[]).forEach(r=>(r.teams||[]).forEach((t,k)=>{if(k===0&&!t.guest&&(t.ids||[]).includes(id)){if(t.exit>=7)w++;else if(t.exit===6)f++;else if(t.exit===5)s++}}));const pts=w*4+f*2+s,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,pts,b}}
 function rpData(){const fl=anFlat(),by={};fl.forEach(e=>{if(e.pid)(by[e.pid]=by[e.pid]||[]).push(e)});
   const cmp=(a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g);
   const out=S.members.filter(m=>by[m.id]&&by[m.id].length).map(m=>{const L=by[m.id].slice().sort(cmp),st=anStats(L),lv=anHexLv(L,10).lv,sk=AN_HEX.map(([k])=>[k,+lv[k]||0]);
