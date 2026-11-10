@@ -1583,9 +1583,9 @@ function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim
 function rpSetPT(v){rpStop();rpSim.pt=v;rpSim.bm=null;rpSim.a=null;rpSim.b=null;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpFit(A,B){const d=x=>(x.lv.Fs||0)-(x.lv.Bs||0);return Math.max(-3,Math.min(3,Math.round(.35*(d(A)-d(B))*10)/10))}   /* A=듀스코트(포핸드 사이드), B=애드코트(백핸드 사이드) */
-/* 드릴 이행도 → 실수 감소 보정: 스킬별 완료율(0~1)로 해당 스킬 레벨을 최대 +0.5, 전체 이행도로 팀 전력을 최대 +0.6 보정 */
+/* 드릴 이행도 → 실수 감소 보정: 스킬별 완료율(0~1)로 해당 스킬 레벨을 최대 +0.8, 전체 이행도로 팀 전력을 최대 +1.2 보정 */
 function rpDrP(m){const c={};let t=0;AN_HEX.forEach(([k])=>{const dk=k==="sv"?"Sv":k,x=AN_DRILL.find(y=>y.k===dk),v=x&&x.d.length?drillCnt(m.id,dk)/x.d.length:0;c[k]=v;t+=v});return {c,p:t/AN_HEX.length}}
-function rpTeam(A,B){const dA=rpDrP(A.m),dB=rpDrP(B.m),sk=AN_HEX.map(([k])=>{const x=(A.lv[k]||0)>0?A.lv[k]+.5*dA.c[k]:0,y=(B.lv[k]||0)>0?B.lv[k]+.5*dB.c[k]:0,hi=Math.max(x,y),lo=Math.min(x,y);return lo>0?.65*hi+.35*lo:hi*.85}),sa=sk.reduce((t,v)=>t+v,0)/sk.length,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length,dr=Math.round(.6*(dA.p+dB.p)/2*10)/10;
+function rpTeam(A,B){const dA=rpDrP(A.m),dB=rpDrP(B.m),sk=AN_HEX.map(([k])=>{const x=(A.lv[k]||0)>0?A.lv[k]+.8*dA.c[k]:0,y=(B.lv[k]||0)>0?B.lv[k]+.8*dB.c[k]:0,hi=Math.max(x,y),lo=Math.min(x,y);return lo>0?.65*hi+.35*lo:hi*.85}),sa=sk.reduce((t,v)=>t+v,0)/sk.length,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length,dr=Math.round(1.2*(dA.p+dB.p)/2*10)/10;
   const base=.5*(A.ovr+B.ovr)/2+.5*(20+6*sa);const fit=rpFit(A,B);return {r:Math.round((base+Math.min(3,comp)*.8+fit+dr)*10)/10,comp,sa,fit,dr}}
 function rpRng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* 한 대회 전체를 미리 굴려서 경기 목록으로 만든다. exit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 결승 패(준우승) · 7 우승 */
