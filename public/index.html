@@ -1534,8 +1534,8 @@ let rpGuestMsg="",rpGOpen=false; /* 비회원과 출전 창: 처음엔 닫힘, �
 function rpPT(R){if(rpSim.pt==="남복"||rpSim.pt==="여복")return rpSim.pt;const mm=(S.members||[]).find(x=>x.id===me);if(mm)return gdOf(mm)==="여"?"여복":"남복";return R&&R[0]&&gdOf(R[0].m)==="여"?"여복":"남복"}
 function rpAddGuest(){rpGuestMsg="";const n=(document.getElementById("rpgn")||{}).value||"",li=+((document.getElementById("rpgl")||{}).value)||0,nm=n.trim().slice(0,8);if(!nm){rpGuestMsg="이름을 입력해 주세요";render();return}
   if(S.members.some(m=>m.name===nm)||(S.rpGuests||[]).some(g=>g.name===nm)){rpGuestMsg="이미 있는 이름이에요";render();return}
-  const fem=rpPT(rpDataAll())==="여복",GL=rpGL(fem),it=GL[li]||GL[fem?1:1],id="g"+Date.now().toString(36);S.rpGuests=S.rpGuests||[];S.rpGuests.push({id,name:nm,gender:fem?"여":"남",level:it[0],ovr:it[1],guest:1});try{save()}catch(e){}rpStop();rpSim.b=id;rpSim.seed=1;render()}
-function rpDelGuest(id){S.rpGuests=(S.rpGuests||[]).filter(g=>g.id!==id);try{save()}catch(e){}if(rpSim.a===id)rpSim.a=null;if(rpSim.b===id)rpSim.b=null;rpStop();rpSim.seed=1;render()}
+  const fem=rpPT(rpDataAll())==="여복",GL=rpGL(fem),it=GL[li]||GL[fem?1:1],id="g"+Date.now().toString(36);S.rpGuests=S.rpGuests||[];S.rpGuests.push({id,name:nm,gender:fem?"여":"남",level:it[0],ovr:it[1],guest:1});try{save()}catch(e){}rpStop();rpSim.b=id;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
+function rpDelGuest(id){S.rpGuests=(S.rpGuests||[]).filter(g=>g.id!==id);try{save()}catch(e){}if(rpSim.a===id)rpSim.a=null;if(rpSim.b===id)rpSim.b=null;rpStop();rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 const rpGrade=o=>o>=72?"S":o>=62?"A":o>=52?"B":o>=42?"C":"D";
 const rpHash=s=>[...s].reduce((t,c)=>t+c.charCodeAt(0),0);
 function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),medal=rank===1?"linear-gradient(135deg,#fde68a,#d4a017)":rank===2?"linear-gradient(135deg,#f1f5f9,#94a3b8)":rank===3?"linear-gradient(135deg,#fdba74,#b45309)":"linear-gradient(135deg,#e2e8f0,#cbd5e1)";
@@ -1557,7 +1557,7 @@ function rpCard(r,i){const m=r.m,h=rpHash(m.name),rank=i+1,rd=Math.ceil(rank/3),
   <details style="padding:6px 12px 10px"><summary style="cursor:pointer;font-size:12px;color:var(--muted);list-style:none;padding:4px 0">🔎 스카우팅 노트 · 툴 그레이드 보기 ▾</summary>
     <p style="margin:4px 0 8px;font-size:13px;line-height:1.65">${esc(cm)}</p>${tools}<div style="font-size:11px;color:var(--muted);margin-top:6px">Winning ${r.W} · Unforced ${r.U} · 툴 그레이드는 20~80 스케일 (50=평균)</div></details></div>`}
 /* ===== 가상 대회 시뮬레이터 (예선 2경기 + 본선 128강 토너먼트, 경기마다 5초 랠리 연출) ===== */
-let rpSim={a:"",b:"",g:"",seed:1},rpPlay=null;
+let rpSim={a:"",b:"",g:"",seed:1+Math.floor(Math.random()*900000)},rpPlay=null;
 const RP_GB={"오픈부":66,"전국신인부":58,"지역신인부":52,"개나리부":46,"국화부":60},RP_RD=["128강","64강","32강","16강","8강","4강","결승"],RP_SZ={"대":150},RP_STG=["예선 탈락","128강 탈락","64강 탈락","32강 탈락","16강 탈락","8강 탈락","4강 탈락","준우승","우승"],rpMemo={},rpFC={};
 /* 참가 N팀 → 3팀 조 G개(1·2위 진출) → 본선 B강. 부전승 B-Q팀은 조1위 우선, 남으면 조2위 */
 function rpBr(N){const G=Math.ceil(N/3),Q=2*G;let B=4;while(B<Q&&B<128)B*=2;const byes=Math.max(0,B-Q);return {G,Q,B,nR:Math.round(Math.log2(B)),off:7-Math.round(Math.log2(B)),byes,P:Q-byes}}
@@ -1579,9 +1579,9 @@ function rpPath(m){const [A,B]=m.sc.split(":").map(Number),w=m.win,toks=[];for(l
     else msg=a>b?"앞서가는 중 💪":a<b?"뒤지는 중 😅":"팽팽한 균형 ⚖️";
     return {a,b,msg}})}
 function rpStop(){if(rpPlay){if(rpPlay.iv)clearInterval(rpPlay.iv);if(rpPlay.t)clearTimeout(rpPlay.t);(rpPlay.tk||[]).forEach(clearTimeout)}rpPlay=null}
-function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim.b=a;rpSim.seed=1;render()}
-function rpSetPT(v){rpStop();rpSim.pt=v;rpSim.bm=null;rpSim.a=null;rpSim.b=null;rpSim.seed=1;render()}
-function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1;render()}
+function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim.b=a;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
+function rpSetPT(v){rpStop();rpSim.pt=v;rpSim.bm=null;rpSim.a=null;rpSim.b=null;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
+function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpFit(A,B){const d=x=>(x.lv.Fs||0)-(x.lv.Bs||0);return Math.max(-3,Math.min(3,Math.round(.35*(d(A)-d(B))*10)/10))}   /* A=듀스코트(포핸드 사이드), B=애드코트(백핸드 사이드) */
 /* 드릴 이행도 → 실수 감소 보정: 스킬별 완료율(0~1)로 해당 스킬 레벨을 최대 +0.5, 전체 이행도로 팀 전력을 최대 +0.6 보정 */
 function rpDrP(m){const c={};let t=0;AN_HEX.forEach(([k])=>{const dk=k==="sv"?"Sv":k,x=AN_DRILL.find(y=>y.k===dk),v=x&&x.d.length?drillCnt(m.id,dk)/x.d.length:0;c[k]=v;t+=v});return {c,p:t/AN_HEX.length}}
@@ -1664,7 +1664,7 @@ const rpImgC={},rpShQ={},RP_GW={"오픈부":3,"전국신인부":2,"지역신인�
 function rpRole(m){const P=(S.pos||[]).filter(e=>e.h===m.name&&e.pp&&e.pp[m.name]).map(e=>Math.abs(e.pp[m.name].y-237.7)/20),n=P.length;if(n<10)return {f:1,n,t:"기록 부족",rb:0,rf:0};
   const rb=P.filter(d=>d>11.9).length/n,rf=P.filter(d=>d<=6.4).length/n,f=Math.max(.85,Math.min(1.15,1+.25*(rb-rf))),df=rb-rf;return {f:Math.round(f*100)/100,n,rb,rf,t:df>.3?"후위형":df<.1?"전위형":"균형형"}}
 const rpRes=m=>m.level==="오픈부"?.6:(m.level==="전신부"||m.level==="국화부")?.75:1,rpCd=id=>(rpSim.cd&&rpSim.cd[id])||2;
-function rpCdSet(id,v){rpStop();rpSim.cd=rpSim.cd||{};rpSim.cd[id]=v;rpSim.seed=1;render()}
+function rpCdSet(id,v){rpStop();rpSim.cd=rpSim.cd||{};rpSim.cd[id]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpGauge(nm,b,a,anim){const col=a>60?"#16a34a":a>30?"#f59e0b":"#dc2626";return `<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:3px 0"><span style="width:56px;flex:none;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(nm)}</span><div style="flex:1;height:11px;border-radius:6px;background:rgba(128,128,128,.2);position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:${b}%;background:rgba(220,38,38,.3)"></div><div class="${anim?"rpg":""}" data-to="${a}" style="position:absolute;left:0;top:0;bottom:0;width:${anim?b:a}%;background:${col};border-radius:6px;transition:width .9s ease-out"></div></div><b style="width:64px;text-align:right;font-variant-numeric:tabular-nums">${Math.round(a)}%${b>a?` <span style="color:#dc2626">−${Math.round(b-a)}</span>`:""}</b></div>`}
 function rpStam(m,after){const n=rpSim._an;if(!n||!m.sb)return"";return `<div style="margin-top:10px;text-align:left;padding:8px 10px;border-radius:10px;background:rgba(128,128,128,.08)"><div style="font-size:11px;font-weight:800;margin-bottom:2px">💪 체력 게이지</div>${rpGauge(n.n1,m.sb[0],after?m.sa[0]:m.sb[0],after)}${rpGauge(n.n2,m.sb[1],after?m.sa[1]:m.sb[1],after)}${m.nv?`<div style="font-size:11px;margin-top:3px">😤 긴장 ${esc(n.n1)} <b style="color:#dc2626">−${m.nvk[0]}</b> · ${esc(n.n2)} <b style="color:#dc2626">−${m.nvk[1]}</b> <span style="color:var(--muted)">(팀 −${m.nv})</span></div>`:""}<div style="font-size:11px;color:var(--muted);margin-top:3px">${after&&m.sv?`🎾 이번 경기 서브 ${esc(n.n1)} ${m.sv[0]}게임 · ${esc(n.n2)} ${m.sv[1]}게임<br>`:""}우리 컨디션 ${m.cd.map(c=>["","😣","😐","😄"][c]).join(" ")} · 상대 ${["","😣 별로","😐 보통","😄 좋음"][m.ocd]}</div></div>`}
 function rpExLbl(e){return e>=7?"🏆 우승":e===6?"🥈 준우승":e<0?"예선 탈락":RP_RD[e]}
@@ -1720,7 +1720,7 @@ function rpPickB(R,A,B){if(rpSim.bs==null)rpSim.bs=Math.random();const used=new 
 function rpBTeam(R,A,B){const bm=rpSim.bm;if(bm==="off")return null;
   if(bm&&bm.a&&bm.b){const x=R.find(r=>r.m.id===bm.a),y=R.find(r=>r.m.id===bm.b),bad=new Set([A.m.id,B.m.id]);if(x&&y&&x!==y&&!bad.has(x.m.id)&&!bad.has(y.m.id))return {a:x,b:y,r:Math.max(rpTeam(x,y).r,rpTeam(y,x).r),manual:1}}
   return rpPickB(R,A,B)}
-function rpSetBM(k,v){rpStop();if(k==="auto")rpSim.bm=null;else if(k==="off")rpSim.bm="off";else{const bm=(rpSim.bm&&rpSim.bm!=="off")?rpSim.bm:{a:"",b:""};if(k==="a"){bm.a=v;if(bm.b===v)bm.b=""}else bm.b=v;rpSim.bm=(bm.a||bm.b)?bm:null}rpSim.seed=1;render()}
+function rpSetBM(k,v){rpStop();if(k==="auto")rpSim.bm=null;else if(k==="off")rpSim.bm="off";else{const bm=(rpSim.bm&&rpSim.bm!=="off")?rpSim.bm:{a:"",b:""};if(k==="a"){bm.a=v;if(bm.b===v)bm.b=""}else bm.b=v;rpSim.bm=(bm.a||bm.b)?bm:null}rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpBracket(res,nm){const T=res.T,W=150,CW=30,RH=22,G="#16a34a",root=res.aLast;if(!root)return"";
   const dep=(m,l)=>l>=3?0:Math.max(0,...(m.c||[]).filter(Boolean).map(c=>1+dep(c,l+1))),L=dep(root,0)+1;
   const row=(t,w,lg)=>{const x=T[t],c=x.own==="A"?"#4f46e5":x.own==="B"?"#15803d":"inherit";return `<div style="height:${RH}px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 6px;font-size:11px;${w?`font-weight:900;box-shadow:inset 0 0 0 2px ${G};background:rgba(22,163,74,.10)`:"opacity:.55"};${x.own?`color:${c};${w?"":`background:${x.own==="A"?"rgba(79,70,229,.12)":"rgba(21,128,61,.12)"}`}`:""}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${esc(x.n1)}·${esc(x.n2)}</span><span>${w?6:lg}</span></div>`};
@@ -1754,7 +1754,11 @@ function rpMsg0(m){if(m.kind==="q"){if(m.n===1)return m.win?"예선 1승! 🎉":
   if(m.win)return m.r===6?"우승!!! 🏆🎉":m.r===5?"결승 진출! 🔥":`${RP_RD[m.r+1]} 진출! 🎉`;return m.r===6?"준우승 🥈":`${RP_RD[m.r]} 탈락 😭`}
 function rpLabel(m){return m.kind==="q"?`예선 ${m.n}경기`:RP_RD[m.r]}
 function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.seed++;const T=rpTeam(A,B),SZ=RP_SZ[rpSim.sz||"대"],g0=rpSim._g,rk=[A.m.id,B.m.id].sort().join("+")+"|"+g0;S.rpRev=S.rpRev||{};const prev=new Set(S.rpRev[rk]||[]),
-    res=rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,fv:rpSim.seed,rev:prev}),lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
+    run=()=>rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,fv:rpSim.seed,rev:prev}),
+    qk=r=>r.list.filter(m=>m.kind==="q"&&m.oi).map(m=>m.oi.key),lq=new Set(rpSim.lq&&rpSim.lqk===rk?rpSim.lq:[]);
+  let res=run();for(let t=0;t<8&&qk(res).some(k=>lq.has(k));t++){rpSim.seed++;res=run()}
+  rpSim.lq=qk(res);rpSim.lqk=rk;
+  const lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
   if(lost.length){S.rpRev[rk]=[...new Set([...prev,...lost])].slice(-30);try{save()}catch(e){}}
   rpPlay={res,i:0,ph:"rally",done:[],t:null};rpStep(true)}
 function rpStep(first){if(!rpPlay||tab!=="tourney"){rpStop();return}
