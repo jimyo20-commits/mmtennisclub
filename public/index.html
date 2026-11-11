@@ -1660,6 +1660,18 @@ RP_TEAMS["지역신인부"]=[{n1:"양은규",n2:"황정출",club:"상주STC·문
 /* 오픈부는 전국신인부보다 한 단계 높다: 실제 팀 +8(상한 80) */
 const RP_OFF={"국화부":7,"오픈부":8,"지역신인부":-6},RP_CAP={"국화부":80,"전국신인부":72,"오픈부":80,"지역신인부":66};
 (function(){const c={},all=[];["개나리부","국화부","전국신인부","오픈부","지역신인부"].forEach(g=>(RP_TEAMS[g]||[]).forEach(t=>{t.g=g;all.push(t);[t.n1,t.n2].forEach(n=>{c[n]=(c[n]||0)+1})}));all.forEach(t=>{const b=Math.min(3,Math.round(10*.7*((c[t.n1]-1)+(c[t.n2]-1)))/10);t.fb=b;t.rate=Math.min(RP_CAP[t.g]||70,t.rate+b+(RP_OFF[t.g]||0))})})();
+/* 상대 풀 확장: 부서마다 지금 있는 팀 수만큼 그럴듯한 가상 선수·클럽을 고정 시드로 추가한다(이름·클럽 중복 없음, 전력은 그 부서 분포를 따름). 선수 이름은 기존 DB와 겹치지 않는다 */
+(function(){let x=20261112;const R=()=>{x|=0;x=x+0x6D2B79F5|0;let t=Math.imul(x^x>>>15,1|x);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},pk=a=>a[Math.floor(R()*a.length)];
+const SN=["김","김","김","이","이","이","박","박","최","정","강","조","윤","장","임","한","오","서","신","권","황","안","송","류","홍","전","고","문","양","손","배","백","허","유","남","심","노","하","곽","성","차","주","우","구","민","변","엄","원","천","방"];
+const M1=["민","준","성","동","재","상","태","지","현","영","병","진","승","도","종","정","기","창","용","대","광","철","형","병","경","인","홍","석","규","원"],M2=["수","호","훈","원","우","영","철","혁","규","환","식","범","석","현","국","섭","진","근","배","욱","찬","웅","균","선","복","태","호","언","도","일"];
+const F1=["미","수","은","혜","선","유","민","현","정","소","지","영","경","순","명","숙","진","보","효","다","은","희","나","예","윤"],F2=["영","경","진","정","원","연","지","란","희","숙","미","아","선","주","자","옥","애","순","현","은","혜","화","림","빈","리"];
+const RG=["서울","부산","대구","인천","광주","대전","울산","수원","성남","고양","용인","창원","청주","전주","천안","포항","김해","제주","춘천","원주","강릉","여수","순천","목포","익산","군산","안동","경산","진주","양산","거제","구미","김천","영주","상주","충주","제천","아산","평택","파주"];
+const SF=["테니스클럽","TC","테사모","라온","스매시","에이스","랠리","한울","청솔","새벽","드림","파인","로얄","블루","그린","스핀","서브","넷","코트","바운스","위너","챌린저","프로","나이스","어택","하모니","열정","동행","우리","팀"];
+const used=new Set(),clubUsed=new Set();["개나리부","국화부","전국신인부","오픈부","지역신인부"].forEach(g=>(RP_TEAMS[g]||[]).forEach(t=>{used.add(t.n1);used.add(t.n2);String(t.club).split("·").forEach(c=>clubUsed.add(c.trim()))}));
+const nameOf=fem=>{for(let i=0;i<200;i++){const n=pk(SN)+(fem?pk(F1)+pk(F2):pk(M1)+pk(M2));if(!used.has(n)){used.add(n);return n}}return pk(SN)+(fem?"미":"민")+Math.floor(R()*90+10)};
+const clubOf=()=>{for(let i=0;i<200;i++){const r=pk(RG),f=pk(SF),n=R()<.5?r+f:(R()<.5?r+" "+f:f+r);if(!clubUsed.has(n)){clubUsed.add(n);return n}}return pk(RG)+pk(SF)+Math.floor(R()*9+1)};
+["개나리부","국화부","전국신인부","오픈부","지역신인부"].forEach(g=>{const L=RP_TEAMS[g]||[];if(!L.length)return;const fem=g==="개나리부"||g==="국화부",rs=L.map(t=>t.rate),lo=Math.min(...rs),hi=Math.max(...rs),n=L.length,cl=[];for(let i=0;i<Math.ceil(n*.6);i++)cl.push(clubOf());
+  for(let i=0;i<n;i++){const base=pk(rs)+(R()+R()+R()-1.5)*1.2,rate=Math.round(Math.max(lo,Math.min(hi,base))*10)/10,c1=pk(cl),two=R()<.3,c2=two?pk(cl):c1;L.push({n1:nameOf(fem),n2:nameOf(fem),club:two&&c2!==c1?c1+"·"+c2:c1,rate,sd:0,g,fb:0,syn:1})}})})();
 /* 같은 부·규모에서는 항상 같은 상대 팀들(이름·전력·시드)이 나온다 → 복수전 가능. 실제 대회 데이터(RP_TEAMS)가 있으면 그것을 쓴다 */
 function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)+v*131),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
   if(L){const th=L.map(t=>t.rate).sort((a,b)=>b-a)[Math.floor(L.length/4)]||99,LL=L.slice(0,M);
