@@ -1518,8 +1518,8 @@ function rpLv(m){let lv=m.level||"";(S.rpRec||[]).forEach(r=>{const up=RP_UP[r.g
 const rpPromo=m=>rpLv(m)!==(m.level||"");
 /* 부서별 입상 가산 배율(지역·개나리 ×1 · 전국 ×2 · 오픈·국화 ×3: 준우승 3%·공동3위 1.5%·8강 0.6%), 최상위 부서(오픈·국화)는 우승 횟수가 쌓일수록 한 번의 우승 가산이 커지고(1회 6% · 2회 9% · 3회 12% · 4회 이상 15%) 입상 가산 합은 몸값의 30%까지만 */
 const RP_PZ={"지역신인부":1,"전국신인부":2,"오픈부":3,"개나리부":1,"국화부":3},RP_TOP={"오픈부":1,"국화부":1},RP_TOPCAP=30;
-/* 대회 종류: 일반 80% · 슈퍼(강호 총출동) 13% · 불참(날짜 겹쳐 강호 많이 빠짐) 7%. 상금·OVR 배율 k, 종류는 대회 시작 때 무작위로 뽑아 기록(r.ev)에 남긴다 */
-const RP_EV={n:{l:"일반",k:1},s:{l:"슈퍼",k:1.2,ic:"🔥",tx:"강호 총출동 · 상금·성장 ×1.2"},w:{l:"불참",k:.7,ic:"🌱",tx:"강호 다수 불참 · 상금·성장 ×0.7"}},rpEvPick=()=>{const x=Math.random();return x<.8?"n":x<.93?"s":"w"},rpEvK=r=>(RP_EV[r&&r.ev]||RP_EV.n).k;
+/* 대회 종류: 일반 83% · 슈퍼(강호 총출동) 13% · 불참(날짜 겹쳐 강호 많이 빠짐) 4%. 상금·OVR 성장은 종류와 무관하게 동일(운에 따른 난이도 차이만 있음), 종류는 대회 시작 때 무작위로 뽑아 기록(r.ev)에 남긴다 */
+const RP_EV={n:{l:"일반",k:1},s:{l:"슈퍼",k:1,ic:"🔥",tx:"강호 총출동"},w:{l:"불참",k:1,ic:"🌱",tx:"강호 다수 불참"}},rpEvPick=()=>{const x=Math.random();return x<.83?"n":x<.96?"s":"w"},rpEvK=r=>(RP_EV[r&&r.ev]||RP_EV.n).k;
 /* 졸업한 부서(자기 가상 등급보다 아래 부서)에도 출전은 가능: 상금(몸값 가산)만 없고 OVR 성장·긴장도 경감·기록은 그대로 반영 */
 function rpLock(m,g){const d=RPD[g];if(!d||RP_TOP[g])return 0;const l=RP_LVD[rpLv(m)];return l&&l[0]===d[0]&&d[1]<l[1]?1:0}
 const rpPairLock=(ids,g)=>(ids||[]).some(i=>{const m=S.members.find(x=>x.id===i);return m&&rpLock(m,g)});
@@ -1532,7 +1532,7 @@ const RP_SAL0=3000; /* 몸값 시작점: 기준 3000에서 실력(OVR)에 따라
 function rpTB(id){let w=0,f=0,s=0,q=0,lo=0,hi=0,tw=0,pp=0;const mm=S.members.find(x=>x.id===id),ix={m:-1,f:-1},l0=mm&&RP_LVD[mm.level];if(l0)ix[l0[0]]=l0[1];
   (S.rpRec||[]).forEach(r=>{const d=RPD[r.g];(r.teams||[]).forEach((t,k)=>{if(k===0&&!t.guest&&!t.pr&&rpOwn(r,t)===id){let v=0;if(t.exit>=7){w++;v=3}else if(t.exit===6){f++;v=1}else if(t.exit===5){s++;v=.5}else if(t.exit===4){q++;v=.2}
     /* 졸업한 부서(당시 자기 등급보다 아래 부서)의 입상은 상금(몸값 가산) 없음 — OVR 점수는 그대로 */
-    const ek=rpEvK(r),grad=d&&d[1]<ix[d[0]],top=RP_TOP[r.g],z=grad?0:(top&&t.exit>=7?(r.ev==="w"?6:Math.min(15,6+3*tw)):v*(RP_PZ[r.g]||1))*ek;if(top&&t.exit>=7&&r.ev!=="w")tw++;pp+=(t.exit>=7?4:t.exit===6?2:t.exit===5?1:t.exit===4?.5:0)*ek;if(top)hi+=z;else lo+=z;if(t.exit>=7&&d&&RP_UP[r.g])ix[d[0]]=Math.max(ix[d[0]],d[1]+1)}})});
+    const ek=rpEvK(r),grad=d&&d[1]<ix[d[0]],top=RP_TOP[r.g],z=grad?0:(top&&t.exit>=7?Math.min(15,6+3*tw):v*(RP_PZ[r.g]||1))*ek;if(top&&t.exit>=7)tw++;pp+=(t.exit>=7?4:t.exit===6?2:t.exit===5?1:t.exit===4?.5:0)*ek;if(top)hi+=z;else lo+=z;if(t.exit>=7&&d&&RP_UP[r.g])ix[d[0]]=Math.max(ix[d[0]],d[1]+1)}})});
   const pts=pp,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,q,pts,b,sp:Math.round((lo+Math.min(RP_TOPCAP,hi))*10)/10,capped:hi>RP_TOPCAP}}
 /* 팀워크 수당(몸값 %): ①인기 — 다른 회원이 나를 파트너로 고를 때(기록의 "고른 사람" 기준, 고른 사람마다 처음 1점·다시 고를수록 절반씩 감소) 1점당 0.1%, 한 기간 상한 0.5% ②케미 — 같은 파트너와 8강 이상을 낼 때(파트너마다 처음 1점·같은 파트너와 반복할수록 절반씩 감소, 두 사람 모두) 1점당 0.15%, 한 기간 상한 1.2%, 1년(월례회 6회) 합계 상한 10%.
    월례회는 짝수 달에 열리고, 월례회가 끝나면 감소·상한이 새로 시작된다(기간별로 계산해 합산). RP_MEET_DAY = 짝수 달 월례회 날짜(일), 정확한 날짜를 모르면 말일 근처 */
