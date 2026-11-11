@@ -1518,6 +1518,8 @@ function rpLv(m){let lv=m.level||"";(S.rpRec||[]).forEach(r=>{const up=RP_UP[r.g
 const rpPromo=m=>rpLv(m)!==(m.level||"");
 /* 부서별 입상 가산 배율(지역·개나리 ×1 · 전국 ×2 · 오픈·국화 ×3: 준우승 3%·공동3위 1.5%·8강 0.6%), 최상위 부서(오픈·국화)는 우승 횟수가 쌓일수록 한 번의 우승 가산이 커지고(1회 6% · 2회 9% · 3회 12% · 4회 이상 15%) 입상 가산 합은 몸값의 30%까지만 */
 const RP_PZ={"지역신인부":1,"전국신인부":2,"오픈부":3,"개나리부":1,"국화부":3},RP_TOP={"오픈부":1,"국화부":1},RP_TOPCAP=30;
+/* 대회 종류: 일반 80% · 슈퍼(강호 총출동) 13% · 불참(날짜 겹쳐 강호 많이 빠짐) 7%. 상금·OVR 배율 k, 종류는 대회 시작 때 무작위로 뽑아 기록(r.ev)에 남긴다 */
+const RP_EV={n:{l:"일반",k:1},s:{l:"슈퍼",k:1.2,ic:"🔥",tx:"강호 총출동 · 상금·성장 ×1.2"},w:{l:"불참",k:.7,ic:"🌱",tx:"강호 다수 불참 · 상금·성장 ×0.7"}},rpEvPick=()=>{const x=Math.random();return x<.8?"n":x<.93?"s":"w"},rpEvK=r=>(RP_EV[r&&r.ev]||RP_EV.n).k;
 /* 졸업한 부서(자기 가상 등급보다 아래 부서)에도 출전은 가능: 상금(몸값 가산)만 없고 OVR 성장·긴장도 경감·기록은 그대로 반영 */
 function rpLock(m,g){const d=RPD[g];if(!d||RP_TOP[g])return 0;const l=RP_LVD[rpLv(m)];return l&&l[0]===d[0]&&d[1]<l[1]?1:0}
 const rpPairLock=(ids,g)=>(ids||[]).some(i=>{const m=S.members.find(x=>x.id===i);return m&&rpLock(m,g)});
@@ -1527,11 +1529,11 @@ const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r
 /* 시작 등급 보정(몸값 %, 한 번만): 높은 등급으로 시작한 회원은 낮은 부서 우승 상금을 못 받으므로, 올라온 사람이 도착까지 최소로 번 상금(오픈 = 지역 3 + 전국 6, 전신 = 지역 3, 국화 = 개나리 3)만큼 처음부터 더해준다. 회원관리에 등록된 등급(m.level) 기준 — 승급 등급으로 계산하면 번 상금과 이중으로 쌓임 */
 const RP_START={"오픈부":9,"전신부":3,"국화부":3};
 const RP_SAL0=3000; /* 몸값 시작점: 기준 3000에서 실력(OVR)에 따라 ±10%만 차이, 이후 대회 성적(우승 3%·준우승 1%·공동3위 0.5%·8강 0.2%에 부서별 배율 지역 ×1 · 전국 ×2 · 오픈/국화 입상 ×3 + 우승 횟수별 6·9·12·15%, 최상위 부서 합계 상한 30%)으로 벌어진다 */
-function rpTB(id){let w=0,f=0,s=0,q=0,lo=0,hi=0,tw=0;const mm=S.members.find(x=>x.id===id),ix={m:-1,f:-1},l0=mm&&RP_LVD[mm.level];if(l0)ix[l0[0]]=l0[1];
+function rpTB(id){let w=0,f=0,s=0,q=0,lo=0,hi=0,tw=0,pp=0;const mm=S.members.find(x=>x.id===id),ix={m:-1,f:-1},l0=mm&&RP_LVD[mm.level];if(l0)ix[l0[0]]=l0[1];
   (S.rpRec||[]).forEach(r=>{const d=RPD[r.g];(r.teams||[]).forEach((t,k)=>{if(k===0&&!t.guest&&!t.pr&&rpOwn(r,t)===id){let v=0;if(t.exit>=7){w++;v=3}else if(t.exit===6){f++;v=1}else if(t.exit===5){s++;v=.5}else if(t.exit===4){q++;v=.2}
     /* 졸업한 부서(당시 자기 등급보다 아래 부서)의 입상은 상금(몸값 가산) 없음 — OVR 점수는 그대로 */
-    const grad=d&&d[1]<ix[d[0]],top=RP_TOP[r.g],z=grad?0:top&&t.exit>=7?Math.min(15,6+3*tw):v*(RP_PZ[r.g]||1);if(top&&t.exit>=7)tw++;if(top)hi+=z;else lo+=z;if(t.exit>=7&&d&&RP_UP[r.g])ix[d[0]]=Math.max(ix[d[0]],d[1]+1)}})});
-  const pts=w*4+f*2+s+q*.5,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,q,pts,b,sp:Math.round((lo+Math.min(RP_TOPCAP,hi))*10)/10,capped:hi>RP_TOPCAP}}
+    const ek=rpEvK(r),grad=d&&d[1]<ix[d[0]],top=RP_TOP[r.g],z=grad?0:(top&&t.exit>=7?(r.ev==="w"?6:Math.min(15,6+3*tw)):v*(RP_PZ[r.g]||1))*ek;if(top&&t.exit>=7&&r.ev!=="w")tw++;pp+=(t.exit>=7?4:t.exit===6?2:t.exit===5?1:t.exit===4?.5:0)*ek;if(top)hi+=z;else lo+=z;if(t.exit>=7&&d&&RP_UP[r.g])ix[d[0]]=Math.max(ix[d[0]],d[1]+1)}})});
+  const pts=pp,b=Math.round(8*(1-Math.exp(-pts/10))*10)/10;return {w,f,s,q,pts,b,sp:Math.round((lo+Math.min(RP_TOPCAP,hi))*10)/10,capped:hi>RP_TOPCAP}}
 /* 팀워크 수당(몸값 %): ①인기 — 다른 회원이 나를 파트너로 고를 때(기록의 "고른 사람" 기준, 고른 사람마다 처음 1점·다시 고를수록 절반씩 감소) 1점당 0.1%, 한 기간 상한 0.5% ②케미 — 같은 파트너와 8강 이상을 낼 때(파트너마다 처음 1점·같은 파트너와 반복할수록 절반씩 감소, 두 사람 모두) 1점당 0.15%, 한 기간 상한 1.2%, 1년(월례회 6회) 합계 상한 10%.
    월례회는 짝수 달에 열리고, 월례회가 끝나면 감소·상한이 새로 시작된다(기간별로 계산해 합산). RP_MEET_DAY = 짝수 달 월례회 날짜(일), 정확한 날짜를 모르면 말일 근처 */
 const RP_SOC_R=.5,RP_POP_W=.1,RP_POP_CAP=.5,RP_CHEM_W=.15,RP_CHEM_CAP=1.2,RP_SOC_YCAP=10,RP_MEET_DAY=28;
@@ -1688,7 +1690,10 @@ function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return r
   const used=new Set(out.map(t=>t.seed).filter(Boolean));let nx=1;
   out.map((t,i)=>[t.r,i]).filter(x=>!out[x[1]].seed&&(!L||out[x[1]].real)).sort((a,b)=>b[0]-a[0]).forEach(x=>{while(used.has(nx))nx++;if(nx<=8){out[x[1]].seed=nx;used.add(nx)}});return rpFC[k]=out}
 /* 대회 전체를 굴린다. 0=우리 A팀, 1=우리 B팀(선택), 나머지=상대 팀. exit/bExit: -1 예선탈락 · 0~5 해당 라운드 탈락 · 6 준우승 · 7 우승 */
-function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld=rpField(g,N-(ob?2:1),N,o.fv),T=[{r:me,own:"A",n1:an?an.n1:"",n2:an?an.n2:"",club:"우리 클럽"}];
+/* 대회 종류별 상대 편성: 슈퍼는 강호(시드·강팀) 전력 +2.5, 불참은 강호의 약 45%가 빠지고 무명 팀이 대신 들어온다 */
+function rpEvField(f,ev,v,g){if(ev!=="s"&&ev!=="w")return f;const rng=rpRng(rpHash("ev"+g)+(v||0)*17),mean=(RP_GB[g]||50)-2,fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM);
+  return f.map(t=>{const hv=t.seed||t.strong;if(!hv)return t;if(ev==="s")return {...t,r:t.r+2.5};if(rng()<.45)return {n1:nm(),n2:nm(),club:pk(RP_RGN)+pk(RP_CL),r:mean+6*(rng()+rng()-1),seed:0,real:0,strong:0};return t})}
+function rpTour(o){const {me,an,ob,g,N,rnd,det,rev}=o,br=rpBr(N),fld0=rpField(g,N-(ob?2:1),N,o.fv),fld=rpEvField(fld0,o.ev,o.fv,g),T=[{r:me,own:"A",n1:an?an.n1:"",n2:an?an.n2:"",club:"우리 클럽"}];
   if(ob)T.push({r:ob.r,own:"B",n1:ob.n1,n2:ob.n2,club:"우리 클럽"});for(const t of fld)T.push({...t});
   const n=T.length,G=Math.floor(n/3),sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
   /* 컨디션(1별로·2보통·3좋음) · 체력 · 긴장도. 상대/B팀 컨디션은 80% 보통·10% 별로·10% 좋음 */
@@ -1761,7 +1766,7 @@ function rpStam(m,after){const n=rpSim._an;if(!n||!m.sb)return"";return `<div st
 function rpExLbl(e){return e>=7?"🏆 우승":e===6?"🥈 준우승":e<0?"예선 탈락":RP_RD[e]}
 function rpFin(P){if(P.rec||!rpSim._an)return;P.rec=1;rpSim.bs=Math.random();const res=P.res,gi=new Set((S.rpGuests||[]).map(g=>g.id)),hg=a=>(a||[]).some(i=>gi.has(i)),T=[{ids:rpSim._Aids||[],names:[rpSim._an.n1,rpSim._an.n2],exit:res.exit,guest:hg(rpSim._Aids)?1:0}];
   if(rpSim._Bt&&res.bExit!=null)T.push({ids:rpSim._Bids||[],names:[rpSim._Bt.n1,rpSim._Bt.n2],exit:res.bExit,guest:hg(rpSim._Bids)?1:0});
-  S.rpRec=S.rpRec||[];S.rpRec.push({t:Date.now(),by:(typeof me!=="undefined"&&me)||"",d:new Date().toISOString().slice(0,10),g:rpSim._g,sz:RP_SZ[rpSim.sz||"대"],teams:T});if(S.rpRec.length>800)S.rpRec=S.rpRec.slice(-800);try{save()}catch(e){}}
+  S.rpRec=S.rpRec||[];S.rpRec.push({t:Date.now(),by:(typeof me!=="undefined"&&me)||"",d:new Date().toISOString().slice(0,10),g:rpSim._g,sz:RP_SZ[rpSim.sz||"대"],ev:P.ev||"n",teams:T});if(S.rpRec.length>800)S.rpRec=S.rpRec.slice(-800);try{save()}catch(e){}}
 const rpInfo=(t,st)=>`<details style="${st||"margin-top:4px"}"><summary style="cursor:pointer;list-style:none;font-size:11px;color:var(--muted);display:inline-block;padding:1px 0">ⓘ 설명 보기</summary><div style="font-size:11px;color:var(--muted);line-height:1.55;margin-top:3px">${t}</div></details>`;
 const rpPhC={};
 function rpPhGet(src){if(!src)return null;const c=rpPhC[src];if(c&&c.ok)return c.img;if(!c){const im=new Image(),o={img:im,ok:0};rpPhC[src]=o;im.onload=()=>{o.ok=1;try{render()}catch(e){}};im.onerror=()=>{o.ok=-1};im.src=src}return null}
@@ -1865,14 +1870,14 @@ function rpMsg(m){const x0=rpMsg0(m),x=m.cr?(m.cr.us?`🦵 ${m.cr.nm} 선수가 
 function rpMsg0(m){if(m.kind==="q"){if(m.n===1)return m.win?"예선 1승! 🎉":"예선 1패 😢";const nx=m.bye?`${RP_RD[RP_RD.indexOf(m.first)+1]} 부전승 직행!`:`${m.first}에서 만나요!`;return m.rank===1?`🎊 조 1위 본선 진출! 축하해요 🎉 ${nx}`:m.rank===2?`👏 조 2위로 아슬아슬하게 본선 진출! ${nx}`:m.qw===1?"😢 1승 1패, 조 3위로 아쉬운 예선 탈락":"😭 예선 2패 · 조 3위 예선 탈락"}
   if(m.win)return m.r===6?"우승!!! 🏆🎉":m.r===5?"결승 진출! 🔥":`${RP_RD[m.r+1]} 진출! 🎉`;return m.r===6?"준우승 🥈":`${RP_RD[m.r]} 탈락 😭`}
 function rpLabel(m){return m.kind==="q"?`예선 ${m.n}경기`:RP_RD[m.r]}
-function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.seed++;const T=rpTeam(A,B),SZ=RP_SZ[rpSim.sz||"대"],g0=rpSim._g,rk=[A.m.id,B.m.id].sort().join("+")+"|"+g0;S.rpRev=S.rpRev||{};const prev=new Set(S.rpRev[rk]||[]),
-    run=()=>rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,fv:rpSim.seed,rev:prev}),
+function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.seed++;const T=rpTeam(A,B),SZ=RP_SZ[rpSim.sz||"대"],g0=rpSim._g,rk=[A.m.id,B.m.id].sort().join("+")+"|"+g0,ev=rpEvPick();S.rpRev=S.rpRev||{};const prev=new Set(S.rpRev[rk]||[]),
+    run=()=>rpTour({me:T.r,an:rpSim._an,ob:rpSim._Bt,cdA:rpSim._cdA,resKA:rpSim._resKA,roleA:rpSim._roleA,g:g0,N:SZ,rnd:rpRng(rpHash(A.m.id+B.m.id+g0)+rpSim.seed*7919),det:1,fv:rpSim.seed,rev:prev,ev:ev}),
     qk=r=>r.list.filter(m=>m.kind==="q"&&m.oi).map(m=>m.oi.key),lq=new Set(rpSim.lq&&rpSim.lqk===rk?rpSim.lq:[]);
   let res=run();for(let t=0;t<8&&qk(res).some(k=>lq.has(k));t++){rpSim.seed++;res=run()}
   rpSim.lq=qk(res);rpSim.lqk=rk;
   const lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
   if(lost.length){S.rpRev[rk]=[...new Set([...prev,...lost])].slice(-30);try{save()}catch(e){}}
-  rpPlay={res,i:0,ph:"rally",done:[],t:null};rpStep(true)}
+  rpPlay={res,i:0,ph:"rally",done:[],t:null,ev};rpStep(true)}
 function rpStep(first){if(!rpPlay||tab!=="tourney"){rpStop();return}
   const P=rpPlay;P.ph="intro";P.dr=1;render();
   P.tk=[setTimeout(()=>{if(rpPlay===P&&P.ph==="intro"){P.dr=0;render()}},1700)];P.t=setTimeout(rpRally,7000)}
@@ -1937,7 +1942,7 @@ function rpSimView(R){if(!R.length)return"";
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${GR.map(x=>`<button class="btn ${x===g?"rpsel":"ghost"}" style="padding:5px 12px;font-size:13px${lkG(x)&&x!==g?";opacity:.8":""}" onclick="rpSet('g','${x}')">${lkG(x)?"🎓 ":""}${x}${lkG(x)?" (상금 없음)":""}</button>`).join("")}</div>${lkG(g)?`<div style="margin:-2px 0 8px;padding:7px 10px;border-radius:10px;background:rgba(14,116,144,.09);border:1px solid rgba(14,116,144,.3);font-size:12px;line-height:1.5;color:#0e7490;font-weight:700">🎓 ${[A.m,B.m].filter(m=>rpLock(m,g)).map(m=>esc(m.name)).join("·")} 님은 ${g}를 이미 졸업했어요 — <b>상금(몸값 가산)만 없고</b>, 기록·OVR 성장·긴장도 경감은 그대로 쌓여요.</div>`:""}
   <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px">📋 ${RP_SZ[rpSim.sz||"대"]}팀 → 예선 ${BR.G}개 조(3팀) → 본선 ${RP_RD[BR.off]}${BR.byes?` · 조1위 ${Math.min(BR.G,BR.byes)}팀은 ${RP_RD[BR.off]} 부전승${BR.byes>BR.G?`, 조2위 ${BR.byes-BR.G}팀도 부전승`:""}`:" · 전원 첫 라운드부터"}<br>🤝 ${obj?`같은 대회에 우리 클럽 B팀도 출전: <b>${esc(obj.n1)}·${esc(obj.n2)}</b>${pb&&pb.manual?" <span style='color:var(--muted)'>(직접 선택)</span>":""}`:rpSim.bm==="off"?"B팀 없이 출전해요":"함께 출전할 다른 회원이 부족해요"}${bmUI}</div>
   <div style="padding:10px;border-radius:12px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.3);text-align:center"><div style="font-size:13px;font-weight:800">${esc(A.m.name)}(듀스) · ${esc(B.m.name)}(애드) 조 <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#4f46e5;color:#fff;margin-left:4px;vertical-align:1px">${PT}</span></div><div style="font-size:12px;color:var(--muted);margin-top:2px">${T.comp?`보완되는 스킬 ${T.comp}개 (케미 +) · `:""}출전 등급 ${g}</div><div style="font-size:13px;margin-top:6px;font-weight:700">${verdict}</div></div>
-  ${P&&P.ph!=="end"?`<div style="margin-top:10px"><div style="text-align:center;font-size:12px;font-weight:800;color:var(--muted);padding:6px;border-radius:10px;background:rgba(128,128,128,.1)">🎾 대회 진행 중…</div><div style="display:flex;gap:6px;margin-top:6px;align-items:stretch"><button class="btn ghost" style="flex:1;padding:6px 4px;font-size:11px;color:var(--muted)" onclick="rpSkipAll()">결과만 보기</button><button class="btn" style="flex:3;padding:11px 8px;font-size:14px;font-weight:800" onclick="rpSkip()">⏭ 건너뛰기</button></div></div>`:`<div style="margin-top:10px">${(()=>{const f=RP_FEE[g]||0;const ow=rpOwn({by:me},{ids:rpSim._Aids}),on=(S.members.find(x=>x.id===ow)||{}).name;return f?(on?`<div style="font-size:12px;color:#92400e;text-align:center;margin-bottom:6px">💰 참가비 ${rpWon(f)} <span style="color:var(--muted)">(본인 ${esc(on)}님만 몸값 −${Math.round(f/100)/100}만원 차감 · 파트너는 팀워크 수당만)</span></div>`:`<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:6px">로그인한 본인이 선수로 들어가지 않아 아무 효과 없이 결과만 볼 수 있어요</div>`):""})()}<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:800" onclick="rpStart()">🎾 ${P?"다시 출전하기":"대회 출전!"}</button></div>`}
+  ${P&&P.ph!=="end"?`<div style="margin-top:10px"><div style="text-align:center;font-size:12px;font-weight:800;color:var(--muted);padding:6px;border-radius:10px;background:rgba(128,128,128,.1)">🎾 대회 진행 중…${P.ev&&P.ev!=="n"?` <span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:${P.ev==="s"?"#fee2e2;color:#b91c1c":"#dcfce7;color:#15803d"}">${RP_EV[P.ev].ic} ${RP_EV[P.ev].l} 대회 · ${RP_EV[P.ev].tx}</span>`:""}</div><div style="display:flex;gap:6px;margin-top:6px;align-items:stretch"><button class="btn ghost" style="flex:1;padding:6px 4px;font-size:11px;color:var(--muted)" onclick="rpSkipAll()">결과만 보기</button><button class="btn" style="flex:3;padding:11px 8px;font-size:14px;font-weight:800" onclick="rpSkip()">⏭ 건너뛰기</button></div></div>`:`<div style="margin-top:10px">${(()=>{const f=RP_FEE[g]||0;const ow=rpOwn({by:me},{ids:rpSim._Aids}),on=(S.members.find(x=>x.id===ow)||{}).name;return f?(on?`<div style="font-size:12px;color:#92400e;text-align:center;margin-bottom:6px">💰 참가비 ${rpWon(f)} <span style="color:var(--muted)">(본인 ${esc(on)}님만 몸값 −${Math.round(f/100)/100}만원 차감 · 파트너는 팀워크 수당만)</span></div>`:`<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:6px">로그인한 본인이 선수로 들어가지 않아 아무 효과 없이 결과만 볼 수 있어요</div>`):""})()}<button class="btn" style="width:100%;padding:12px;font-size:15px;font-weight:800" onclick="rpStart()">🎾 ${P?"다시 출전하기":"대회 출전!"}</button></div>`}
   ${stageBox}${hist}
   <details style="margin-top:12px"><summary style="cursor:pointer;list-style:none;padding:9px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px;font-weight:800;text-align:center">📊 어디까지 갈 수 있을까? <span style="font-weight:500;color:var(--muted)">(눌러서 보기)</span></summary><div style="font-size:11px;color:var(--muted);margin:8px 0 2px">${N.toLocaleString()}번 돌려 본 도달 확률</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px">가장 가능성 높은 결과는 <b style="color:var(--text)">${stage[likely]}</b> (${pc(likely)}%)</div>
