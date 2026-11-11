@@ -1698,7 +1698,10 @@ function rpRole(m){const P=(S.pos||[]).filter(e=>e.h===m.name&&e.pp&&e.pp[m.name
 const RPD={"지역신인부":["m",0],"전국신인부":["m",1],"오픈부":["m",2],"개나리부":["f",0],"국화부":["f",1]};
 const rpPerf=(id,g)=>{const d=RPD[g],list=[];(S.rpRec||[]).forEach(r=>{const e=RPD[r.g];if(d?(!e||e[0]!==d[0]||e[1]<d[1]):r.g!==g)return;(r.teams||[]).forEach(t=>{if(!t.guest&&(t.ids||[]).includes(id)&&t.exit>=4)list.push({x:t.exit>=7?.07:t.exit===6?.05:t.exit===5?.03:.01,e:Math.min(7,t.exit),g:r.g,up:d&&e&&e[1]>d[1]?1:0})})});
   const use=list,k=g==="개나리부"?1.5:1,sum=use.reduce((t,u)=>t+u.x,0);return {red:Math.min(.21,sum)*k,sum,use,n:list.length}};
-const rpRes=(m,g)=>Math.max(.1,Math.round((1-((rpLv(m)==="오픈부"||rpLv(m)==="국화부")?.4:rpLv(m)==="전신부"?.25:0)-(g?rpPerf(m.id,g).red:0))*1000)/1000),
+/* 숨겨진 디스어드밴티지: 자기 등급보다 높은 부서에 출전하면 단계당 긴장도 +12% (화면에는 표시 안 함) */
+const RP_LVD={"지신부":["m",0],"전신부":["m",1],"오픈부":["m",2],"개나리부":["f",0],"국화부":["f",1]};
+const rpUp=(m,g)=>{const d=RPD[g],l=RP_LVD[rpLv(m)];if(!d)return 0;if(rpLv(m)==="비입상")return d[1]+1;if(!l||l[0]!==d[0])return 0;return Math.max(0,d[1]-l[1])};
+const rpRes=(m,g)=>Math.max(.1,Math.round((1+(g?rpUp(m,g)*.12:0)-((rpLv(m)==="오픈부"||rpLv(m)==="국화부")?.4:rpLv(m)==="전신부"?.25:0)-(g?rpPerf(m.id,g).red:0))*1000)/1000),
   rpAdvTxt=(id,g)=>{const p=rpPerf(id,g);if(!p.use.length)return"";const nm={4:"8강",5:"공동3위",6:"준우승",7:"우승"},c={};p.use.forEach(u=>{const k=u.g+" "+nm[u.e];c[k]=(c[k]||0)+1});return Object.keys(c).map(k=>esc(k)+(c[k]>1?"×"+c[k]:"")).join(" · ")+" 입상 경험 · 누적 "+Math.round(Math.min(p.sum,.21)/.21*100)+"%"},
   rpCd=id=>(rpSim.cd&&rpSim.cd[id])||2;
 function rpCdSet(id,v){rpStop();rpSim.cd=rpSim.cd||{};rpSim.cd[id]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
