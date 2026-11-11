@@ -33,8 +33,8 @@ nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrol
 #navless{position:absolute;left:0;top:0;bottom:0;width:44px;border:0;padding:0 14px 0 4px;color:#fff;font-size:24px;font-weight:900;line-height:1;justify-content:flex-start;align-items:center;background:linear-gradient(270deg,transparent,var(--court) 55%);cursor:pointer;display:none;z-index:1}
 nav button{white-space:nowrap;flex:1;min-width:58px;border:0;background:transparent;color:#cfe3d8;font:inherit;font-size:14px;font-weight:500;padding:10px 5px;cursor:pointer;border-radius:10px 10px 0 0}
 nav button.on{background:var(--bg);color:var(--ink);font-weight:700}
-nav button.gold{color:#fde68a;font-weight:800;box-shadow:inset 0 0 0 2px #facc15,0 0 10px rgba(250,204,21,.55);background:rgba(250,204,21,.10);border-radius:10px;margin:2px 3px 0}
-nav button.gold.on{background:linear-gradient(180deg,#fff3b0,#facc15);color:#3b2a00;box-shadow:inset 0 0 0 2px #b45309,0 0 12px rgba(250,204,21,.8)}
+nav button.gold{color:#fde68a;font-weight:800;box-shadow:inset 0 0 0 1.5px rgba(250,204,21,.75);background:transparent;border-radius:10px 10px 0 0;margin:0 2px}
+nav button.gold.on{background:var(--bg);color:var(--ink);font-weight:900;box-shadow:inset 0 -5px 0 #facc15,inset 1.5px 0 0 #facc15,inset -1.5px 0 0 #facc15,inset 0 1.5px 0 #facc15}
 nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ball);outline-offset:1px}
 main{padding:18px 16px 60px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
