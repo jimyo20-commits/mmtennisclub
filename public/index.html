@@ -1624,9 +1624,9 @@ function rpPath(m){const [A,B]=m.sc.split(":").map(Number),w=m.win,toks=[];for(l
 /* 5:5 타이브레이크: 7점 선취(먼저 7점)로 승부. 5:5 장면 뒤에 점수 진행을 끼워 넣고, 이긴 쪽 7점·진 쪽 점수는 m.tbs(우리:상대)에 남긴다 */
 function rpTbPath(m,steps){const [A,B]=m.sc.split(":").map(Number);if(m.cr||A+B!==11||Math.min(A,B)!==5||steps.length<2)return steps;
   const n=steps.length,pre=steps[n-2],fin=steps[n-1];if(!(pre.a===5&&pre.b===5))return steps;
-  const us=!!m.win,R=x=>Math.floor(Math.random()*x),lo=2+R(5),seq=[];for(let i=0;i<6;i++)seq.push(us?1:0);for(let i=0;i<lo;i++)seq.push(us?0:1);
+  const us=!!m.win,R=x=>Math.floor(Math.random()*x),pk=l=>l[R(l.length)],lo=2+R(5),seq=[];for(let i=0;i<6;i++)seq.push(us?1:0);for(let i=0;i<lo;i++)seq.push(us?0:1);
   for(let i=seq.length-1;i>0;i--){const j=R(i+1);[seq[i],seq[j]]=[seq[j],seq[i]]}
-  let ta=0,tb=0;const mid=seq.map(t=>{t?ta++:tb++;const mp=(ta===6||tb===6)&&Math.abs(ta-tb)>=0;return {a:5,b:5,tbA:ta,tbB:tb,msg:mp?(ta>=tb?"🎯 타이브레이크 매치포인트! 한 점만 더!":"😱 상대 타이브레이크 매치포인트… 버텨요!"):"⚡ 타이브레이크 "+ta+" : "+tb,wa:pre.wa,ea:pre.ea,wb:pre.wb,eb:pre.eb}});
+  let ta=0,tb=0;const mid=seq.map(t=>{t?ta++:tb++;const mp=(ta===6||tb===6)&&Math.abs(ta-tb)>=0;return {a:5,b:5,tbA:ta,tbB:tb,msg:mp?(ta>=tb?pk(["🎯 매치포인트! 한 점만 더!","🔥 손에 땀을 쥐게 해요… 한 점만!","🫣 긴장돼서 못 보겠어요!"]):pk(["😱 상대 매치포인트… 버텨요!","😰 심장이 쿵쿵… 제발 버텨요!","🙈 긴장돼서 못 보겠어요ㅠㅠ"])):pk(["😬 손에 땀을 쥐게 해요!","🫣 긴장돼서 못 보겠어요!","💦 숨 막히는 접전… 손에 땀이!","😵 심장 떨려서 못 보겠어요!","🔥 한 점 한 점이 피 말려요!"]),wa:pre.wa,ea:pre.ea,wb:pre.wb,eb:pre.eb}});
   const fa=us?7:lo,fb=us?lo:7;m.tbs=fa+":"+fb;return steps.slice(0,n-1).concat(mid,[Object.assign({},fin,{tbA:fa,tbB:fb})])}
 function rpStop(){if(rpPlay){if(rpPlay.iv)clearInterval(rpPlay.iv);if(rpPlay.t)clearTimeout(rpPlay.t);(rpPlay.tk||[]).forEach(clearTimeout)}rpPlay=null}
 function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim.b=a;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
