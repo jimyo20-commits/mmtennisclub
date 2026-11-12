@@ -2361,13 +2361,24 @@ function recoStrength(){if(_rsC&&Date.now()-_rsC.t<2000)return _rsC.f;
   const base=recoRankStr();let rows=[];try{const c=anAdjCalc();if(!c.allNo)rows=c.rows.filter(r=>r.g>=3)}catch(e){}
   const so=[...rows].sort((a,b)=>a.adj-b.adj),pct={};so.forEach((r,i)=>{pct[r.n]={p:so.length>1?i/(so.length-1):.5,w:Math.min(.5,r.g*.05)}});
   const f=m=>{const b=base(m),x=pct[m.name];return x?(1-x.w)*b+x.w*x.p:b};_rsC={t:Date.now(),f};return f}
+/* 경기 결과를 끌어와 두 팀의 실력 차(A−B)를 계산: 기본 실력값(랭킹+보정) + ①최근 5경기 흐름 ②같은 파트너로 뛴 성적 ③선수끼리 맞대결 전적 */
+let _reC=null;
+function recoEdge(){if(_reC&&Date.now()-_reC.t<2000)return _reC.f;
+  const str=recoStrength(),pair={},H=recoH2H(),form={};
+  (S.matches||[]).forEach(mt=>{if(typeof mt.s1!=="number"||typeof mt.s2!=="number"||mt.s1===mt.s2)return;const T=teams(mt);
+    T.forEach((t,i)=>{if((t||[]).length===2&&t[0]&&t[1]){const k=[t[0],t[1]].sort().join("|"),o=pair[k]||(pair[k]={n:0,w:0});o.n++;if((i===0)===(mt.s1>mt.s2))o.w++}})});
+  const fm=id=>form[id]||(form[id]=recoForm(id));
+  const tm=t=>{let v=0;t.forEach(m=>{v+=str(m);const f=fm(m.id);if(f.n)v+=0.2*((f.w+1)/(f.n+2)-0.5)*Math.min(1,f.n/5)});
+    if(t.length===2){const p=pair[[t[0].id,t[1].id].sort().join("|")];if(p)v+=0.3*((p.w+1)/(p.n+2)-0.5)*Math.min(1,p.n/3)}return v};
+  const f=(A,B)=>{let h=0;A.forEach(a=>B.forEach(b=>{const x=H.opp[a.id+"|"+b.id],y=H.opp[b.id+"|"+a.id];if(x&&x.n)h+=0.1*((x.w||0)-(y?y.w||0:0))/(x.n+2)}));return tm(A)-tm(B)+h};
+  _reC={t:Date.now(),f};return f}
 function recoGender(ps,rate,seed,opt){opt=opt||{};const n=Math.min(ps.length,30);if(n<4)return null;
-  const P=ps.slice(0,n),str=opt.str||recoRankStr(),rnd=recoRng(seed),W=10,OV=0.12,NEAR=0.03,cnt=(t,g)=>t.filter(m=>gdOf(m)===g).length,pc=x=>{let c=0;while(x){x&=x-1;c++}return c};
+  const P=ps.slice(0,n),str=opt.str||recoRankStr(),edge=opt.edge||((A,B)=>A.reduce((t,m)=>t+str(m),0)-B.reduce((t,m)=>t+str(m),0)),rnd=recoRng(seed),W=10,OV=0.12,NEAR=0.03,cnt=(t,g)=>t.filter(m=>gdOf(m)===g).length,pc=x=>{let c=0;while(x){x&=x-1;c++}return c};
   const sps=[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]],cands=[];
   for(let a=0;a<n;a++)for(let b=a+1;b<n;b++)for(let c=b+1;c<n;c++)for(let d=c+1;d<n;d++){
     const g=[P[a],P[b],P[c],P[d]],mask=(1<<a)|(1<<b)|(1<<c)|(1<<d);
     for(const sp of sps){const A=sp[0].map(i=>g[i]),B=sp[1].map(i=>g[i]);
-      const mis=Math.abs(cnt(A,"남")-cnt(B,"남"))+Math.abs(cnt(A,"여")-cnt(B,"여")),diff=Math.abs(A.reduce((t,m)=>t+str(m),0)-B.reduce((t,m)=>t+str(m),0))/2;
+      const mis=Math.abs(cnt(A,"남")-cnt(B,"남"))+Math.abs(cnt(A,"여")-cnt(B,"여")),diff=Math.abs(edge(A,B))/2;
       cands.push({A,B,diff,mis,mask,key:recoKey(A.map(m=>m.id),B.map(m=>m.id)),c:W*mis+diff})}}
   cands.sort((x,y)=>x.c-y.c);
   if(opt.raw)return{cands,rnd,str,pc,P};
@@ -2387,7 +2398,7 @@ function recoGender(ps,rate,seed,opt){opt=opt||{};const n=Math.min(ps.length,30)
 let _rmC=null;
 function recoMulti(ps,rate,seed){if(_rmC&&_rmC.k===seed&&Date.now()-_rmC.t<3000)return _rmC.v;const v=recoMulti0(ps,rate,seed);_rmC={k:seed,t:Date.now(),v};return v}   // 화면이 다시 그려질 때마다 다시 계산하지 않도록 3초 캐시
 function recoMulti0(ps,rate,seed){const n=Math.min(ps.length,30);if(n<4)return null;
-  const R=recoGender(ps,rate,seed,{raw:1,str:recoStrength()});if(!R)return null;const {cands,rnd,str,pc}=R,G=Math.min(3,Math.floor(n/4)),W=10;
+  const R=recoGender(ps,rate,seed,{raw:1,str:recoStrength(),edge:recoEdge()});if(!R)return null;const {cands,rnd,str,pc}=R,G=Math.min(3,Math.floor(n/4)),W=10;
   let ad={};try{const c=anAdjCalc();c.rows.forEach(r=>{if(r.g>=3)ad[r.n]=r.adj})}catch(e){}
   const need=m=>ad[m.name]==null?0:Math.max(0,Math.min(1,(100-ad[m.name])/100));
   const H=recoH2H(),newP=(a,b)=>H.par[a.id+"|"+b.id]?0:1,newO=(a,b)=>(H.opp[a.id+"|"+b.id]||{n:0}).n?0:1;
@@ -2497,8 +2508,8 @@ function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 �
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
   if(!S.recoRedoK)S.recoRedoK={};const seen=((S.recoRedoK[ds]=S.recoRedoK[ds]||{})[i]=S.recoRedoK[ds][i]||[]);if(!seen.includes(recoGKey(cur[i])))seen.push(recoGKey(cur[i]));   // 이미 나왔던 조합은 다시 안 나오게
   const exAll=()=>{const R=S.recoRedoK[ds]||{};return [...new Set([...seen,...Object.keys(R).filter(k=>+k!==i).reduce((t,k)=>t.concat(R[k]||[]),[]),...oth.map(recoGKey)])]};   // 두 게임 모두 이미 나왔던 조합은 제외
-  let pk=recoGender(c.ps,c.rate,base,{fix:oth,ex:exAll(),str:recoStrength()});
-  if(pk&&exAll().includes(recoGKey(pk))){seen.length=0;seen.push(recoGKey(cur[i]));pk=recoGender(c.ps,c.rate,base+"r",{fix:oth,ex:[...seen,...oth.map(recoGKey)],str:recoStrength()})||pk;alert("이 인원으로 나올 수 있는 조합을 한 번씩 다 봤어요.\n이제부터 처음 나온 조합부터 다시 돌아요.")}
+  let pk=recoGender(c.ps,c.rate,base,{fix:oth,ex:exAll(),str:recoStrength(),edge:recoEdge()});
+  if(pk&&exAll().includes(recoGKey(pk))){seen.length=0;seen.push(recoGKey(cur[i]));pk=recoGender(c.ps,c.rate,base+"r",{fix:oth,ex:[...seen,...oth.map(recoGKey)],str:recoStrength(),edge:recoEdge()})||pk;alert("이 인원으로 나올 수 있는 조합을 한 번씩 다 봤어요.\n이제부터 처음 나온 조합부터 다시 돌아요.")}
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
@@ -2515,13 +2526,13 @@ function recoPanel(){
   const rkSt=stats(),rkPl=x=>{const s=rkSt[x.id];return !!s&&s.w+s.l+s.d>0},rkNo=m=>rkPl(m)?(1+S.members.filter(x=>rkPl(x)&&rkBetter(rkSt[x.id],rkSt[m.id])).length)+"위":"랭킹 없음";   // 랭킹탭과 같은 순위
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${(S.guests||[]).some(x=>x.id===m.id)?"게스트":rkNo(m)}</small></span>`;
   const H=recoH2H();
-  const rkS=recoStrength(),qUsed=[];
-  const rows=games.map((g,i)=>{const d=Math.round(g.diff*100),sd=g.A.reduce((t,m)=>t+rkS(m),0)-g.B.reduce((t,m)=>t+rkS(m),0),wp=Math.round(100/(1+Math.exp(-2.2*sd)));
+  const rkE=recoEdge(),qUsed=[];
+  const rows=games.map((g,i)=>{const d=Math.round(g.diff*100),sd=rkE(g.A,g.B),wp=Math.round(100/(1+Math.exp(-2.2*sd)));
     return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b>추천 ${i+1}게임 ${(k=>k?`<span class="tag" style="font-size:11px;vertical-align:middle">${k}</span> `:"")(recoKind(g.A.concat(g.B),g.A))}${(()=>{const kk=recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));return S.matches.some(x=>x.bonus&&x.date===u.ds&&recoKey(...teams(x))===kk)?` <span class="tag" style="font-size:11px;vertical-align:middle">완료</span>`:""})()}</b><span class="tag ${Math.abs(wp-50)<=5?"ok":""}" title="클럽 랭킹 기준 예상 승리확률">A ${wp}% : ${100-wp}% B</span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:3px;align-items:center;font-size:13px;line-height:1.7">${[["A팀",g.A],["B팀",g.B]].map(t=>`<div style="align-self:stretch;border:1.5px solid var(--line);border-radius:10px;padding:6px 6px"><b style="display:block;font-size:12px;color:var(--muted);text-align:center">${t[0]}</b>${t[1].map(m=>pl(m).replace("display:flex;","display:flex;justify-content:center;")).join("")}</div>`).join(`<div style="position:relative;width:20px;height:24px"><div aria-label="승점 2배" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:74px;pointer-events:none"><svg width="110" height="74" viewBox="0 -4 110 74" style="overflow:visible"><g><text transform="rotate(-9 55 14)" x="55" y="17" text-anchor="middle" font-family="'Nanum Pen Script','Gaegu',cursive" font-size="23" font-weight="400" fill="#16a34a" stroke="rgba(255,255,255,.9)" stroke-width="1.4" paint-order="stroke">승점</text><text transform="rotate(-9 55 58)" x="55" y="64" text-anchor="middle" font-family="'Nanum Pen Script','Gaegu',cursive" font-size="23" font-weight="400" fill="#16a34a" stroke="rgba(255,255,255,.9)" stroke-width="1.4" paint-order="stroke">×2</text></g></svg></div><div style="position:absolute;left:0;top:0;width:20px;height:24px;display:grid;place-items:center;overflow:hidden"><span style="font-size:19px;line-height:1">🔥</span><b style="position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:7px;font-weight:900;letter-spacing:0;color:#fff;text-shadow:0 0 2px #b3260f,0 1px 1px #b3260f,0 0 4px #b3260f">VS</b></div></div>`)}</div>${recoQuip(wp,g,qUsed)}${(()=>{let best=null;g.A.forEach(a=>g.B.forEach(b=>{const o=H.opp[a.id+"|"+b.id];if(o&&o.n&&(!best||o.n>best.o.n))best={a,b,o}}));const parts=[];
       if(best){const r=H.opp[best.b.id+"|"+best.a.id];parts.push(`상대전적 ${esc(best.a.name)} ${best.o.w}승 ${r?r.w:0}패 ${esc(best.b.name)}`)}
       if(!(H.par[g.A[0].id+"|"+g.A[1].id])||!(H.par[g.B[0].id+"|"+g.B[1].id]))parts.push("처음 호흡을 맞추는 조합 포함");
       return parts.length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">💡 ${parts.join(" · ")}</div>`:""})()}${recoGBtn(u,i,g)}</li>`}).join("");
-  return wrap(`<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">상대 팀끼리 성별 구성을 맞추고, 실력·최근 경기 흐름·같이 뛰어 본 이력을 함께 보고 참석 인원 안에서 가장 재미있을 조합을 골랐어요. 게임마다 서로 다른 선수로 짜고, 인원이 적으면 추천 게임 수를 줄여요.</p></details>`)}
+  return wrap(`<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">상대 팀끼리 성별 구성을 맞추고, 실력(랭킹·보정 기록)에 최근 5경기 흐름·같이 뛴 성적·서로 맞붙은 전적까지 경기 결과를 함께 보고 참석 인원 안에서 가장 재미있을 조합을 골랐어요. 게임마다 서로 다른 선수로 짜고, 인원이 적으면 추천 게임 수를 줄여요.</p></details>`)}
 function offPanel(){
   const rows=OFFICES.filter(o=>o!=="운영자").map(o=>{const ms=S.members.filter(m=>m.role===o);
     const people=ms.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;margin:3px 14px 3px 0">${av(m,36)}<b>${esc(m.name)}</b></span>`).join("");
