@@ -1911,8 +1911,8 @@ function rpStart(){const A=rpSim._A,B=rpSim._B;if(!A||!B)return;rpStop();rpSim.s
   const lost=res.list.filter(m=>!m.win&&m.oi&&!m.oi.own).map(m=>m.oi.key);
   if(lost.length){S.rpRev[rk]=[...new Set([...prev,...lost])].slice(-30);try{save()}catch(e){}}
   const P0=rpPlay={res,i:0,ph:"pre",done:[],t:null,ev,evMsg:ev!=="n"?RP_EVM[ev][Math.floor(Math.random()*RP_EVM[ev].length)]:"",preMsg:rpPreMsg(ev,g0,SZ)};render();P0.t=setTimeout(()=>{if(rpPlay===P0&&P0.ph==="pre")rpStep(true)},3000)}
-/* 출전 버튼을 누르면 3초간 대회장 상황 안내 화면: 슈퍼·불참은 그 멘트, 일반은 무작위 한 줄(상품 수령·자리 확보·실력 파악·주차 지각·B팀 소개·유명 선수 출전) */
-function rpPreMsg(ev,g,SZ){if(ev!=="n")return "";const ob=rpSim._Bt,L=["🎁 상품 수령하고 코트로 이동하는 중이에요","🪑 휴식 자리 확보하고 코트로 이동해요","🔍 출전 선수들의 실력을 파악하는 중… 만만치 않아 보여요","🚗 주차하다가 약간 늦었어요! 서둘러 코트로 가요","📋 대진표를 확인하고 있어요. 오늘 컨디션이 어떠세요?"];
+/* 출전 버튼을 누르면 3초간 대회장 상황 안내 화면: 슈퍼·불참은 그 멘트, 일반은 무작위 한 줄(참가상품 수령·자리 확보·실력 파악·주차 지각·B팀 소개·유명 선수 출전) */
+function rpPreMsg(ev,g,SZ){if(ev!=="n")return "";const ob=rpSim._Bt,L=["🎁 참가상품 수령하고 코트로 이동하는 중이에요","🪑 휴식 자리 확보하고 코트로 이동해요","🔍 출전 선수들의 실력을 파악하는 중… 만만치 않아 보여요","🚗 주차하다가 약간 늦었어요! 서둘러 코트로 가요","📋 대진표를 확인하고 있어요. 오늘 컨디션이 어떠세요?"];
   if(ob)L.push("👥 우리 클럽 B팀 "+esc(ob.n1)+"·"+esc(ob.n2)+" 조도 출전했어요! 반가워요");
   try{const f=rpField(g,SZ-(ob?2:1),SZ,rpSim.seed).filter(t=>t.seed&&t.real).sort((a,b)=>a.seed-b.seed)[0];if(f)L.push("🌟 "+esc(f.n1)+"·"+esc(f.n2)+" 조가 출전했네요~ 꽤 유명한 강호예요")}catch(e){}
   return L[Math.floor(Math.random()*L.length)]}
