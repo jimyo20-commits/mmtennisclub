@@ -884,7 +884,28 @@ function posPopView(){if(!posPop||isGuest())return"";const nm=posPop.nm,FM={1:4,
   <div style="display:flex;flex-wrap:wrap;gap:6px">${btn(K==="all","posPopSet('k','all')","전체")}${btn(K==="w","posPopSet('k','w')","✅ 위닝","#22a85a")}${btn(K==="e","posPopSet('k','e')","❌ 에러","#e5484d")}</div>
   <p style="margin:6px 0 0;font-size:12px;font-weight:700">${info}</p>${posCourt(dots,false,true,tab==="h")}${stat}<p style="margin:4px 0 0;font-size:11px;color:var(--muted)">내가 뛴 쪽 반코트만 보여줘요 (코트 끝이 바뀐 경기는 방향을 맞춰 합쳤어요 · 아래쪽이 베이스라인)</p>${ana}${anaH}`:`<p class="empty">이 선수가 직접 친 위치 기록이 아직 없어요.</p>`}<div style="height:110px" aria-hidden="true"></div></div></div>`}
 function posPanel(){return posPanel0("in")+posPanel0("out")}
-function anView(){return anView0()+posPanel()}
+/* 구간 보정 미리보기(운영자 전용): 원점수는 그대로 두고, (나+파트너 실력) − (상대 두 명 실력) 차이만큼 경기별 승리기여도를 보정해 비교 */
+let anAdjOn=false,anAdjK=null;
+function anAdjSet(v){anAdjK=v===""?null:Math.max(0,Math.min(.4,parseFloat(v)||0));render()}
+function anAdjCalc(){const rk=id=>{const m=S.members.find(x=>x.id===id);return m?(RP_RANK[m.level||""]||0):null},E=[],noLv=S.members.filter(m=>!m.level).length;
+  (S.analysis||[]).forEach(g=>{if(!g.rows||g.rows.length!==4)return;const f=anFlat().filter(e=>e.g===g);if(f.length!==4)return;const pr=f.map(x=>rk(x.pid));if(pr.some(x=>x===null))return;
+    f.forEach((e,i)=>{const o=i<2?[2,3]:[0,1],mate=i<2?1-i:5-i;E.push({n:mname(e.pid)||e.name,raw:anGr(e),lr:Math.log((e.W+1)/(e.U+1)),df:pr[i]+pr[mate]-pr[o[0]]-pr[o[1]]})})});
+  let est=0;if(E.length>3){const mx=E.reduce((t,e)=>t+e.df,0)/E.length,my=E.reduce((t,e)=>t+e.lr,0)/E.length;let a=0,b=0;E.forEach(e=>{a+=(e.df-mx)*(e.lr-my);b+=(e.df-mx)**2});est=b?a/b:0}
+  const k=anAdjK!=null?anAdjK:Math.max(0,Math.min(.15,est)),by={};E.forEach(e=>{(by[e.n]=by[e.n]||[]).push({raw:e.raw,adj:e.raw*Math.exp(-k*e.df),df:e.df})});
+  const av=a=>a.reduce((t,v)=>t+v,0)/a.length;
+  const rows=Object.entries(by).map(([n,L])=>({n,g:L.length,raw:Math.round(av(L.map(x=>x.raw))*100),adj:Math.round(av(L.map(x=>x.adj))*100),df:av(L.map(x=>x.df))})).sort((a,b)=>b.g-a.g||a.n.localeCompare(b.n));
+  return {rows,k,est,n:E.length,noLv,allNo:noLv===S.members.length}}
+function anAdjView(){if(!isAdmin())return"";
+  const hd=`<div class="panel"><h2 style="cursor:pointer" onclick="anAdjOn=!anAdjOn;render()">🧮 구간 보정 미리보기 <span style="font-size:12px;font-weight:400;color:var(--muted)">(운영자 전용 · ${anAdjOn?"접기":"펼치기"})</span></h2>`;
+  if(!anAdjOn)return hd+"</div>";
+  const c=anAdjCalc();
+  if(c.allNo||!c.rows.length)return hd+`<p style="font-size:13px;color:var(--muted)">회원관리에서 회원 <b>등급</b>이 입력돼야 계산할 수 있어요${c.allNo?" (지금은 등급이 모두 비어 있어요)":""}.</p></div>`;
+  const rw=c.rows.map(r=>{const d=r.adj-r.raw,col=d>0?"#16a34a":d<0?"#dc2626":"var(--muted)";return `<tr><td style="text-align:left">${esc(r.n)}</td><td>${r.g}</td><td>${r.raw}%</td><td><b>${r.adj}%</b></td><td style="color:${col};font-weight:700">${d>0?"+":""}${d}</td><td style="color:var(--muted)">${r.df>0?"+":""}${r.df.toFixed(1)}</td></tr>`}).join("");
+  return hd+`<p style="font-size:12px;color:var(--muted);margin:0 0 8px">경기별 승리기여도 × e<sup>−k×실력차</sup> · 실력차 = (나+파트너) − (상대 두 명), 등급 점수 비입상 0 · 개나리·지신 1 · 전신 2 · 오픈·국화 3. 기존 점수·그래프는 그대로예요.</p>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px">보정 강도 k <input type="number" step="0.01" min="0" max="0.4" value="${anAdjK!=null?anAdjK:""}" placeholder="자동" onchange="anAdjSet(this.value)" style="width:70px"> <span style="color:var(--muted)">현재 ${c.k.toFixed(2)} (기록 ${c.n}행에서 추정 ${c.est.toFixed(2)}${anAdjK!=null?" · 직접 입력":" · 자동"})</span>${anAdjK!=null?`<button class="btn sm" onclick="anAdjSet('')">자동</button>`:""}</div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center"><thead><tr style="color:var(--muted)"><th style="text-align:left;font-weight:400">선수</th><th style="font-weight:400">경기</th><th style="font-weight:400">원점수</th><th style="font-weight:400">보정</th><th style="font-weight:400">차이</th><th style="font-weight:400">평균 실력차</th></tr></thead><tbody>${rw}</tbody></table></div>
+  <p style="font-size:11px;color:var(--muted);margin:6px 0 0">경기 수가 적으면 추정 k가 흔들려요(0.15 상한). 평균 실력차가 +면 고수와 같은 편이 많았다는 뜻이라 보정이 내려가요.${c.noLv?` · 등급 미입력 ${c.noLv}명의 경기는 제외`:""}</p></div>`}
+function anView(){return anView0()+posPanel()+anAdjView()}
 function anView0(){
   anImportSample();anImportPreset();anFillSampleC();
   const flat=anFlat();
