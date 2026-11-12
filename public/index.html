@@ -2468,22 +2468,24 @@ function recoCalc0(T){
   return{u,ps,games,rate,shown,pre:!closed}}
 let recoAsk=null;
 /* 승리확률에 따른 멘트(같은 게임이면 늘 같은 멘트가 나오도록 게임 조합으로 고름) */
-const RQ_EVEN=["팽팽해요! 누가 이겨도 이상하지 않아요 🎾","막상막하! 한 점이 승부를 가를 거예요","오늘 제일 재미있을 한 판이에요 😆","누가 이길지 정말 모르겠어요 👀"],
- RQ_SL=["살짝 한쪽으로 기우는 느낌인데요? 😏","미묘하게 한쪽이 유리해 보이네요, 그래도 해볼 만해요!","약간 앞서 보이지만 코트에선 모르는 일이죠 🎾"],
- RQ_MID=["승부가 기울어져 보이는 건 저만 그런가요? 🤔","어이쿠, 이거 쉽지 않겠는데요?","이쪽이 조금 힘들어 보이는데요… 이변을 기대해 봅니다!","슬슬 땀이 나는 대진이에요 😅"],
- RQ_BIG=["당연히 이기긴 힘들겠죠? 그래서 이기면 더 짜릿해요 🔥","어이쿠 이거 힘들겠는데요… 이변의 주인공이 되어 보세요!","와, 이건 도전자 정신이 필요한 대진이에요 💪","누가 봐도 기울었지만 테니스는 모르는 거죠! 😎"];
-/* 최근 5경기 승패(기록이 있는 경기만) */
+const RQ_EVEN=["팽팽해요! 누가 이겨도 몰라요 🎾","막상막하! 한 점이 승부를 가를 거예요","오늘 제일 재미있을 한 판이에요 😆","누가 이길지 정말 모르겠어요 👀"],
+ RQ_SL=["{U}이 살짝 불리해 보이는데요? 😏","{U} 쪽이 조금 아쉬운 느낌, 해볼 만해요!","약간 기울었지만 코트에선 모르죠 🎾"],
+ RQ_MID=["승부가 기울어 보이는 건 저만 그런가요? 🤔","{U}, 어이쿠 이거 쉽지 않겠는데요?","{U}의 이변을 기대해 봅니다! 🙌","슬슬 땀이 나는 대진이에요 😅"],
+ RQ_BIG=["{U}, 당연히 이기긴 힘들겠죠? 🔥","{U}, 어이쿠 이거 힘들겠는데요… 😅","이변의 주인공이 되어 보세요! 💪","누가 봐도 기울었지만 모르는 거죠! 😎"];/* 최근 5경기 승패(기록이 있는 경기만) */
 function recoForm(id){const L=(S.matches||[]).filter(mt=>teams(mt).flat().includes(id)&&typeof mt.s1==="number"&&typeof mt.s2==="number"&&mt.s1!==mt.s2).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(-5);let w=0;L.forEach(mt=>{const i=teams(mt).findIndex(t=>(t||[]).includes(id));if((i===0)===(mt.s1>mt.s2))w++});return {w,n:L.length}}
 /* 게임마다 멘트를 다르게(used로 중복 방지): 확률 멘트 + "저는 이쪽이 이길 것 같아요" 같은 예측 + 최근 기세가 좋은 선수(실제 최근 5경기 기록 기준) 멘트 */
+/* 추천 멘트를 한 줄에 예쁘게: 글자 크기를 15→12.5px까지 줄여 한 줄에 맞추고, 그래도 넘치면 균형 있게 두 줄로 나눔 */
+function fitRq(){document.querySelectorAll(".rq").forEach(el=>{el.style.whiteSpace="nowrap";let f=15;el.style.fontSize=f+"px";while(el.scrollWidth>el.clientWidth+1&&f>12.5){f-=0.5;el.style.fontSize=f+"px"}
+  if(el.scrollWidth>el.clientWidth+1){el.style.whiteSpace="normal";el.style.wordBreak="keep-all";el.style.textWrap="balance"}})}
 function recoQuip(wp,g,used){const hi=Math.max(wp,100-wp),fav=wp>=50?"A팀":"B팀",und=wp>=50?"B팀":"A팀";let h=0;for(const ch of recoGKey(g))h=(h*31+ch.charCodeAt(0))>>>0;
-  let L;if(hi<55)L=RQ_EVEN.slice();else if(hi<60)L=RQ_SL.map(x=>und+" 쪽이 "+x);else if(hi<65)L=RQ_MID.map(x=>und+" — "+x);else L=RQ_BIG.map(x=>und+" — "+x);
+  let L;if(hi<55)L=RQ_EVEN.slice();else if(hi<60)L=RQ_SL.map(x=>x.replace("{U}",und));else if(hi<65)L=RQ_MID.map(x=>x.replace("{U}",und));else L=RQ_BIG.map(x=>x.replace("{U}",und));
   const pk=hi<53?(h%2?"A팀":"B팀"):fav;
-  if(hi<58)L.push("확률은 비슷해도 저는 "+pk+"이 이길 것 같아요 😏","수치로는 비슷하지만 제 촉은 "+pk+" 쪽이에요 🔮");else L.push("확률은 "+fav+"이 유리하지만 저는 "+und+"의 이변을 응원해요 🙌");
-  if(hi>=55)L.push("확률은 "+fav+"이 앞서지만, 승부는 해봐야 아는 거죠! 🎾");
+  if(hi<58)L.push("비슷해도 저는 "+pk+"이 이길 것 같아요 😏","제 촉은 "+pk+" 쪽이에요 🔮");else L.push(fav+" 우세지만 저는 "+und+" 이변을 응원해요 🙌");
+  if(hi>=55)L.push(fav+"이 앞서지만 승부는 해봐야죠! 🎾");
   const hot=g.A.concat(g.B).map(m=>({m,f:recoForm(m.id)})).filter(x=>x.f.n>=3&&x.f.w/x.f.n>=0.6).sort((a,b)=>b.f.w/b.f.n-a.f.w/a.f.n||b.f.n-a.f.n)[0];
-  if(hot)L.push("최근 "+hot.m.name+"님이 기세가 좋아서 기대돼요 🔥","요즘 "+hot.m.name+"님 폼이 좋던데, 오늘도 이어갈까요? 👀");
+  if(hot)L.push("최근 "+hot.m.name+"님이 기세가 좋아서 기대돼요 🔥","요즘 "+hot.m.name+"님 폼이 좋아요, 이어갈까요? 👀");
   let t=null;for(let k=0;k<L.length;k++){const c=L[(h+k)%L.length];if(!used||!used.includes(c)){t=c;break}}if(t==null)t=L[h%L.length];if(used)used.push(t);
-  return `<div style="margin-top:10px;font-size:15px;font-weight:800;line-height:1.5;color:${hi>=60?"#c2410c":"#15803d"}">💬 ${esc(t)}</div>`}
+  return `<div class="rq" style="margin-top:10px;font-size:15px;font-weight:800;line-height:1.5;white-space:nowrap;color:${hi>=60?"#c2410c":"#15803d"}">💬 ${esc(t)}</div>`}
 /* 운영자 전용 시험 모드: 가짜 참석자를 골라 추천을 미리 돌려 봄(저장·공개 안 함) */
 let recoTest={on:false,ids:[],seed:0,open:false};
 const recoTPool=()=>S.members.filter(m=>m.status!=="휴회원");
@@ -2868,7 +2870,7 @@ function render(){
   const tabs=isGuest()?TABS.filter(([k])=>["home","club","drill","matches","analysis"].includes(k)):TABS.filter(([k])=>k!=="tourney"&&(isAdmin()||!["members","dues"].includes(k)));
   if(!tabs.some(([k])=>k===tab)&&!(tab==="tourney"&&!isGuest()))tab=tabs[0][0];
   $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}${k==="report"?" gold":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
-  setTimeout(navUpd,0);
+  setTimeout(navUpd,0);setTimeout(fitRq,0);
   $("#view").innerHTML=V[tab]();
   const sc=document.querySelector(".sheet");const st=sc?sc.scrollTop:0;
   $("#modal").innerHTML=showVote?`<div class="modal" onclick="if(event.target===this)closeVote()"><div class="sheet"><div style="position:sticky;top:-16px;z-index:5;display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 12px;padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)"><h2 style="margin:0">이번 경기, 참석하시나요?</h2><button class="btn ghost" onclick="closeVote()">닫기</button></div>${V.votes()}</div></div>`:"";
