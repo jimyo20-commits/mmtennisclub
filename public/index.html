@@ -2485,7 +2485,7 @@ function recoQuip(wp,g,used){const hi=Math.max(wp,100-wp),fav=wp>=50?"A팀":"B�
   const hot=g.A.concat(g.B).map(m=>({m,f:recoForm(m.id)})).filter(x=>x.f.n>=3&&x.f.w/x.f.n>=0.6).sort((a,b)=>b.f.w/b.f.n-a.f.w/a.f.n||b.f.n-a.f.n)[0];
   if(hot)L.push("최근 "+hot.m.name+"님이 기세가 좋아서 기대돼요 🔥","요즘 "+hot.m.name+"님 폼이 좋아요, 이어갈까요? 👀");
   let t=null;for(let k=0;k<L.length;k++){const c=L[(h+k)%L.length];if(!used||!used.includes(c)){t=c;break}}if(t==null)t=L[h%L.length];if(used)used.push(t);
-  return `<div class="rq" style="margin-top:10px;font-size:15px;font-weight:800;line-height:1.5;white-space:nowrap;color:${hi>=60?"#c2410c":"#15803d"}">💬 ${esc(t)}</div>`}
+  return `<div class="rq" style="margin-top:10px;font-size:15px;font-weight:800;line-height:1.5;white-space:nowrap;color:${hi>=65?"#dc2626":hi>=60?"#ea580c":hi>=55?"#a16207":"#15803d"}">💬 ${esc(t)}</div>`}
 /* 운영자 전용 시험 모드: 가짜 참석자를 골라 추천을 미리 돌려 봄(저장·공개 안 함) */
 let recoTest={on:false,ids:[],seed:0,open:false};
 const recoTPool=()=>S.members.filter(m=>m.status!=="휴회원");
