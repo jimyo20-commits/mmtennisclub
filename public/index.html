@@ -2402,8 +2402,8 @@ function recoMulti0(ps,rate,seed){const n=Math.min(ps.length,30);if(n<4)return n
   let ad={};try{const c=anAdjCalc();c.rows.forEach(r=>{if(r.g>=3)ad[r.n]=r.adj})}catch(e){}
   const need=m=>ad[m.name]==null?0:Math.max(0,Math.min(1,(100-ad[m.name])/100));
   const H=recoH2H(),newP=(a,b)=>H.par[a.id+"|"+b.id]?0:1,newO=(a,b)=>(H.opp[a.id+"|"+b.id]||{n:0}).n?0:1;
-  /* 게임마다 목표 승리확률을 뽑아요: 50:50이 가장 흔하고 55:45 · 60:40 · 65:35는 점점 드물게, 70:30은 약 5% */
-  const draw=()=>{const r=rnd(),T=[[.52,.5],[.76,.55],[.88,.6],[.95,.65],[1.01,.7]];const p=T.find(x=>r<x[0])[1];return p===.5?0:Math.log(p/(1-p))/2.2};
+  /* 게임마다 목표 승리확률을 뽑아요(50~70%를 연속으로): 박빙이 가장 많고 기울수록 드물게 */
+  const draw=()=>{const p=0.5+0.2*Math.pow(rnd(),1.7);return Math.log(p/(1-p))/2.2};   // 목표 승리확률을 50~70% 사이에서 연속적으로 뽑음(50대 초반이 가장 많고 70에 가까울수록 드물게: 55 미만 약 44% · 55~59 22% · 60~64 18% · 65 이상 약 16%)
   let tg=0;const pen=c=>4*Math.abs(2*c.diff-tg);   // 후보의 두 팀 실력 격차(2×diff)가 목표와 얼마나 다른지
   const sc={
     bal:c=>W*c.mis+pen(c),fem:c=>pen(c),
