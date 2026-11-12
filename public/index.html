@@ -209,7 +209,6 @@ try{const u0=S.members.find(m=>m.id===me);if(u0&&(u0.name==="윤준식"||u0.admi
 /* 게스트 로그인: 회원이 아닌 등록 게스트(전화번호 뒷 4자리)는 분석 탭만 볼 수 있음 */
 const isGuest=()=>!!me&&!S.members.some(m=>m.id===me)&&(S.guests||[]).some(g=>g.id===me);
 const isAdmin=()=>{const u=S.members.find(m=>m.id===me);return !!u&&(u.name==="윤준식"||u.admin)};
-const isStaff=()=>isAdmin()||!!(S.members.find(m=>m.id===me)||{}).role;   /* 운영진: 운영자 + 직책(회장·부회장·총무·이사) 회원 — 추천매치 미리보기·다시 짜기·시험 모드에 사용 */
 const uid=()=>Math.random().toString(36).slice(2,9);
 const DAYS=["일","월","화","수","목","금","토"];
 const fmtT=t=>{const h=+t.slice(0,2);return (h<12?"오전 ":"오후 ")+(h>12?h-12:h)+"시"};
@@ -2429,7 +2428,7 @@ function recoCalc0(T){
   const shown=m=>{const s=st[m.id]||{w:0,l:0};return s.w+s.l?Math.round(s.w/(s.w+s.l)*100)+"%":"기록 없음"};
   if(T){const tp=S.members.filter(m=>recoTest.ids.includes(m.id));if(tp.length<4)return{u,ps:tp,games:null,rate,shown,test:1};   // 시험 모드: 실제 투표·기록과 무관, 저장하지 않음
     return{u,ps:tp,games:recoMulti(tp,rate,"T|"+recoTest.seed+"|"+tp.map(m=>m.id).sort().join()),rate,shown,test:1}}
-  if(!closed&&!isStaff())return{u,ps,games:null,rate,shown,pending:true};   // 운영진은 마감 전에도 미리 보고 조율(일반 회원은 마감 시각에 공개)
+  if(!closed&&!isAdmin())return{u,ps,games:null,rate,shown,pending:true};   // 운영진은 마감 전에도 미리 보고 조율(일반 회원은 마감 시각에 공개)
   const fx=S.recoFix&&S.recoFix[u.ds];   // 당일 추천게임 경기가 입력되면 그날 추천 2게임을 고정
   if(fx){const mm=id=>S.members.find(x=>x.id===id)||(S.guests||[]).find(x=>x.id===id);const gm=fx.map(g=>({A:g.A.map(mm),B:g.B.map(mm),diff:g.diff||0}));
     if(gm.every(g=>g.A.concat(g.B).every(m=>m&&ps.some(x=>x.id===m.id))))return{u,ps,games:gm,rate,shown,pre:!closed}}
@@ -2475,7 +2474,7 @@ function recoTOff(){recoTest.on=false;render()}
 function recoTN(n){const L=recoTPool().map(m=>m.id);for(let i=L.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[L[i],L[j]]=[L[j],L[i]]}recoTest.ids=L.slice(0,Math.min(n,L.length));recoTest.seed++;render()}
 function recoTTog(id){const i=recoTest.ids.indexOf(id);if(i<0)recoTest.ids.push(id);else recoTest.ids.splice(i,1);render()}
 function recoTRe(){recoTest.seed++;render()}
-function recoTestBar(){if(!isStaff())return"";
+function recoTestBar(){if(!isAdmin())return"";
   if(!recoTest.on)return `<button class="btn ghost" style="width:100%;margin-top:10px;font-size:13px" onclick="recoTOn()">🧪 시험 모드 (운영자 전용 · 가짜 참석자로 추천 미리 보기)</button>`;
   const n=recoTest.ids.length,bt=(l,f)=>`<button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="${f}">${l}</button>`;
   return `<div style="margin-top:10px;border:1.5px dashed #6366f1;border-radius:12px;padding:10px"><div style="font-size:12px;font-weight:700;color:#4338ca;margin-bottom:6px">🧪 시험 참석자 ${n}명 · 누르면 무작위로 다시 뽑아요</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${[4,8,12,16].map(k=>bt(k+"명","recoTN("+k+")")).join("")}${bt("전체","recoTN(999)")}${bt("🔀 다시 뽑기","recoTRe()")}${bt("끄기","recoTOff()")}</div><details ${recoTest.open?"open":""} ontoggle="recoTest.open=this.open"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">이름으로 직접 선택</summary><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${recoTPool().map(m=>{const on=recoTest.ids.includes(m.id);return `<button onclick="recoTTog('${m.id}')" style="border:1.5px solid ${on?"#6366f1":"var(--line)"};background:${on?"#eef2ff":"transparent"};color:${on?"#4338ca":"inherit"};border-radius:14px;padding:2px 9px;font-size:12px;font:inherit;font-size:12px;cursor:pointer">${esc(m.name)}</button>`}).join("")}</div></details></div>`}
@@ -2485,7 +2484,7 @@ const recoRedoCnt=(ds,i)=>{const v=((S.recoRedoG||{})[ds]||{})[i]||0;return Math
 const recoRedoOkG=(u,i)=>Date.now()<recoStartMs(u);   // 운영자는 투표 마감 전에도 경기 시작 전까지 횟수 제한 없이 다시 짤 수 있음
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
-function recoRedoG(i){if(!isStaff())return;if(!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
+function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
   const cur=c.games,oth=cur.filter((_,k)=>k!==i);
   if(recoDone(ds,cur[i])){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
@@ -2496,15 +2495,15 @@ function recoRedoG(i){if(!isStaff())return;if(!confirm((i+1)+"게임을 다시 �
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
-const recoGBtn=(u,i,g)=>{if(!isStaff()||recoTest.on||recoDone(u.ds,g))return"";
+const recoGBtn=(u,i,g)=>{if(!isAdmin()||recoTest.on||recoDone(u.ds,g))return"";
   if(Date.now()>=recoStartMs(u))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 다시 짜기는 경기 시작 전까지만 가능해요</p>`;
   const n=recoRedoCnt(u.ds,i);return `<button class="btn ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">🔄 ${i+1}게임 다시 짜기 (운영자 · 횟수 제한 없음${n?" · "+n+"번 다시 짬":""})</button>`};
 function recoPanel(){
-  const c=(recoTest.on&&isStaff())?recoCalc0(true):recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
+  const c=(recoTest.on&&isAdmin())?recoCalc0(true):recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
   if(c.pending){const od=deadline(u.ds),ot=`${od.getMonth()+1}/${od.getDate()} (${DAYS[od.getDay()]}) ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))}`;
    return `<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 경기</p><div style="text-align:center;padding:14px 8px 10px"><div style="font-size:34px;line-height:1">🎁</div><div style="font-weight:800;margin-top:8px">대진표는 아직 비밀이에요!</div><div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7">누구랑 붙을지 궁금하죠? 🎾<br>경기 1시간 전, 출석 투표가 마감되는<br><b style="color:#16a34a">${ot}</b>에 출석한 인원으로<br>짠~ 하고 공개됩니다.<br>그 전에 참석 투표 먼저 해두세요 😉</div></div></div>`}
-  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 4점 · 패 2점${voteClosed(u.ds)&&!recoTest.on?" · 투표 마감으로 고정":""}</p>${recoTest.on&&isStaff()?`<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;line-height:1.5">🧪 시험 모드 · 아래는 가짜 참석자 ${ps.length}명 기준이에요. 실제 투표·기록·고정에는 반영되지 않고 운영자에게만 보여요.</div>`:voteClosed(u.ds)?"":(()=>{const od=deadline(u.ds);return `<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700;line-height:1.5">👀 운영진 미리보기 · 일반 회원에게는 투표 마감(${od.getMonth()+1}/${od.getDate()} ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))})에 공개돼요. 그 전까지 참석 변동에 따라 바뀌고, 다시 짜기로 조율할 수 있어요.</div>`})()}${b}${recoTestBar()}</div>`;
+  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 4점 · 패 2점${voteClosed(u.ds)&&!recoTest.on?" · 투표 마감으로 고정":""}</p>${recoTest.on&&isAdmin()?`<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;line-height:1.5">🧪 시험 모드 · 아래는 가짜 참석자 ${ps.length}명 기준이에요. 실제 투표·기록·고정에는 반영되지 않고 운영자에게만 보여요.</div>`:voteClosed(u.ds)?"":(()=>{const od=deadline(u.ds);return `<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700;line-height:1.5">👀 운영진 미리보기 · 일반 회원에게는 투표 마감(${od.getMonth()+1}/${od.getDate()} ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))})에 공개돼요. 그 전까지 참석 변동에 따라 바뀌고, 다시 짜기로 조율할 수 있어요.</div>`})()}${b}${recoTestBar()}</div>`;
   if(!games)return wrap(`<p class="empty">참석자가 4명 이상 모이면 참석 인원 안에서 가장 재미있을 게임을 추천해요.</p>`);
   const rkSt=stats(),rkPl=x=>{const s=rkSt[x.id];return !!s&&s.w+s.l+s.d>0},rkNo=m=>rkPl(m)?(1+S.members.filter(x=>rkPl(x)&&rkBetter(rkSt[x.id],rkSt[m.id])).length)+"위":"랭킹 없음";   // 랭킹탭과 같은 순위
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${(S.guests||[]).some(x=>x.id===m.id)?"게스트":rkNo(m)}</small></span>`;
