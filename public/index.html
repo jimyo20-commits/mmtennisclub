@@ -2377,19 +2377,28 @@ function recoGender(ps,rate,seed,opt){opt=opt||{};const n=Math.min(ps.length,30)
   return rnd()<0.5?[toG(r.a),toG(r.b)]:[toG(r.b),toG(r.a)]}
 /* 오늘의 추천매치(최대 3게임): 서로 다른 세 가지 방식(비공개)으로 짜고, 선수가 겹치지 않도록 인원이 적으면 게임 수를 줄여요(8명→2게임, 4~7명→1게임, 12명 이상→3게임).
    ①밸런스: 성별 구성·랭킹 실력이 비슷한 박빙 조합 ②성장: 최근 보정 승리기여도가 낮은 선수가 부담 없이 도전할 수 있는 비슷한 수준 조합 ③새 조합: 아직 같이/맞서 본 적 없는 조합을 우선 */
-function recoMulti(ps,rate,seed){const n=Math.min(ps.length,30);if(n<4)return null;
+let _rmC=null;
+function recoMulti(ps,rate,seed){if(_rmC&&_rmC.k===seed&&Date.now()-_rmC.t<3000)return _rmC.v;const v=recoMulti0(ps,rate,seed);_rmC={k:seed,t:Date.now(),v};return v}   // 화면이 다시 그려질 때마다 다시 계산하지 않도록 3초 캐시
+function recoMulti0(ps,rate,seed){const n=Math.min(ps.length,30);if(n<4)return null;
   const R=recoGender(ps,rate,seed,{raw:1});if(!R)return null;const {cands,rnd,str,pc}=R,G=Math.min(3,Math.floor(n/4)),W=10;
   let ad={};try{const c=anAdjCalc();c.rows.forEach(r=>{if(r.g>=3)ad[r.n]=r.adj})}catch(e){}
   const need=m=>ad[m.name]==null?0:Math.max(0,Math.min(1,(100-ad[m.name])/100));
   const H=recoH2H(),newP=(a,b)=>H.par[a.id+"|"+b.id]?0:1,newO=(a,b)=>(H.opp[a.id+"|"+b.id]||{n:0}).n?0:1;
+  /* 게임마다 목표 승리확률을 뽑아요: 50:50이 가장 흔하고 55:45 · 60:40 · 65:35는 점점 드물게, 70:30은 약 5% */
+  const draw=()=>{const r=rnd(),T=[[.52,.5],[.76,.55],[.88,.6],[.95,.65],[1.01,.7]];const p=T.find(x=>r<x[0])[1];return p===.5?0:Math.log(p/(1-p))/2.2};
+  let tg=0;const pen=c=>4*Math.abs(2*c.diff-tg);   // 후보의 두 팀 실력 격차(2×diff)가 목표와 얼마나 다른지
   const sc={
-    bal:c=>c.c,
-    gro:c=>{const all=c.A.concat(c.B),nd=all.reduce((t,m)=>t+need(m),0),gap=Math.max(Math.abs(str(c.A[0])-str(c.A[1])),Math.abs(str(c.B[0])-str(c.B[1])));return W*c.mis+2*Math.max(0,c.diff-0.12)+0.4*Math.max(0,gap-0.35)-0.12*nd},
-    nw:c=>{const np=newP(c.A[0],c.A[1])+newP(c.B[0],c.B[1]);let no=0;c.A.forEach(a=>c.B.forEach(b=>{no+=newO(a,b)}));return W*c.mis+2*Math.max(0,c.diff-0.15)-0.06*(1.5*np+no)}};
+    bal:c=>W*c.mis+pen(c),
+    gro:c=>{const all=c.A.concat(c.B),nd=all.reduce((t,m)=>t+need(m),0),gap=Math.max(Math.abs(str(c.A[0])-str(c.A[1])),Math.abs(str(c.B[0])-str(c.B[1])));return W*c.mis+pen(c)+0.4*Math.max(0,gap-0.35)-0.12*nd},
+    nw:c=>{const np=newP(c.A[0],c.A[1])+newP(c.B[0],c.B[1]);let no=0;c.A.forEach(a=>c.B.forEach(b=>{no+=newO(a,b)}));return W*c.mis+pen(c)-0.06*(1.5*np+no)}};
   let order=["bal","gro","nw"];if(G===2)order=rnd()<0.5?["bal","gro"]:["bal","nw"];else if(G===1)order=["bal"];
+  const tgs=order.map(()=>draw());
+  const evalK=(ki,used)=>{tg=tgs[ki];const k=order[ki];return cands.filter(c=>!(c.mask&used)).map(c=>({c,v:sc[k](c)})).sort((x,y)=>x.v-y.v)};
+  const rest=(ki,used)=>{let t=0;for(let j=ki;j<order.length;j++){const L=evalK(j,used);if(!L.length)return 1e9;t+=L[0].v;used|=L[0].c.mask}return t};
   let used=0;const out=[];
-  for(const k of order){const pool=cands.filter(c=>!(c.mask&used));if(!pool.length)break;
-    const L=pool.map(c=>({c,v:sc[k](c)})).sort((x,y)=>x.v-y.v),lim=L[0].v+0.03,top=L.filter(x=>x.v<=lim),pk=top[Math.floor(rnd()*rnd()*top.length)].c;
+  for(let ki=0;ki<order.length;ki++){let L=evalK(ki,used);if(!L.length)break;
+    if(n<=16&&ki<order.length-1)L=L.slice(0,30).map(x=>({c:x.c,v:x.v+rest(ki+1,used|x.c.mask)})).sort((x,y)=>x.v-y.v);   // 인원이 적으면 뒤 게임이 한쪽으로 쏠리지 않게 다음 게임까지 미리 봄
+    const lim=L[0].v+0.03,top=L.filter(x=>x.v<=lim),pk=top[Math.floor(rnd()*rnd()*top.length)].c;
     out.push({A:pk.A,B:pk.B,diff:pk.diff});used|=pk.mask}
   return out.length?out:null}
 function recoKey(a,b){return [[...a].sort().join(),[...b].sort().join()].sort().join("|")}
@@ -2428,6 +2437,15 @@ function recoCalc0(T){
     if(key(games[0])===key(games[1]))games[1]=splits(wins[best.b].g)[1]}
   return{u,ps,games,rate,shown,pre:!closed}}
 let recoAsk=null;
+/* 승리확률에 따른 멘트(같은 게임이면 늘 같은 멘트가 나오도록 게임 조합으로 고름) */
+const RQ_EVEN=["팽팽해요! 누가 이겨도 이상하지 않아요 🎾","막상막하! 한 점이 승부를 가를 거예요","오늘 제일 재미있을 한 판이에요 😆","누가 이길지 정말 모르겠어요 👀"],
+ RQ_SL=["살짝 한쪽으로 기우는 느낌인데요? 😏","미묘하게 한쪽이 유리해 보이네요, 그래도 해볼 만해요!","약간 앞서 보이지만 코트에선 모르는 일이죠 🎾"],
+ RQ_MID=["승부가 기울어져 보이는 건 저만 그런가요? 🤔","어이쿠, 이거 쉽지 않겠는데요?","이쪽이 조금 힘들어 보이는데요… 이변을 기대해 봅니다!","슬슬 땀이 나는 대진이에요 😅"],
+ RQ_BIG=["당연히 이기긴 힘들겠죠? 그래서 이기면 더 짜릿해요 🔥","어이쿠 이거 힘들겠는데요… 이변의 주인공이 되어 보세요!","와, 이건 도전자 정신이 필요한 대진이에요 💪","누가 봐도 기울었지만 테니스는 모르는 거죠! 😎"];
+function recoQuip(wp,g){const hi=Math.max(wp,100-wp),u=wp>=50?"B팀":"A팀";let h=0;for(const ch of recoGKey(g))h=(h*31+ch.charCodeAt(0))>>>0;
+  const pick=L=>L[h%L.length];let t;if(hi<55)t=pick(RQ_EVEN);else if(hi<60)t=u+" 쪽이 "+pick(RQ_SL).replace(/^/,"");else if(hi<65)t=pick(RQ_MID);else t=pick(RQ_BIG);
+  if(hi>=60&&hi<65)t=u+" — "+t;else if(hi>=65)t=u+" — "+t;
+  return `<div style="margin-top:6px;font-size:12px;font-weight:700;color:${hi>=60?"#c2410c":"#15803d"}">💬 ${t}</div>`}
 /* 운영자 전용 시험 모드: 가짜 참석자를 골라 추천을 미리 돌려 봄(저장·공개 안 함) */
 let recoTest={on:false,ids:[],seed:0,open:false};
 const recoTPool=()=>S.members.filter(m=>m.status!=="휴회원");
@@ -2475,7 +2493,7 @@ function recoPanel(){
     return `<li style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b>추천 ${i+1}게임 ${(k=>k?`<span class="tag" style="font-size:11px;vertical-align:middle">${k}</span> `:"")(recoKind(g.A.concat(g.B),g.A))}${(()=>{const kk=recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));return S.matches.some(x=>x.bonus&&x.date===u.ds&&recoKey(...teams(x))===kk)?` <span class="tag" style="font-size:11px;vertical-align:middle">완료</span>`:""})()}</b><span class="tag ${Math.abs(wp-50)<=5?"ok":""}" title="클럽 랭킹 기준 예상 승리확률">A ${wp}% : ${100-wp}% B</span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:3px;align-items:center;font-size:13px;line-height:1.7">${[["A팀",g.A],["B팀",g.B]].map(t=>`<div style="align-self:stretch;border:1.5px solid var(--line);border-radius:10px;padding:6px 6px"><b style="display:block;font-size:12px;color:var(--muted);text-align:center">${t[0]}</b>${t[1].map(m=>pl(m).replace("display:flex;","display:flex;justify-content:center;")).join("")}</div>`).join(`<div style="position:relative;width:20px;height:24px"><div aria-label="승점 2배" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:74px;pointer-events:none"><svg width="110" height="74" viewBox="0 -4 110 74" style="overflow:visible"><g><text transform="rotate(-9 55 14)" x="55" y="17" text-anchor="middle" font-family="'Nanum Pen Script','Gaegu',cursive" font-size="23" font-weight="400" fill="#16a34a" stroke="rgba(255,255,255,.9)" stroke-width="1.4" paint-order="stroke">승점</text><text transform="rotate(-9 55 58)" x="55" y="64" text-anchor="middle" font-family="'Nanum Pen Script','Gaegu',cursive" font-size="23" font-weight="400" fill="#16a34a" stroke="rgba(255,255,255,.9)" stroke-width="1.4" paint-order="stroke">×2</text></g></svg></div><div style="position:absolute;left:0;top:0;width:20px;height:24px;display:grid;place-items:center;overflow:hidden"><span style="font-size:19px;line-height:1">🔥</span><b style="position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:7px;font-weight:900;letter-spacing:0;color:#fff;text-shadow:0 0 2px #b3260f,0 1px 1px #b3260f,0 0 4px #b3260f">VS</b></div></div>`)}</div>${(()=>{let best=null;g.A.forEach(a=>g.B.forEach(b=>{const o=H.opp[a.id+"|"+b.id];if(o&&o.n&&(!best||o.n>best.o.n))best={a,b,o}}));const parts=[];
       if(best){const r=H.opp[best.b.id+"|"+best.a.id];parts.push(`상대전적 ${esc(best.a.name)} ${best.o.w}승 ${r?r.w:0}패 ${esc(best.b.name)}`)}
       if(!(H.par[g.A[0].id+"|"+g.A[1].id])||!(H.par[g.B[0].id+"|"+g.B[1].id]))parts.push("처음 호흡을 맞추는 조합 포함");
-      return parts.length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">💡 ${parts.join(" · ")}</div>`:""})()}${recoGBtn(u,i,g)}</li>`}).join("");
+      return parts.length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">💡 ${parts.join(" · ")}</div>`:""})()}${recoQuip(wp,g)}${recoGBtn(u,i,g)}</li>`}).join("");
   return wrap(`<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">상대 팀끼리 성별 구성을 맞추고, 실력·최근 경기 흐름·같이 뛰어 본 이력을 함께 보고 참석 인원 안에서 가장 재미있을 조합을 골랐어요. 게임마다 서로 다른 선수로 짜고, 인원이 적으면 추천 게임 수를 줄여요.</p></details>`)}
 function offPanel(){
   const rows=OFFICES.filter(o=>o!=="운영자").map(o=>{const ms=S.members.filter(m=>m.role===o);
