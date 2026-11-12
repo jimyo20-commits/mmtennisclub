@@ -1633,7 +1633,7 @@ function rpTbPath(m,steps){const [A,B]=m.sc.split(":").map(Number);if(m.cr||A+B!
 function rpStop(){if(rpPlay){if(rpPlay.iv)clearInterval(rpPlay.iv);if(rpPlay.t)clearTimeout(rpPlay.t);(rpPlay.tk||[]).forEach(clearTimeout)}rpPlay=null}
 function rpSwap(){rpStop();const a=rpSim._A.m.id,b=rpSim._B.m.id;rpSim.a=b;rpSim.b=a;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpSetPT(v){rpStop();rpSim.pt=v;rpSim.bm=null;rpSim.a=null;rpSim.b=null;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
-function rpSet(k,v){if(!isAdmin()&&me&&((k==="a"&&rpSim.a===me)||(k==="b"&&rpSim.b===me)))return;rpStop();rpSim[k]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
+function rpSet(k,v){rpStop();rpSim[k]=v;rpSim.seed=1+Math.floor(Math.random()*900000);render()}
 function rpFit(A,B){const d=x=>(x.lv.Fs||0)-(x.lv.Bs||0);return Math.max(-3,Math.min(3,Math.round(.35*(d(A)-d(B))*10)/10))}   /* A=듀스코트(포핸드 사이드), B=애드코트(백핸드 사이드) */
 /* 드릴 이행도 → 실수 감소 보정: 스킬별 완료율(0~1)로 해당 스킬 레벨을 최대 +0.8, 전체 이행도로 팀 전력을 최대 +1.2 보정 */
 function rpDrP(m){const c={};let t=0;AN_HEX.forEach(([k])=>{const dk=k==="sv"?"Sv":k,x=AN_DRILL.find(y=>y.k===dk),v=x&&x.d.length?drillCnt(m.id,dk)/x.d.length:0;c[k]=v;t+=v});return {c,p:t/AN_HEX.length}}
@@ -1900,8 +1900,8 @@ function rpSkipAll(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(
 /* 건너뛰기: 지금 보이는 화면(소개 → 경기 → 결과 → 다음 경기)만 넘긴다 */
 function rpSkip(){if(!rpPlay)return;const P=rpPlay;if(P.t)clearTimeout(P.t);(P.tk||[]).forEach(clearTimeout);P.tk=[];if(P.ph==="pre")rpStep(true);else if(P.ph==="intro")rpRally();else if(P.ph==="rally")rpResult();else if(P.ph==="result")rpNext()}
 function rpSimView(R){if(!R.length)return"";
-  /* 일반 회원: 선수 한 칸은 로그인한 본인으로 고정(성별에 맞는 복식), 다른 한 칸(파트너)만 고른다 */
-  const LK=!isAdmin()&&!isGuest()&&me&&R.some(r=>r.m.id===me)?me:null;if(LK){const mm=S.members.find(x=>x.id===me);rpSim.pt=gdOf(mm)==="여"?"여복":"남복";if(rpSim.a!==me&&rpSim.b!==me)rpSim.a=me}
+  /* 일반 회원: 처음 열 때만 본인이 선수 칸에 들어가 있고(성별에 맞는 복식), 이후엔 자유롭게 바꿀 수 있다(본인을 빼면 관전 모드) */
+  const LK=null;if(!isAdmin()&&!isGuest()&&me&&R.some(r=>r.m.id===me)&&rpSim._ini!==me){rpSim._ini=me;const mm=S.members.find(x=>x.id===me);rpSim.pt=gdOf(mm)==="여"?"여복":"남복";rpSim.a=me;rpSim.b=undefined}
   const isF=r=>gdOf(r.m)==="여",PTS=["남복","여복"],pt0=rpPT(R),gl=(S.rpGuests||[]).filter(g=>g.gender===(rpPT(R)==="여복"?"여":"남")),
     poolA=pt0==="여복"?R.filter(isF):R.filter(r=>!isF(r)),ok=id=>R.find(r=>r.m.id===id),
     A=(poolA.find(r=>r.m.id===rpSim.a))||poolA[0],
