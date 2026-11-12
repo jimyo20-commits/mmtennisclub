@@ -2338,7 +2338,7 @@ function toggleSpForm(){spForm=!spForm;render()}
 let awDelId=null;   /* 확인창(confirm)은 미리보기에서 막히므로 화면 안에서 2단계로 확인 */
 function askDelAward(id){awDelId=id;render()}
 function delAward(id){awDelId=null;S.awards=S.awards.filter(x=>x.id!==id);save();render()}
-const gdOf=m=>m&&(m.gender==="남"||m.gender==="여")?m.gender:"";
+const gdOf=m=>m&&(m.gender==="남"||m.gender==="여")?m.gender:(m&&(m.level==="개나리부"||m.level==="국화부")&&(S.guests||[]).some(g=>g.id===m.id)?"여":"");   /* 게스트는 성별이 비어 있고 실력이 개나리부·국화부면 여자로 봄 */
 function recoKind(g4,A){const M=g4.filter(m=>gdOf(m)==="남").length,F=g4.filter(m=>gdOf(m)==="여").length;if(M+F<4)return"";if(F===0)return"남자복식";if(M===0)return"여자복식";if(M!==2)return"";const aM=(A||g4.slice(0,2)).filter(m=>gdOf(m)==="남").length;return aM===1?"혼합복식":"남 vs 여"}
 /* 1순위 승률이 비슷한 조합. 비슷한 후보가 여럿이면 → 추천게임에 덜 뽑혔던 사람(약한 가산점), 여성이 끼면 남녀 성비가 맞는 조합(남복·여복·혼복)을 이왕이면 선호. 성별 미등록은 중립 */
 /* 맞대결·파트너 이력: opp["a|b"]={n:a가 b와 상대한 횟수, w:a가 이긴 횟수}, par["a|b"]=함께 한 팀이 된 횟수 */
