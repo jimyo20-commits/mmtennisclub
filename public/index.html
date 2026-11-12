@@ -2416,7 +2416,14 @@ function recoCalc0(T){
   const ps=S.members.filter(m=>v[m.id]==="yes");
   /* 게스트: 남자·성별 미분류 게스트는 추천에서 제외(회원만). 여자는 회원만으로 4명이 되면 회원 우선, 회원이 4명 미만이고 게스트를 합쳐 4명 이상이면 여자 게스트도 포함 */
   {const fm=ps.filter(m=>gdOf(m)==="여").length,fg=[];(S.invites[u.ds]||[]).forEach(x=>{const g=(S.guests||[]).find(y=>y.name===x.name);if(g&&gdOf(g)==="여"&&!fg.includes(g))fg.push(g)});
-   if(fm<4&&fm+fg.length>=4)fg.forEach(g=>ps.push(g))}
+   if(fm<4&&fm+fg.length>=4){const need=4-fm;let pick=fg;
+     if(fg.length>need){   // 필요한 인원만: 경기 결과가 있는 게스트는 여자 회원들과 실력이 비슷한 순으로 먼저, 결과가 없으면 무작위(같은 참석자면 같은 결과)
+       const rt=(w,l)=>(w+1)/(w+l+2),fr=ps.filter(m=>gdOf(m)==="여").map(m=>{const x=st[m.id]||{w:0,l:0};return rt(x.w,x.l)}),tg=fr.length?fr.reduce((t,v)=>t+v,0)/fr.length:.5;
+       const rec=g=>{let w=0,l=0;(S.matches||[]).forEach(mt=>{const T=teams(mt),i=T.findIndex(t=>(t||[]).includes(g.id));if(i<0||typeof mt.s1!=="number"||typeof mt.s2!=="number"||mt.s1===mt.s2)return;((i===0)===(mt.s1>mt.s2))?w++:l++});return {w,l,n:w+l}};
+       const rnd=recoRng(u.ds+"|gst|"+ps.map(m=>m.id).sort().join()+fg.map(g=>g.id).sort().join()+((S.recoSeed||{})[u.ds]||0));
+       const L=fg.map(g=>{const r=rec(g);return {g,n:r.n,d:r.n?Math.abs(rt(r.w,r.l)-tg):9,r:rnd()}});
+       L.sort((a,b)=>(b.n>0)-(a.n>0)||(a.n&&b.n?a.d-b.d:a.r-b.r));pick=L.slice(0,need).map(x=>x.g)}
+     pick.forEach(g=>ps.push(g))}}
   const rate=m=>{const s=st[m.id]||{w:0,l:0};return (s.w+1)/(s.w+s.l+2)};      // 기록이 적으면 50%쪽으로 보정
   const shown=m=>{const s=st[m.id]||{w:0,l:0};return s.w+s.l?Math.round(s.w/(s.w+s.l)*100)+"%":"기록 없음"};
   if(T){const tp=S.members.filter(m=>recoTest.ids.includes(m.id));if(tp.length<4)return{u,ps:tp,games:null,rate,shown,test:1};   // 시험 모드: 실제 투표·기록과 무관, 저장하지 않음
