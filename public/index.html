@@ -737,7 +737,7 @@ function posAnal(g,N,ev){
     ${A.miss.length?`<div style="font-size:12px;font-weight:700;margin-top:6px">❗ 빠진 장면 (엑셀 순서)</div><div style="font-size:12px;line-height:1.7">${byG(A.miss,pl)}</div>`:`<div style="font-size:13px;color:#16a34a;font-weight:700">빠진 장면이 없어요 🎉</div>`}
     ${A.diff.length?`<div style="font-size:12px;font-weight:700;margin-top:8px">⚠ 샷 종류가 엑셀과 달라요</div><div style="font-size:12px;line-height:1.7">${A.diff.map(a=>pl(a)+` → 장면에는 <b>${SH(ev[A.em[a]].s)}</b>`).join("<br>")}</div>`:""}
     ${A.ord.length?`<div style="font-size:12px;font-weight:700;margin-top:8px">↕ 순서가 달리 저장돼 짝지은 장면</div><div style="font-size:12px;line-height:1.7">${A.ord.map(pl).join("<br>")}</div>`:""}
-    ${A.extra.length?`<div style="font-size:12px;font-weight:700;margin-top:8px;color:#dc2626">➕ 엑셀에 짝이 없는 장면</div><div style="font-size:12px;line-height:1.7">${A.extra.map(b=>`장면 ${b+1}번째 저장 · ${esc(ev[b].h)} · ${ev[b].s?SH(ev[b].s)+" · ":""}${ev[b].k==="w"?"위닝":"에러"}`).join("<br>")}</div>`:""}</div>`}
+    ${A.extra.length?`<div style="font-size:12px;font-weight:700;margin-top:8px;color:#dc2626">➕ 엑셀에 짝이 없는 장면</div><div style="font-size:12px;line-height:1.7">${A.extra.map(b=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><span style="flex:1;min-width:0">장면 ${b+1}번째 저장 · ${esc(ev[b].h)} · ${ev[b].s?SH(ev[b].s)+" · ":""}${ev[b].k==="w"?"위닝":"에러"}</span>${isAdmin()?`<button class="btn" style="flex:none;padding:3px 10px;font-size:12px;color:#dc2626;border-color:#dc2626" onclick="posDelExtra('${ev[b].id}')">삭제</button>`:""}</div>`).join("")}</div>`:""}</div>`}
   else ordSec=`<p style="margin:12px 0 0;font-size:12px;color:var(--muted)">이 경기는 엑셀 포인트 순서가 저장돼 있지 않아 개수로만 비교해요. 엑셀을 다시 올리면 순서 대조가 켜져요.</p>`;
   const exp=posExp?`<textarea readonly onclick="this.select()" style="width:100%;box-sizing:border-box;height:120px;margin-top:6px;font-size:11px">${esc(JSON.stringify({date:g.date,court:g.court,rows:(g.rows||[]).map(r=>({name:r.name||mname(r.pid),W:r.W,U:r.U,w:r.w,u:r.u,sv:r.sv})),scenes:ev}))}</textarea>`:"";
   return `<p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">엑셀의 위닝·에러 개수와 위치 기록을 맞춰 봐요. 서브 관련(A·Sp·D)과 리턴(R)은 위치 기록 대상이 아니라서 엑셀 숫자에서 뺀 값과 비교합니다.</p>
@@ -788,6 +788,7 @@ function posNewMake(){if(!isAdmin())return;const v=id=>(document.getElementById(
 function posGameDel(id){if(!isAdmin())return;const g=(S.posExtra||[]).find(x=>x.id===id);if(!g)return;const c=(S.pos||[]).filter(x=>x.g===id).length;
   if(!confirm("["+posGl(g)+"]\n위치만 있는 이 경기를 삭제할까요?"+(c?"\n저장된 장면 "+c+"개도 함께 삭제돼요. 되돌릴 수 없어요.":"")))return;
   S.posExtra=S.posExtra.filter(x=>x.id!==id);S.pos=(S.pos||[]).filter(x=>x.g!==id);posG="";posSel="";save();render()}
+function posDelExtra(id){if(!isAdmin())return;const e=(S.pos||[]).find(x=>x.id===id);if(!e)return;if(!confirm("엑셀에 짝이 없는 이 장면만 삭제할까요?\n"+e.h+" · "+(e.k==="w"?"위닝":"에러")+(e.s?" · "+(POSSHN[e.s]||e.s):"")+"\n되돌릴 수 없어요."))return;S.pos=S.pos.filter(x=>x.id!==id);if(posSel===id)posSel="";save();render()}
 function posDel(id){if(!isAdmin())return;S.pos=(S.pos||[]).filter(x=>x.id!==id);if(posSel===id)posSel="";save();render()}
 function posCourt(dots,tap,half,lt){
   const L=lt?"stroke:#6b7a70;stroke-width:2;fill:none":"stroke:#fff;stroke-width:2;fill:none",NC=lt?"#6b7a70":"#fff";
