@@ -2697,15 +2697,15 @@ function relStats(m){const P={},O={};
 function recPanel(m,inModal){const {bp,bo,wo}=relStats(m);
   const item=(icon,label,sub,x,tg)=>x?`<li style="padding:10px 0${inModal?"":";cursor:pointer"}"${inModal?"":` role="button" tabindex="0" onclick="openProfile('${x.m.id}')"`}><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span>${av(x.m,40)}<div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><b>${esc(x.m.name)}</b><small>내 전적 ${x.w}승 ${x.d?x.d+"무 ":""}${x.l}패 (${x.n}경기)</small></div><span class="tag" style="font-weight:700;${rateColor(Math.round(x.r*100))}">${tg(x)}</span></li>`:`<li style="padding:10px 0"><span style="font-size:24px;width:30px;text-align:center;flex:none">${icon}</span><div class="grow"><div style="font-size:12px;color:var(--muted)">${label} <span style="opacity:.8">· ${sub}</span></div><span style="color:var(--muted)">기록 없음</span></div></li>`;
   return `<div class="panel"${inModal?' style="margin-top:10px"':""}><h2>${inModal&&m.id!==me?"":"나의 "}파트너·상대 기록</h2><ul class="list">${item("🤝","최강파트너","함께 가장 많이 이긴 사람",bp,x=>x.w+"승")}${item("💪","극강상대","내가 가장 많이 이긴 상대",bo,x=>x.w+"승")}${item("😱","나의천적","나에게 가장 많이 패배를 준 상대",wo,x=>x.l+"패")}</ul></div>`}
-function totalRate(m){const keys=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).sort();const start=m.joined||keys[0];if(!start)return null;
-  const s=new Date(start+"T00:00");if(isNaN(s))return null;const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;
-  for(let d=new Date(s);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length){tot++;if((S.attend[ds]||{})[m.id])ok++}}
-  {const td=iso(n);if(s<=n&&sessOn(td).length&&S.attDone[td]){tot++;if((S.attend[td]||{})[m.id])ok++}}   /* 오늘 모임을 운영자가 최종 확인했으면 결석까지 바로 반영 */
+/* 출석률: 출석 확인(기록)이 실제로 있었던 모임만 분모에 넣는다. 가입일 이후라도 출석 기록이 없는 모임(기록 시작 전·미입력)은 결석으로 세지 않음.
+   오늘 모임은 출석 확인한 사람은 즉시 반영, 운영자가 최종 확인하면 결석자도 반영. 랭킹 탭·승점 차감·신입회원 칩이 모두 같은 값을 쓴다. */
+function attCalc(m,start){const s=new Date(start+"T00:00");if(isNaN(s))return null;const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;
+  const checked=ds=>Object.keys(S.attend[ds]||{}).length>0||!!S.attDone[ds];
+  for(let d=new Date(s);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length&&checked(ds)){tot++;if((S.attend[ds]||{})[m.id])ok++}}
+  {const td=iso(n);if(s<=n&&sessOn(td).length){if(S.attDone[td]){tot++;if((S.attend[td]||{})[m.id])ok++}else if((S.attend[td]||{})[m.id]){tot++;ok++}}}
   return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
-function attRate(m){if(!m.joined)return null;const j=new Date(m.joined+"T00:00");const n=new Date();n.setHours(0,0,0,0);let tot=0,ok=0;for(let d=new Date(j);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length){tot++;if((S.attend[ds]||{})[m.id])ok++}}
-  /* 오늘 모임: 출석 확인한 사람은 즉시 반영, 운영자가 출석을 최종 확인하면 결석자도 바로 반영 */
-  {const td=iso(n);if(new Date(m.joined+"T00:00")<=n&&sessOn(td).length){if(S.attDone[td]){tot++;if((S.attend[td]||{})[m.id])ok++}else if((S.attend[td]||{})[m.id]){tot++;ok++}}}
-  return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
+function totalRate(m){const keys=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).sort();const start=m.joined||keys[0];return start?attCalc(m,start):null}
+function attRate(m){return m.joined?attCalc(m,m.joined):null}
 function newPanel(){
   drillMig();
   const ns=S.members.filter(isNew).sort((a,b)=>b.joined.localeCompare(a.joined));
