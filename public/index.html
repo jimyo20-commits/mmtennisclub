@@ -2704,8 +2704,9 @@ function attCalc(m,start){const s=new Date(start+"T00:00");if(isNaN(s))return nu
   for(let d=new Date(s);d<n;d.setDate(d.getDate()+1)){const ds=iso(d);if(sessOn(ds).length&&checked(ds)){tot++;if((S.attend[ds]||{})[m.id])ok++}}
   {const td=iso(n);if(s<=n&&sessOn(td).length){if(S.attDone[td]){tot++;if((S.attend[td]||{})[m.id])ok++}else if((S.attend[td]||{})[m.id]){tot++;ok++}}}
   return tot?{tot,ok,pct:Math.round(ok/tot*100)}:null}
-function totalRate(m){const keys=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).sort();const start=m.joined||keys[0];return start?attCalc(m,start):null}
-function attRate(m){return m.joined?attCalc(m,m.joined):null}
+function attStart(){const ks=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).concat(Object.keys(S.attDone||{}).filter(k=>S.attDone[k])).sort();return ks[0]||null}   /* 가입일은 참고용: 출석률은 모든 회원 같은 기준(출석 기록이 시작된 날부터)으로 계산 */
+function totalRate(m){const st=attStart();return st?attCalc(m,st):null}
+function attRate(m){return totalRate(m)}
 function newPanel(){
   drillMig();
   const ns=S.members.filter(isNew).sort((a,b)=>b.joined.localeCompare(a.joined));
