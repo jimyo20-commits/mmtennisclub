@@ -190,7 +190,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
-if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={};
+if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
 S.members.forEach(m=>{if(!LEVELS.includes(m.level))m.level="";if(!STATUSES.includes(m.status))m.status="정회원"});
@@ -2271,7 +2271,7 @@ function book(t,c){const m=$("#bm").value;if(!m){alert("먼저 회원을 추가�
 function cancelBooking(id){S.bookings=S.bookings.filter(b=>b.id!==id);save();render()}
 function addMatch(){const g0=ed();if(g0?!canEditMatch(g0):!canAddMatch()){alert("경기 시간에만 입력할 수 있습니다. (경기 시간 외에는 운영자만 가능)");editMatchId=null;render();return}
   /* 시간 종료 경기는 양쪽 점수 합이 4게임 이하이면 노게임: 기록을 남기지 않습니다 */
-  if($("#pt")&&$("#pt").checked&&(+$("#s1").value)+(+$("#s2").value)<=4){if(g0){S.matches=S.matches.filter(x=>x.id!==g0.id);if(S.recoFix&&S.recoFix[g0.date]&&!S.matches.some(x=>x.bonus&&x.date===g0.date))delete S.recoFix[g0.date];save()}editMatchId=null;render();alert("시간 종료 경기는 양쪽 점수 합이 4게임 이하이면 노게임이라 기록을 남기지 않아요.");return}
+  if($("#pt")&&$("#pt").checked&&(+$("#s1").value)+(+$("#s2").value)<=4){if(g0){S.matches=S.matches.filter(x=>x.id!==g0.id);if(S.recoFix&&S.recoFix[g0.date]&&!S.matches.some(x=>x.bonus&&x.date===g0.date))delete S.recoFix[g0.date],delete (S.recoLock||{})[g0.date];save()}editMatchId=null;render();alert("시간 종료 경기는 양쪽 점수 합이 4게임 이하이면 노게임이라 기록을 남기지 않아요.");return}
   const resolve=id=>{const v=$("#"+id).value;if(v!=="__new")return v;const nm=($("#"+id+"_n").value||"").trim();if(!nm)return "";const m=S.members.find(x=>x.name===nm);if(m)return m.id;let g=S.guests.find(x=>x.name===nm);if(!g){g={id:uid(),name:nm,photo:"",age:"",region:"",level:"",club:""};S.guests.push(g)}return g.id};
   const t1=[resolve("p1"),resolve("p1b")],t2=[resolve("p2"),resolve("p2b")],s1=+$("#s1").value,s2=+$("#s2").value,part=!!($("#pt")&&$("#pt").checked);
   if([...t1,...t2].some(x=>!x)||new Set([...t1,...t2]).size!==4){alert("복식 경기는 서로 다른 선수 4명을 선택해야 합니다.");return}
@@ -2298,7 +2298,7 @@ function askDelMatch(id){delMatchId=id;render()}   /* 확인창(confirm)은 미�
 function cancelDelMatch(){delMatchId=null;render()}
 function delMatch(id){const g=S.matches.find(x=>x.id===id);delMatchId=null;if(!g||!canEditMatch(g)){render();return}
   S.matches=S.matches.filter(x=>x.id!==id);
-  if(S.recoFix&&S.recoFix[g.date]&&!S.matches.some(x=>x.bonus&&x.date===g.date))delete S.recoFix[g.date];
+  if(S.recoFix&&S.recoFix[g.date]&&!S.matches.some(x=>x.bonus&&x.date===g.date))delete S.recoFix[g.date],delete (S.recoLock||{})[g.date];
   if(editMatchId===id)editMatchId=null;save();render()}
 function delMatchView(){const g=S.matches.find(x=>x.id===delMatchId);if(!g){delMatchId=null;return""}
   const [A,B]=teams(g),nm=a=>a.map(id=>esc(mname(id))).join("·");
@@ -2515,7 +2515,8 @@ function recoKey(a,b){return [[...a].sort().join(),[...b].sort().join()].sort().
 const recoSnap=g=>g.map(gm=>({A:gm.A.map(m=>m.id),B:gm.B.map(m=>m.id),diff:gm.diff}));
 function recoCalc(){let c=recoCalc0();
   if(c){const ds=c.u.ds;if(!S.recoFix)S.recoFix={};
-    if(c.games&&voteClosed(ds)&&!S.recoFix[ds]){S.recoFix[ds]=recoSnap(c.games);setTimeout(()=>{try{save()}catch(e){}},0)}}   // 투표 마감(경기 1시간 전) 때 출석 인원으로 짜서 고정
+    if(!S.recoLock)S.recoLock={};
+    if(c.games&&voteClosed(ds)&&(!S.recoFix[ds]||!S.recoLock[ds])){S.recoFix[ds]=recoSnap(c.games);S.recoLock[ds]=1;setTimeout(()=>{try{save()}catch(e){}},0)}}   // 투표 마감(경기 1시간 전) 후 처음 계산할 때 출석 인원으로 짜서 고정(잠금). 잠긴 뒤에는 운영자가 직접 다시 짜기 전까지 참석 변경·기록 변화와 상관없이 그대로 유지
   return c}
 function recoCalc0(T){
   const u=upcoming()[0];if(!u)return null;
@@ -2538,7 +2539,7 @@ function recoCalc0(T){
   if(!closed&&!isAdmin())return{u,ps,games:null,rate,shown,pending:true};   // 운영진은 마감 전에도 미리 보고 조율(일반 회원은 마감 시각에 공개)
   const fx=S.recoFix&&S.recoFix[u.ds];   // 당일 추천게임 경기가 입력되면 그날 추천 2게임을 고정
   if(fx){const mm=id=>S.members.find(x=>x.id===id)||(S.guests||[]).find(x=>x.id===id);const gm=fx.map(g=>({A:g.A.map(mm),B:g.B.map(mm),diff:g.diff||0}));
-    if(gm.every(g=>g.A.concat(g.B).every(m=>m&&ps.some(x=>x.id===m.id))))return{u,ps,games:gm,rate,shown,pre:!closed}}
+    const lk=closed&&S.recoLock&&S.recoLock[u.ds];if(gm.every(g=>g.A.concat(g.B).every(m=>m&&(lk||ps.some(x=>x.id===m.id)))))return{u,ps,games:gm,rate,shown,pre:!closed}}
   if(ps.length<4)return{u,ps,games:null,rate,shown};
   {const gg=recoMulti(ps,rate,u.ds+"|"+ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[u.ds]||0));if(gg)return{u,ps,games:gg,rate,shown,gender:ps.some(gdOf),pre:!closed}}
   const sorted=[...ps].sort((x,y)=>rate(x)-rate(y)||x.name.localeCompare(y.name,"ko"));
@@ -3024,7 +3025,7 @@ function applyOpsS(st,ops){for(const op of ops){
 }return st}
 function ensureS(){
   ["sponsors","teamAwards","bookings","matches","awards","guests","purchases","members","analysis"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
-  ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
+  ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg","recoLock"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
   if(!Array.isArray(S.schedule)||!S.schedule.length)S.schedule=[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}];
 }
 function adoptS(st){S=jclone(st);ensureS()}
