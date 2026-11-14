@@ -1550,7 +1550,12 @@ const RP_ST={Fs:"베이스라인 포핸드 슬러거",Bs:"백핸드 장인",V:"�
 const RP_RANK={"":0,"비입상":0,"개나리부":1,"지신부":1,"전신부":2,"오픈부":3,"국화부":3},RP_UP={"지역신인부":"전신부","전국신인부":"오픈부","개나리부":"국화부"};
 /* 상금·OVR 점수·승급·참가비는 출전한 본인(기록의 by가 팀에 있을 때만 — 운영자가 남의 팀으로 돌리면 누구에게도 적용 안 됨, by 기록이 없는 옛 기록은 A팀 첫 번째)에게만 적용 — 파트너로 뽑힌 사람은 해당 없음(팀워크 인기·케미만 파트너도 받음, 본인이 팀에 있는 출전일 때) */
 const rpOwn=(r,t)=>{const a=(t&&t.ids)||[];return r&&r.by?(a.includes(r.by)?r.by:null):a[0]};
-function rpLv(m){let lv=m.level||"";(S.rpRec||[]).forEach(r=>{const up=RP_UP[r.g];if(!up||r.nf)return;(r.teams||[]).forEach((t,k)=>{if(t.exit>=7&&!t.guest&&!t.pr&&(k===0?rpOwn(r,t)===m.id:(t.ids||[]).includes(m.id))&&(RP_RANK[up]||0)>(RP_RANK[lv]||0))lv=up})});return lv}
+/* 실제 대회 입상 자동 반영: 대회 DB(RP_HIST)에서 4강 이상 입상한 이름이 회원과 정확히 1명만 일치하고 성별이 맞으면, 수동 입력 레벨과 비교해 더 높은 쪽을 쓴다 (동명이인·불일치는 무시) */
+const RP_AUTO_G={"지역신인부":["지신부","남"],"전국신인부":["전신부","남"],"오픈부":["오픈부","남"],"개나리부":["개나리부","여"],"국화부":["국화부","여"]},RP_AUTO_OK=new Set(["4강","준우승","우승"]);
+let rpAutoC=null,rpAutoK="";
+function rpAutoMap(){const key=(S.members||[]).map(m=>m.id+m.name+(m.gender||"")).join("|");if(rpAutoC&&rpAutoK===key)return rpAutoC;const cnt={};(S.members||[]).forEach(m=>{cnt[m.name]=(cnt[m.name]||0)+1});const mp={};(S.members||[]).forEach(m=>{if(cnt[m.name]!==1)return;let best="",bs=0;Object.keys(RP_AUTO_G).forEach(g=>{const h=(RP_HIST[g]||{})[m.name];if(!h||!RP_AUTO_OK.has(h.st))return;const[lv,gd]=RP_AUTO_G[g],mg=gdOf(m);if(mg&&mg!==gd)return;const rk=RP_RANK[lv]||0;if(rk>bs){bs=rk;best=lv}});if(best)mp[m.id]=best});rpAutoC=mp;rpAutoK=key;return mp}
+function rpBaseLv(m){const a=m.level||"",b=rpAutoMap()[m.id];return b&&(RP_RANK[b]||0)>(RP_RANK[a]||0)?b:a}
+function rpLv(m){let lv=rpBaseLv(m);(S.rpRec||[]).forEach(r=>{const up=RP_UP[r.g];if(!up||r.nf)return;(r.teams||[]).forEach((t,k)=>{if(t.exit>=7&&!t.guest&&!t.pr&&(k===0?rpOwn(r,t)===m.id:(t.ids||[]).includes(m.id))&&(RP_RANK[up]||0)>(RP_RANK[lv]||0))lv=up})});return lv}
 const rpPromo=m=>rpLv(m)!==(m.level||"");
 /* 부서별 입상 가산 배율(지역·개나리 ×1 · 전국 ×2 · 오픈·국화 ×3: 준우승 3%·공동3위 1.5%·8강 0.6%), 최상위 부서(오픈·국화)는 우승 횟수가 쌓일수록 한 번의 우승 가산이 커지고(1회 6% · 2회 9% · 3회 12% · 4회 이상 15%) 입상 가산 합은 몸값의 30%까지만 */
 const RP_PZ={"지역신인부":1,"전국신인부":2,"오픈부":3,"개나리부":1,"국화부":3},RP_TOP={"오픈부":1,"국화부":1},RP_TOPCAP=30;
@@ -1562,7 +1567,7 @@ const rpPairLock=(ids,g)=>(ids||[]).some(i=>{const m=S.members.find(x=>x.id===i)
 /* 실제 대회 입상 등급 가점(OVR): 그 부서 선수들의 전력 중간 수준(상대 DB 중앙값)이 기본 50보다 높은 간격의 70%를 더한다 → 개인 전력(OVR의 절반 반영)으로는 간격의 35%(스킬 기록이 이미 반영하는 몫이 있어 전부 더하면 이중 계산). 지역신인 +5.2 · 전국신인 +9.4 · 오픈 +15.1 · 개나리 +7.5 · 국화 +14.6 (DB가 바뀌면 같이 바뀐다). 회원관리에 등록된 등급(m.level)은 전부, 가상대회 우승으로 올라간 등급은 올라간 간격의 40%만 반영한다 */
 const RP_LBG={"지신부":"지역신인부","전신부":"전국신인부","오픈부":"오픈부","개나리부":"개나리부","국화부":"국화부"},RP_LBV=.4,RP_LBC={};
 const rpLbOf=lv=>{const g=RP_LBG[lv];if(!g)return 0;if(RP_LBC[g]==null){const d=rpDivMed(g);if(!d)return 0;RP_LBC[g]=Math.max(0,Math.round(.5*(d-50)*10)/10)}return RP_LBC[g]};
-function rpLb(m){const a=m.level||"",b=rpLv(m),la=rpLbOf(a);return b===a?la:Math.round((la+RP_LBV*Math.max(0,rpLbOf(b)-la))*10)/10}
+function rpLb(m){const a=rpBaseLv(m),b=rpLv(m),la=rpLbOf(a);return b===a?la:Math.round((la+RP_LBV*Math.max(0,rpLbOf(b)-la))*10)/10}
 const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+"억"+(r?" "+r.toLocaleString("ko-KR")+"만":"")}return n.toLocaleString("ko-KR")+"만"};   /* 금액 단위: 만원 */
 /* 가상대회 성적 보너스: 우승 4·준우승 2·공동3위 1·8강 진출(8강 탈락) 0.5점을 쌓되 포화 곡선(최대 +8). 몸값은 우승 +3%·준우승 +1%·공동3위 +0.5%·8강 +0.2%씩 상한 없이 누적, OVR(시뮬 전력)에는 포화 곡선의 1/10만 반영 */
 /* 시작 등급 보정(몸값 %, 한 번만): 높은 등급으로 시작한 회원은 낮은 부서 우승 상금을 못 받으므로, 올라온 사람이 도착까지 최소로 번 상금(오픈 = 지역 3 + 전국 6, 전신 = 지역 3, 국화 = 개나리 3)만큼 처음부터 더해준다. 회원관리에 등록된 등급(m.level) 기준 — 승급 등급으로 계산하면 번 상금과 이중으로 쌓임 */
@@ -1679,7 +1684,7 @@ function rpDrP(m){const c={};let t=0;AN_HEX.forEach(([k])=>{const dk=k==="sv"?"S
 /* 드릴 이행은 팀이 아니라 선수 개인 단위: 본인의 이행률 1.0 → 본인 OVR +2.4(팀 평균에는 절반 반영) */
 function rpDB(p){return Math.round(4*p*10)/10}
 /* 모든 스탯은 선수 개인 단위로 먼저 계산한다: 개인 전력 = 0.5×(OVR+드릴 보정) + 0.5×(20+6×개인 스킬 평균, 드릴 이행 반영). 팀 전력 = 강한 쪽 0.6 + 약한 쪽 0.4 + 스킬 보완 + 자리 궁합 */
-function rpPers(P){const d=rpDrP(P.m),LV=P.lvE||P.lv,xs=AN_HEX.map(([k])=>(LV[k]||0)>0?LV[k]+.8*d.c[k]:null),ok=xs.filter(x=>x!==null),mn=ok.length?ok.reduce((t,v)=>t+v,0)/ok.length:0,sa=xs.reduce((t,v)=>t+(v===null?.85*mn:v),0)/xs.length,db=rpDB(d.p);return {sa,db,r:RP_WO*(P.ovr+db)+(1-RP_WO)*(20+6*sa)}}
+function rpPers(P,o){const d=rpDrP(P.m);if(o&&o.dr)AN_HEX.forEach(([k])=>{d.c[k]=1});d.p=o&&o.dr?1:d.p;const LV=P.lvE||P.lv,xs=AN_HEX.map(([k])=>(LV[k]||0)>0?LV[k]+.8*d.c[k]:null),ok=xs.filter(x=>x!==null),mn=ok.length?ok.reduce((t,v)=>t+v,0)/ok.length:0,sa=xs.reduce((t,v)=>t+(v===null?.85*mn:v),0)/xs.length,db=rpDB(d.p);return {sa,db,r:RP_WO*(P.ovr+db)+(1-RP_WO)*(20+6*sa)}}
 function rpTeam(A,B){const pa=rpPers(A),pb=rpPers(B),hi=Math.max(pa.r,pb.r),lo=Math.min(pa.r,pb.r),sa=(pa.sa+pb.sa)/2,comp=AN_HEX.filter(([k])=>{const x=A.lv[k]||0,y=B.lv[k]||0;return Math.max(x,y)>=6&&Math.min(x,y)<5&&Math.min(x,y)>0}).length,dr=0;
   const base=.6*hi+.4*lo;const fit=rpFit(A,B);return {r:Math.round((base+Math.min(3,comp)*.8+fit)*10)/10,comp,sa,fit,dr,pa:pa.r,pb:pb.r}}
 function rpRng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -1875,7 +1880,8 @@ function rpFeePanel(){const F=rpFees(),nm=id=>(S.members.find(m=>m.id===id)||{})
   ${pl.length?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700">월례회 기간별 모인 금액</summary><div style="font-size:12px;line-height:1.8;margin-top:4px">${pl.map(p=>`<div style="display:flex;justify-content:space-between"><span>${rpPLbl(p)}까지</span><b>${rpWon(F.per[p])}</b></div>`).join("")}</div></details>`:""}
   ${ml.length?`<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700">회원별 낸 금액 (${ml.length}명)</summary><div style="font-size:12px;line-height:1.8;margin-top:4px">${ml.map(([id,v])=>`<div style="display:flex;justify-content:space-between"><span>${esc(nm(id))}</span><b>${rpWon(v)}</b></div>`).join("")}</div></details>`:""}</div>`}
 /* 운영자용: 우리 클럽 전력 분포. 전력=가상대회에서 쓰는 개인 전력(상대 DB와 같은 눈금), 성장가능치=예상 천장(전력 + (80−전력)×성장률). 성장률은 표본이 적을수록·최근 추세가 오를수록·스킬 빈칸이 클수록 커진다(5~60%). 부서 기준선은 상대 DB 선수 전력의 중앙값 */
-function rpPot(r,c){const have=(r.sk||[]).filter(x=>x[1]>0),sr=have.length?have.reduce((t,x)=>t+(10-x[1])/10,0)/have.length:.5,un=1/(r.n+1),tr=r.trend==null?0:Math.max(-1,Math.min(1,r.trend/20)),k=Math.max(.05,Math.min(.6,.12+.35*un+.25*tr+.22*sr)),g=Math.max(0,80-c)*k;return {g:Math.round(g*10)/10,pot:Math.min(80,Math.round((c+g)*10)/10),k}}
+function rpPot(r,c){const full=rpPers(r,{dr:1}).r-rpPers(r).r,lv0=r.lvE||r.lv||{},mn=(()=>{const v=AN_HEX.map(([k])=>+lv0[k]||0).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:4})(),lv2={};let dl=0;AN_HEX.forEach(([k])=>{const v=+lv0[k]||mn,nv=Math.min(9.5,v+1);lv2[k]=nv;dl+=nv-v});dl/=AN_HEX.length;
+  const sk=rpPers({...r,lvE:lv2,ovr:r.ovr+3*dl*(r.n/(r.n+1))},{dr:1}).r-rpPers(r,{dr:1}).r,rk=Math.max(0,3-(r.rk?r.rk.adj:0))*.5*RP_WO,nx={"지신부":"전신부","전신부":"오픈부","개나리부":"국화부"}[rpLv(r.m)]||"",lp=nx?RP_WO*RP_LBV*Math.max(0,rpLbOf(nx)-rpLbOf(rpLv(r.m))):0,g=Math.max(0,Math.min(80-c,full+sk+rk+lp));return {g:Math.round(g*10)/10,pot:Math.min(80,Math.round((c+g)*10)/10),k:g/Math.max(1,80-c),parts:{drill:Math.round(full*10)/10,skill:Math.round(sk*10)/10,rank:Math.round(rk*10)/10,level:Math.round(lp*10)/10}}}
 const rpDivMed=g=>{const m={};(RP_TEAMS[g]||[]).forEach(t=>[t.n1,t.n2].forEach(n=>{(m[n]=m[n]||[]).push(t.rate)}));const a=Object.values(m).map(v=>v.reduce((s,x)=>s+x,0)/v.length).sort((x,y)=>x-y);return a.length?a[Math.floor((a.length-1)/2)]:0};
 function rpClubPanel(){const R=rpData();if(!R.length)return"";const bin=v=>Math.max(30,Math.min(75,Math.floor(v/5)*5)),
   sec=(lab,L,DV)=>{if(!L.length)return"";const cur={},pot={};let mx=1;L.forEach(r=>{const a=bin(r.cr),b=bin(r.pt.pot);cur[a]=(cur[a]||0)+1;pot[b]=(pot[b]||0)+1;mx=Math.max(mx,cur[a],pot[b])});
