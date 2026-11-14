@@ -1518,7 +1518,7 @@ function anCodeChips(list,tot){tot=tot||{};
 }
 let anMore=false,anMoreG={};
 function toggleAnMore(){anMore=!anMore;render()}
-function toggleAnMoreG(g){anMoreG[g]=!anMoreG[g];render()}
+let anGT=null;function toggleAnMoreG(g){anMoreG[g]=!anMoreG[g];render()}
 const anDt={};function toggleAnDt(id){anDt[id]=!anDt[id];render()}
 function anTeamTxt(g,me0){   // 같은 편(1~2번째 / 3~4번째) 기준으로 '팀원 vs 상대' 표시
   const all=anFlat().filter(x=>x.g===g);if(all.length!==4||!me0)return"";
@@ -1534,7 +1534,9 @@ function anRank(flat){anUsedQ.clear();const kgm=anKingMap();
   const GR=[["남","♂ 남자"],["여","♀ 여자"],["","성별 미등록"]].map(([g,l])=>[g,l,rows.filter(x=>gdOf(x.m)===g)]).filter(a=>a[2].length);
   const hint=`<div aria-hidden="true" style="position:relative;height:50px;pointer-events:none"><div style="position:absolute;right:2px;top:4px;transform:rotate(-3deg);transform-origin:right center;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;line-height:1.05;color:#16a34a;white-space:nowrap"><b>클릭!</b> 선수별 세부스텟이 떠요<svg width="90" height="46" viewBox="0 0 90 46" style="position:absolute;left:-4px;top:16px;overflow:visible"><path d="M30 2 C 12 4, 4 16, 10 36" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.8 26.4 L10 36 L2.4 29.8" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>`;
   /* 남자 · 여자(· 성별 미등록)를 각각 별도 창으로 분리 */
-  return GR.map(([g,l,L],gi)=>{const c=KING_COL[g],open=anMoreG[g],first=gi===0,hd=`<h2 style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px"><span style="display:inline-block;padding:2px 10px;border-radius:10px;background:${c.soft};color:${c.tx};border-left:4px solid ${c.bd}">${l}</span><span>선수별 비교</span><span style="font-size:12px;font-weight:400;color:var(--muted)">${L.length}명${first?" · 이름을 클릭하면 자세한 내용을 볼 수 있어요":""}</span></h2>`;
+  const myG=gdOf((anAll().find(m=>m.id===me))||{}),selG=GR.some(a=>a[0]===anGT)?anGT:(GR.some(a=>a[0]===myG)?myG:GR[0][0]);
+  const tabs=GR.length>1?`<div role="tablist" aria-label="성별 선수 보기" style="display:flex;gap:4px;margin:0 0 -1px;padding:0 6px;position:relative;z-index:1">${GR.map(([g,l,L])=>{const c=KING_COL[g],on=g===selG;return `<button type="button" role="tab" aria-selected="${on}" onclick="anGT='${g}';render()" style="all:unset;cursor:pointer;box-sizing:border-box;padding:7px 14px 6px;border-radius:12px 12px 0 0;font-size:13px;font-weight:${on?900:600};border:1px solid ${on?c.bd:'var(--line,#ddd)'};border-bottom:${on?'1px solid var(--card,#fff)':'1px solid transparent'};background:${on?c.soft:'rgba(128,128,128,.12)'};color:${on?c.tx:'var(--muted)'};${on?'':'transform:translateY(3px);'}white-space:nowrap">${l} <small style="font-weight:700">${L.length}</small></button>`}).join("")}</div>`:"";
+  return tabs+GR.filter(a=>a[0]===selG).map(([g,l,L],gi)=>{const c=KING_COL[g],open=anMoreG[g],first=true,hd=`<h2 style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px"><span style="display:inline-block;padding:2px 10px;border-radius:10px;background:${c.soft};color:${c.tx};border-left:4px solid ${c.bd}">${l}</span><span>선수별 비교</span><span style="font-size:12px;font-weight:400;color:var(--muted)">${L.length}명${first?" · 이름을 클릭하면 자세한 내용을 볼 수 있어요":""}</span></h2>`;
     return `<div class="panel">${hd}${first?anTrendLegend()+hint:""}<ul class="list">${(open||L.length<=3?L:L.slice(0,3)).map((x,i)=>anLi(x,i)).join("")}</ul>${L.length>3?`<button class="btn ghost" style="width:100%;margin-top:6px" onclick="toggleAnMoreG('${g}')">${open?"접기 ▲":`나머지 ${L.length-3}명 더보기 ▼`}</button>`:""}<p style="margin:6px 0 0;font-size:12px;color:var(--muted)">승리기여도가 높은 순 · 이름을 누르면 해당 선수의 분석을 봅니다.</p></div>`}).join("");
 }
 /* ===== 리포트(운영자 전용): 분석 데이터를 모아 스카우팅 리포트 · 가상 드래프트/계약 ===== */
