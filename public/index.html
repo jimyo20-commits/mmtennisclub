@@ -1722,12 +1722,22 @@ const RP_HIST=(()=>{const H={},O=["128강","64강","32강","16강","8강","4강"
       W.forEach(n=>put(n,rd==="결승"?"우승":NX[rd]));Lo.forEach(n=>put(n,rd==="결승"?"준우승":rd));
       [[m[0],m[1],m[4],m[5],m[2],m[3]],[m[2],m[3],m[5],m[4],m[0],m[1]]].forEach(([a,b,x,y,c,d])=>[a,b].forEach(n=>(rec[n]=rec[n]||[]).push({rd,w:x>y,sc:x+":"+y,vs:c+"·"+d})))}));
     Object.keys(st).forEach(n=>{const h=(H[g]=H[g]||{});if(!h[n]||O.indexOf(st[n])>O.indexOf(h[n].st))h[n]={st:st[n],ev:E.ev,rec:rec[n]||[]};else h[n].rec=h[n].rec.concat(rec[n]||[])})});return H})();
+/* 승급 규칙: 하위부에서 우승한 선수는 상위부로 올라간다 (지역신인부→전국신인부→오픈부, 개나리부→국화부). 상위부에서는 그 부 평균보다 약간 낮은 전력의 신규 승급자로 시작하고, 하위부 상대 풀에서는 빠진다. 전적은 상위부에서도 보인다 */
+const RP_PROMO={"지역신인부":"전국신인부","전국신인부":"오픈부","개나리부":"국화부"};
+const RP_PRO=(()=>{const out={},inn={},mv=[],avg=g=>{const L=RP_TEAMS[g]||[];return L.length?L.reduce((a,t)=>a+t.rate,0)/L.length:50},W={},cp=[];
+  ["지역신인부","전국신인부","개나리부","국화부","오픈부"].forEach(g=>{W[g]=new Set(Object.keys(RP_HIST[g]||{}).filter(n=>RP_HIST[g][n].st==="우승"))});
+  ["지역신인부","전국신인부","개나리부"].forEach(g=>W[g].forEach(n=>{let d=RP_PROMO[g];(out[g]=out[g]||{})[n]=1;
+    while(RP_PROMO[d]&&W[d].has(n)){(out[d]=out[d]||{})[n]=1;d=RP_PROMO[d]}
+    const t=(RP_TEAMS[g]||[]).find(t=>t.n1===n||t.n2===n);(inn[d]=inn[d]||{})[n]={r:avg(d)-1,club:t?t.club:"무소속"};mv.push({n,from:g,to:d});cp.push([g,d,n])}));
+  cp.forEach(([g,d,n])=>{const H=RP_HIST[d]=RP_HIST[d]||{};if(!H[n])H[n]={...RP_HIST[g][n]}});
+  return {out,inn,mv}})();
 const rpHistChip=o=>{const g=rpSim&&rpSim._g,h=(RP_HIST[g]||{}),L=[o.n1,o.n2].filter(n=>h[n]);if(!L.length)return"";const ev=[...new Set(L.map(n=>h[n].ev))].join("·");return `<div style="margin-top:6px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.10);color:#1d4ed8;font-size:12.5px;font-weight:700;line-height:1.5">📋 ${esc(ev)} · ${L.map(n=>esc(n)+" "+h[n].st).join(" · ")}</div>`};
 function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)+v*131),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
   if(L){const th=L.map(t=>t.rate).sort((a,b)=>b-a)[Math.floor(L.length/4)]||99,LL=L.slice(0,M);
     { /* 상대 선수를 모두 개인 단위(여러 대회 기록 평균 전력)로 풀어 섞어 새 페어를 만든다. 선수 한 명은 한 팀에만 나온다. 시드는 만들어진 팀의 전력 순으로 다시 매긴다 */
       const rate={},club={},keep=[],kept=new Set(),pool=[];
       LL.forEach(t=>{[t.n1,t.n2].forEach(n=>{(rate[n]=rate[n]||[]).push(t.rate);if(!club[n])club[n]=t.club})});
+      Object.keys(RP_PRO.out[g]||{}).forEach(n=>{delete rate[n]});Object.keys(RP_PRO.inn[g]||{}).forEach(n=>{const I=RP_PRO.inn[g][n];rate[n]=[I.r];club[n]=I.club});
       const avg=n=>rate[n].reduce((a,b)=>a+b,0)/rate[n].length;
       /* 데이터베이스의 페어를 그대로 쓰지 않고, 선수 한 명 한 명을 개인 전력으로 풀어 매번 새 조합으로 묶는다 */
       keep.forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1,strong:(t.sd||t.rate>=th)?1:0}));
