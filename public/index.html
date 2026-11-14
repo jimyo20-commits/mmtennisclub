@@ -1559,7 +1559,10 @@ const RP_EVM={s:["☀️ 날씨가 정말 좋아서 그런가, 강호들이 대�
 /* 졸업한 부서(자기 가상 등급보다 아래 부서)에도 출전은 가능: 상금(몸값 가산)만 없고 OVR 성장·긴장도 경감·기록은 그대로 반영 */
 function rpLock(m,g){const d=RPD[g];if(!d||RP_TOP[g])return 0;const l=RP_LVD[rpLv(m)];return l&&l[0]===d[0]&&d[1]<l[1]?1:0}
 const rpPairLock=(ids,g)=>(ids||[]).some(i=>{const m=S.members.find(x=>x.id===i);return m&&rpLock(m,g)});
-const RP_LB={"오픈부":6,"전신부":4,"지신부":2,"비입상":0,"국화부":5,"개나리부":2};   /* 실력 등급 가점(OVR): 남자 오픈부>전신부>지신부>비입상 · 여자 국화부>개나리부 */
+/* 실제 대회 입상 등급 가점(OVR): 그 부서 선수들의 전력 중간 수준(상대 DB 중앙값)이 기본 50보다 높은 간격의 70%를 더한다 → 개인 전력(OVR의 절반 반영)으로는 간격의 35%(스킬 기록이 이미 반영하는 몫이 있어 전부 더하면 이중 계산). 지역신인 +5.2 · 전국신인 +9.4 · 오픈 +15.1 · 개나리 +7.5 · 국화 +14.6 (DB가 바뀌면 같이 바뀐다). 회원관리에 등록된 등급(m.level)은 전부, 가상대회 우승으로 올라간 등급은 올라간 간격의 40%만 반영한다 */
+const RP_LBG={"지신부":"지역신인부","전신부":"전국신인부","오픈부":"오픈부","개나리부":"개나리부","국화부":"국화부"},RP_LBV=.4,RP_LBC={};
+const rpLbOf=lv=>{const g=RP_LBG[lv];if(!g)return 0;if(RP_LBC[g]==null){const d=rpDivMed(g);if(!d)return 0;RP_LBC[g]=Math.max(0,Math.round(.7*(d-50)*10)/10)}return RP_LBC[g]};
+function rpLb(m){const a=m.level||"",b=rpLv(m),la=rpLbOf(a);return b===a?la:Math.round((la+RP_LBV*Math.max(0,rpLbOf(b)-la))*10)/10}
 const rpBig=n=>{n=Math.round(n/10)*10;if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+"억"+(r?" "+r.toLocaleString("ko-KR")+"만":"")}return n.toLocaleString("ko-KR")+"만"};   /* 금액 단위: 만원 */
 /* 가상대회 성적 보너스: 우승 4·준우승 2·공동3위 1·8강 진출(8강 탈락) 0.5점을 쌓되 포화 곡선(최대 +8). 몸값은 우승 +3%·준우승 +1%·공동3위 +0.5%·8강 +0.2%씩 상한 없이 누적, OVR(시뮬 전력)에는 포화 곡선의 1/10만 반영 */
 /* 시작 등급 보정(몸값 %, 한 번만): 높은 등급으로 시작한 회원은 낮은 부서 우승 상금을 못 받으므로, 올라온 사람이 도착까지 최소로 번 상금(오픈 = 지역 3 + 전국 6, 전신 = 지역 3, 국화 = 개나리 3)만큼 처음부터 더해준다. 회원관리에 등록된 등급(m.level) 기준 — 승급 등급으로 계산하면 번 상금과 이중으로 쌓임 */
@@ -1592,7 +1595,7 @@ function rpData(){const fl=anFlat(),by={},RK=rpRk(),KM=anKingMap(),rpFeeF=rpFees
   const cmp=(a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g);
   const out=S.members.filter(m=>by[m.id]&&by[m.id].length).map(m=>{const L=by[m.id].slice().sort(cmp),st=anStats(L),lv=Object.assign({},anHexLv(L,10).lv),kg=KM[m.id]||[];kg.forEach(k=>{if((+lv[k]||0)>0)lv[k]=Math.min(10,+lv[k]+RP_KING)});const sk=AN_HEX.map(([k])=>[k,+lv[k]||0]);
     const have=sk.filter(x=>x[1]>0),avg=have.length?have.reduce((t,x)=>t+x[1],0)/have.length/10:.4,cn=Math.max(0,Math.min(200,st.contrib||0))/200;
-    const n=L.length,raw=20+60*(.5*cn+.5*avg),shr=n/(n+1),lb=RP_LB[rpLv(m)]||0,tb=rpTB(m.id),rk=RK[m.id]||null,bs0=50+(raw-50)*shr+lb+(rk?rk.adj:0),ovr=Math.round(Math.max(20,Math.min(80,bs0+tb.b*.1)));
+    const n=L.length,raw=20+60*(.5*cn+.5*avg),shr=n/(n+1),lb=rpLb(m),tb=rpTB(m.id),rk=RK[m.id]||null,bs0=50+(raw-50)*shr+lb+(rk?rk.adj:0),ovr=Math.round(Math.max(20,Math.min(80,bs0+tb.b*.1)));
     const sorted=have.slice().sort((a,b)=>b[1]-a[1]),best=sorted[0],worst=have.length>1?sorted[sorted.length-1]:null;
     const gc=L.map(anGr).map(v=>v*100),half=Math.floor(gc.length/2),rec=gc.slice(0,Math.max(1,Math.ceil(gc.length/2))),old=gc.slice(Math.max(1,Math.ceil(gc.length/2))),
       trend=gc.length>=3&&old.length?Math.round(rec.reduce((a,b)=>a+b,0)/rec.length-old.reduce((a,b)=>a+b,0)/old.length):null;
@@ -1601,7 +1604,7 @@ function rpData(){const fl=anFlat(),by={},RK=rpRk(),KM=anKingMap(),rpFeeF=rpFees
   out.sort((a,b)=>b.ovr-a.ovr||(b.st.contrib||0)-(a.st.contrib||0)||b.n-a.n);return out}
 /* 시뮬레이터용: 분석 기록이 없는 회원도 고를 수 있게 평균(스킬 4.5) 수준의 임시 능력치로 포함한다 */
 function rpDataAll(){const R=rpData(),have=new Set(R.map(r=>r.m.id)),RK=rpRk();
-  const stub=S.members.filter(m=>!have.has(m.id)).map(m=>{const lb=RP_LB[rpLv(m)]||0,lv={},rk=RK[m.id]||null;AN_HEX.forEach(([k])=>{lv[k]=4.5});return {m,L:[],st:{},n:0,ovr:Math.round(Math.max(20,Math.min(80,50+lb+(rk?rk.adj:0)))),lb,rk,lv,sk:AN_HEX.map(([k])=>[k,4.5]),best:null,worst:null,trend:null,sal:0,yrs:1,bonus:0,nd:1}});
+  const stub=S.members.filter(m=>!have.has(m.id)).map(m=>{const lb=rpLb(m),lv={},rk=RK[m.id]||null;AN_HEX.forEach(([k])=>{lv[k]=4.5});return {m,L:[],st:{},n:0,ovr:Math.round(Math.max(20,Math.min(80,50+lb+(rk?rk.adj:0)))),lb,rk,lv,sk:AN_HEX.map(([k])=>[k,4.5]),best:null,worst:null,trend:null,sal:0,yrs:1,bonus:0,nd:1}});
   const gs=(S.rpGuests||[]).map(g=>{const lv={},v=Math.round((g.ovr-25)/6*10)/10;AN_HEX.forEach(([k])=>{lv[k]=v});return {m:g,L:[],st:{},n:0,ovr:g.ovr,lb:0,lv,sk:AN_HEX.map(([k])=>[k,v]),best:null,worst:null,trend:null,sal:0,yrs:1,bonus:0,nd:1,guest:1}});
   return R.concat(typeof koSort==="function"?koSort(stub.map(x=>x.m)).map(m=>stub.find(x=>x.m===m)):stub).concat(gs)}
 const RP_GLM=[["지역신인부 하",48],["지역신인부 중",51],["지역신인부 상",54],["전국신인부 하",56],["전국신인부 중",59],["전국신인부 상",62],["오픈부 하",64],["오픈부 중",67],["오픈부 상",70]];
