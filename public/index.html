@@ -256,7 +256,7 @@ function stats(){
     const give=(ids,k,add)=>ids.forEach(id=>{if(w[id]){w[id][k]++;w[id].x+=add}});
     if(g.s1===g.s2){give(A.concat(B),"d",dx);return}
     const a=g.s1>g.s2;give(A,a?"w":"l",a?wx:lx);give(B,a?"l":"w",a?lx:wx)});
-  S.members.forEach(m=>{const a=attRate(m);if(a){w[m.id].pc=a.pct;if(a.pct<70)w[m.id].f=(30+a.pct)/100}});
+  S.members.forEach(m=>{const a=totalRate(m);if(a){w[m.id].pc=a.pct;if(a.pct<70)w[m.id].f=(30+a.pct)/100}});
   return w;
 }
 
