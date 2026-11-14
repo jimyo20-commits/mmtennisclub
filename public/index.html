@@ -1731,6 +1731,8 @@ const RP_PRO=(()=>{const out={},inn={},mv=[],avg=g=>{const L=RP_TEAMS[g]||[];ret
     const t=(RP_TEAMS[g]||[]).find(t=>t.n1===n||t.n2===n);(inn[d]=inn[d]||{})[n]={r:avg(d)-1,club:t?t.club:"무소속"};mv.push({n,from:g,to:d});cp.push([g,d,n])}));
   cp.forEach(([g,d,n])=>{const H=RP_HIST[d]=RP_HIST[d]||{};if(!H[n])H[n]={...RP_HIST[g][n]}});
   return {out,inn,mv}})();
+/* 최종전력: 엑셀(선수전력DB)로 관리하고 업데이트 때 여기로 반영한다. 키는 "부서|선수", 값이 있으면 자동 전력 대신 쓰인다. 화면에는 숫자를 보여주지 않는다 */
+const RP_POW={};
 const rpHistChip=o=>{const g=rpSim&&rpSim._g,h=(RP_HIST[g]||{}),L=[o.n1,o.n2].filter(n=>h[n]);if(!L.length)return"";const ev=[...new Set(L.map(n=>h[n].ev))].join("·");return `<div style="margin-top:6px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.10);color:#1d4ed8;font-size:12.5px;font-weight:700;line-height:1.5">📋 ${esc(ev)} · ${L.map(n=>esc(n)+" "+h[n].st).join(" · ")}</div>`};
 function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return rpFC[k];const mean=RP_GB[g]||50,rng=rpRng(rpHash("fld"+g+N)+v*131),fem=g==="개나리부"||g==="국화부",pk=a=>a[Math.floor(rng()*a.length)],nm=()=>pk(RP_SN)+pk(fem?RP_GF:RP_GM),L=RP_TEAMS[g],out=[];
   if(L){const th=L.map(t=>t.rate).sort((a,b)=>b-a)[Math.floor(L.length/4)]||99,LL=L.slice(0,M);
@@ -1738,7 +1740,7 @@ function rpField(g,M,N,v){v=v||0;const k=g+"|"+N+"|"+M+"|"+v;if(rpFC[k])return r
       const rate={},club={},keep=[],kept=new Set(),pool=[];
       LL.forEach(t=>{[t.n1,t.n2].forEach(n=>{(rate[n]=rate[n]||[]).push(t.rate);if(!club[n])club[n]=t.club})});
       Object.keys(RP_PRO.out[g]||{}).forEach(n=>{delete rate[n]});Object.keys(RP_PRO.inn[g]||{}).forEach(n=>{const I=RP_PRO.inn[g][n];rate[n]=[I.r];club[n]=I.club});
-      {const P=S.rpPow||{};Object.keys(P).forEach(k=>{const i=k.indexOf("|");if(k.slice(0,i)!==g)return;const n=k.slice(i+1),v=+P[k];if(!(v>0))return;rate[n]=[v];if(!club[n])club[n]=(RP_PRO.inn[g]&&RP_PRO.inn[g][n]&&RP_PRO.inn[g][n].club)||"무소속"})}
+      {const P=RP_POW;Object.keys(P).forEach(k=>{const i=k.indexOf("|");if(k.slice(0,i)!==g)return;const n=k.slice(i+1),v=+P[k];if(!(v>0))return;rate[n]=[v];if(!club[n])club[n]=(RP_PRO.inn[g]&&RP_PRO.inn[g][n]&&RP_PRO.inn[g][n].club)||"무소속"})}
       const avg=n=>rate[n].reduce((a,b)=>a+b,0)/rate[n].length;
       /* 데이터베이스의 페어를 그대로 쓰지 않고, 선수 한 명 한 명을 개인 전력으로 풀어 매번 새 조합으로 묶는다 */
       keep.forEach(t=>out.push({n1:t.n1,n2:t.n2,club:t.club,r:t.rate,seed:t.sd||0,real:1,strong:(t.sd||t.rate>=th)?1:0}));
@@ -1869,30 +1871,6 @@ function rpFeePanel(){const F=rpFees(),nm=id=>(S.members.find(m=>m.id===id)||{})
   <div style="font-size:12px;color:var(--muted);line-height:1.6">출전 1회 참가비(로그인한 출전자 본인만 · 파트너 제외): 지역신인부·개나리부 ${rpWon(5000)} · 전국신인부 ${rpWon(10000)} · 오픈부·국화부 ${rpWon(15000)}(10,000원 = 몸값 1만원 차감)${Object.keys(F.div).length?`<br>부서별: ${Object.entries(F.div).map(([g,v])=>g+" "+rpWon(v)).join(" · ")}`:""}</div>
   ${pl.length?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700">월례회 기간별 모인 금액</summary><div style="font-size:12px;line-height:1.8;margin-top:4px">${pl.map(p=>`<div style="display:flex;justify-content:space-between"><span>${rpPLbl(p)}까지</span><b>${rpWon(F.per[p])}</b></div>`).join("")}</div></details>`:""}
   ${ml.length?`<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700">회원별 낸 금액 (${ml.length}명)</summary><div style="font-size:12px;line-height:1.8;margin-top:4px">${ml.map(([id,v])=>`<div style="display:flex;justify-content:space-between"><span>${esc(nm(id))}</span><b>${rpWon(v)}</b></div>`).join("")}</div></details>`:""}</div>`}
-/* 운영자용: 선수 전력 DB 표. 전력(자동)=대회 팀 전력 평균, 최종전력=직접 아는 만큼 고쳐 넣는 값(있으면 가상대회 상대 전력에 우선 적용) */
-let powG="오픈부",powQ="",powN=30;
-function rpBase(g){const rate={},club={},from={};(RP_TEAMS[g]||[]).forEach(t=>[t.n1,t.n2].forEach(n=>{(rate[n]=rate[n]||[]).push(t.rate);club[n]=club[n]||t.club}));
-  const O=RP_PRO.out[g]||{};Object.keys(O).forEach(n=>delete rate[n]);
-  Object.entries(RP_PRO.inn[g]||{}).forEach(([n,I])=>{rate[n]=[I.r];club[n]=I.club;const m=RP_PRO.mv.find(m=>m.n===n&&m.to===g);from[n]=m?m.from:""});
-  const h=RP_HIST[g]||{},EST={"우승":68,"준우승":66,"4강":64,"8강":64,"16강":62,"32강":60},P=S.rpPow||{},out=[];
-  new Set([...Object.keys(rate),...Object.keys(h).filter(n=>!O[n]||(RP_PRO.inn[g]||{})[n])]).forEach(n=>{const H=h[n],est=!rate[n]&&H&&EST[H.st],r=rate[n]?rate[n].reduce((a,b)=>a+b,0)/rate[n].length:(est||0),rec=H?H.rec:[],w=rec.filter(x=>x.w).length;
-    out.push({n,r:Math.round(r*10)/10,est:!!est,st:H?H.st:"",wl:rec.length?w+"승 "+(rec.length-w)+"패":"",club:club[n]||"",from:from[n]||"",fin:P[g+"|"+n]})});return out}
-function rpPowSet(el){const g=el.dataset.g,n=el.dataset.n,v=parseFloat(el.value);S.rpPow=S.rpPow||{};const k=g+"|"+n;
-  if(el.value.trim()===""||!(v>0)){delete S.rpPow[k];el.value=""}else S.rpPow[k]=Math.round(v*10)/10;
-  Object.keys(rpFC).forEach(x=>delete rpFC[x]);try{save()}catch(e){}el.style.background=S.rpPow[k]!=null?"rgba(37,99,235,.14)":"";}
-function rpPowTab(g){powG=g;powN=30;render()}
-function rpPowFind(v){powQ=String(v||"").trim();powN=30;render()}
-function rpPowMore(){powN+=40;render()}
-function rpPowPanel(){const G=["오픈부","전국신인부","지역신인부","국화부","개나리부"],P=S.rpPow||{},L=rpBase(powG),eff=x=>x.fin>0?x.fin:x.r,nF=Object.keys(P).length;
-  let R=L.filter(x=>!powQ||x.n.includes(powQ)).sort((a,b)=>eff(b)-eff(a)||a.n.localeCompare(b.n));const tot=R.length;R=R.slice(0,powN);
-  return `<div class="panel" style="margin-top:14px;padding:12px 14px"><h2 style="margin:0 0 4px">📋 선수 전력 DB <span style="font-size:12px;font-weight:700;color:var(--muted)">가상대회 상대 선수 · 최종전력 입력 ${nF}명</span></h2>
-  <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px"><b>전력</b>은 대회 기록 평균(자동), <b>최종전력</b>은 직접 아는 만큼 고쳐 넣는 값이에요. 최종전력을 넣으면 가상대회 상대 전력에 그대로 쓰이고, 지우면 자동 전력으로 돌아가요. 한 부서 안에서만 비교하세요.</div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${G.map(g=>`<button class="btn sm ${g===powG?"":"ghost"}" onclick="rpPowTab('${g}')">${g}</button>`).join("")}</div>
-  <input type="search" value="${esc(powQ)}" placeholder="선수 이름 검색 (입력 후 Enter)" onchange="rpPowFind(this.value)" style="width:100%;margin-bottom:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line,#ccc);font-size:14px;box-sizing:border-box">
-  <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${powG} ${tot}명${powQ?" (검색)":""} · 전력 높은 순</div>
-  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:420px"><thead><tr style="text-align:left;color:var(--muted);font-size:11.5px"><th style="padding:4px 4px">선수</th><th>전력</th><th>최종전력</th><th>최고성적</th><th>전적</th></tr></thead><tbody>
-  ${R.map(x=>`<tr style="border-top:1px solid rgba(128,128,128,.18)"><td style="padding:5px 4px;font-weight:700">${esc(x.n)}${x.from?` <span style="font-size:10.5px;color:#b45309">↑${esc(x.from)} 우승 승급</span>`:""}<div style="font-size:10.5px;font-weight:400;color:var(--muted)">${esc(x.club)}</div></td><td>${x.r}${x.est?'<span style="font-size:10px;color:var(--muted)"> 추정</span>':""}</td><td><input type="number" step="0.5" min="30" max="95" inputmode="decimal" data-g="${esc(powG)}" data-n="${esc(x.n)}" value="${x.fin>0?x.fin:""}" placeholder="-" onchange="rpPowSet(this)" style="width:62px;padding:4px 6px;border-radius:8px;border:1px solid var(--line,#ccc);font-size:13px;${x.fin>0?"background:rgba(37,99,235,.14)":""}"></td><td>${esc(x.st||"-")}</td><td>${esc(x.wl||"-")}</td></tr>`).join("")}</tbody></table></div>
-  ${tot>R.length?`<button class="btn sm ghost" style="margin-top:8px" onclick="rpPowMore()">더보기 (${tot-R.length}명 남음)</button>`:""}</div>`}
 /* 운영자용: 가상대회 기록(성적·승급·입상 가산·팀워크·현수막·복수전 기록)을 전부 지운다. 회원 정보·드릴 특약·비회원 출전자 목록은 그대로 */
 function rpResetAll(){const n=(S.rpRec||[]).length;if(!n)return;cfm("가상대회 기록 "+n+"건과 우승·준우승 현수막, 복수전 기록을 모두 지울까요?\n승급·입상 몸값 가산·인기·케미·참가비 집계도 처음 상태로 돌아가요.\n(되돌릴 수 없어요)",()=>setTimeout(()=>cfm("⚠️ 마지막 확인이에요.\n정말로 가상대회 기록 "+n+"건과 현수막을 전부 지울까요?\n지운 뒤에는 절대 되돌릴 수 없어요.",()=>{S.rpRec=[];S.rpRev={};rpBnN=3;try{save()}catch(e){}render()}),50))}
 /* 운영자용 기록 내역: 지우기 전에 어떤 기록이 쌓였는지 최신순으로 훑어본다(최대 200건) */
@@ -2110,7 +2088,7 @@ function reportView(){if(isGuest())return`<div class="panel"><p class="empty">�
     </div></div>
   <div style="padding:4px 14px"><details><summary style="cursor:pointer;list-style:none;padding:8px 0;font-size:12px;color:var(--muted)">ⓘ OVR·연봉 계산 방식 보기 ▾</summary><div style="font-size:12px;color:var(--muted);line-height:1.6;padding-bottom:8px">OVR = 승리기여도(50%) + 6개 스킬 평균(50%)을 20~80 스케일로 환산하고, 경기 수가 적으면 평균(50) 쪽으로 보정한 뒤 실력 등급 가점(남자 오픈부 +6 · 전신부 +4 · 지신부 +2 · 비입상 0 / 여자 국화부 +5 · 개나리부 +2)을 더해요. 하위 부서(지역신인부·전국신인부·개나리부)에서 우승하면 가상대회 등급이 한 단계 올라가고(전신부→오픈부 · 지역→전신부 · 개나리부→국화부, 회원관리 등급은 그대로) 졸업한 부서에도 출전은 할 수 있지만 상금(몸값 가산)은 없어요(OVR 성장·기록은 그대로). 대회 입상 가산은 부서별로 달라서 우승 기준 지역신인부·개나리부 +3% · 전국신인부 +6%이고, 오픈부·국화부는 우승 횟수가 쌓일수록 커져서 1번째 +6% · 2번째 +9% · 3번째 +12% · 4번째부터 +15%예요(준우승 +3% · 공동3위 +1.5% · 8강 +0.6%). 최상위 부서 입상 가산은 합쳐서 몸값의 30%까지예요. 연봉은 OVR에 비례해 약 300만~1억, 계약금은 연봉×계약기간×40%예요. 🤝 인기·케미: 다른 회원이 나를 파트너로 고르면 인기 점수(고른 사람마다 처음 1점, 같은 사람이 다시 고를수록 절반씩 줄어듦·1점당 0.1%·한 기간 상한 0.5%)가, 같은 파트너와 8강 이상을 내면(두 사람 모두) 케미 점수(파트너마다 처음 1점, 반복할수록 절반씩 감소·1점당 0.15%·한 기간 상한 1.2%)가 몸값에 더해지고, 1년 합계는 최대 10%예요. 줄어드는 정도와 상한은 짝수 달 월례회가 끝날 때마다 새로 시작하고, 기간별로 얻은 만큼은 합산돼요. 🗓️ 출석률: 80% 이상 연봉 +1.5%, 90% 이상 +3%(기본 연봉 기준, 감액 없음). 🎯 드릴 특약: 선수마다 가장 약한 스킬 2개를 골라 그 스킬 드릴 완료율이 목표(처음 보는 시점의 이행률 +20%p, 기록이 없으면 40%)에 닿으면 건당 기본 연봉의 6%가 연봉·계약금에 더해져요. 🏁 시작 등급 보정: 회원관리 등급이 오픈부면 +9%, 전신부·국화부면 +3%가 처음 한 번 몸값에 더해져요(낮은 부서 우승 상금을 받을 수 없는 몫). ${true?"💰 참가비: 가상대회 출전 1회마다 부서별로 지역신인부·개나리부 5,000원 · 전국신인부 10,000원 · 오픈부·국화부 15,000원(1원 = 몸값 1/10000만원)이 연봉에서 차감되고, 모인 금액은 운영자 대회 탭에 따로 집계돼요. ":""}로그인한 본인이 선수로 들어간 출전에만 효과가 적용돼요: 상금·OVR 점수·승급·참가비는 본인만, 팀워크(인기·케미)는 파트너로 뽑힌 사람도 받아요. 제3자 2명으로 돌린 결과는 아무 효과 없이 결과만 볼 수 있어요.</div></details></div></div></div>
   ${rpCmpList(R)}${rpAudit(R)}`}
-function tourneyView(){if(isGuest())return`<div class="panel"><p class="empty">회원만 볼 수 있어요.</p></div>`;const R=rpDataAll();if(!R.length)return`<div class="panel"><h2>🏟️ 대회</h2><p class="empty">분석된 경기가 아직 없어요. 분석 탭에 엑셀을 올리면 가상 대회에 출전할 수 있어요.</p></div>`;return rpResetPanel()+rpBanners()+rpSimView(R)+(isAdmin()?rpFeePanel()+rpPowPanel():"")}
+function tourneyView(){if(isGuest())return`<div class="panel"><p class="empty">회원만 볼 수 있어요.</p></div>`;const R=rpDataAll();if(!R.length)return`<div class="panel"><h2>🏟️ 대회</h2><p class="empty">분석된 경기가 아직 없어요. 분석 탭에 엑셀을 올리면 가상 대회에 출전할 수 있어요.</p></div>`;return rpResetPanel()+rpBanners()+rpSimView(R)+(isAdmin()?rpFeePanel():"")}
 const V={
 report(){return reportView()},
 tourney(){return tourneyView()},
