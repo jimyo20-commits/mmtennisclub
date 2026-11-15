@@ -2627,7 +2627,7 @@ function recoTestBar(){if(!isAdmin())return"";
 const recoStartMs=u=>new Date(u.ds+"T"+u.s.start+":00").getTime();
 const RECO_EPOCH=3;   /* 올리면 이전에 쓴 다시 짜기 기록이 초기화되어 게임당 한 번씩 다시 가능 */
 const recoRedoCnt=(ds,i)=>{const v=((S.recoRedoG||{})[ds]||{})[i]||0;return Math.floor(v/100)===RECO_EPOCH?v%100:0};   /* 값 = 규칙번호*100 + 사용 횟수 */
-const recoRedoOkG=(u,i)=>Date.now()<recoStartMs(u);   // 운영자는 투표 마감 전에도 경기 시작 전까지 횟수 제한 없이 다시 짤 수 있음
+const recoRedoOkG=(u,i)=>true;   // 운영자는 투표 마감 전에도 경기 시작 전까지 횟수 제한 없이 다시 짤 수 있음
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
 function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
@@ -2642,7 +2642,6 @@ function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 �
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
 const recoGBtn=(u,i,g)=>{if(!isAdmin()||recoTest.on||recoDone(u.ds,g))return"";
-  if(Date.now()>=recoStartMs(u))return `<p style="margin:8px 0 0;font-size:12px;color:var(--muted);text-align:center">🔄 다시 짜기는 경기 시작 전까지만 가능해요</p>`;
   const n=recoRedoCnt(u.ds,i);return `<button class="btn ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">🔄 ${i+1}게임 다시 짜기 (운영자 · 횟수 제한 없음${n?" · "+n+"번 다시 짬":""})</button>`};
 function recoPanel(){
   const c=(recoTest.on&&isAdmin())?recoCalc0(true):recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
