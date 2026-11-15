@@ -2503,7 +2503,8 @@ function recoGender(ps,rate,seed,opt){opt=opt||{};const n=Math.min(ps.length,30)
     const FX=[].concat(opt.fix),fks=FX.map(f=>recoKey(f.A.map(m=>m.id),f.B.map(m=>m.id))),fm=FX.reduce((t0,f)=>f.A.concat(f.B).reduce((t,m)=>{const i=P.indexOf(m);return i<0?t:t|(1<<i)},t0),0),ex=opt.ex||[],ov=P.length>=4*(FX.length+1)?5:OV;   // 선수가 충분하면 다른 게임과 겹치지 않게
     const hard=P.length>=4*(FX.length+1);let base=cands.filter(c=>!fks.includes(c.key));if(hard&&base.some(c=>!(c.mask&fm)))base=base.filter(c=>!(c.mask&fm));   // 선수가 충분하면 다른 게임 선수와 절대 겹치지 않게
     let pool=base.filter(c=>!ex.includes(c.key));if(!pool.length)pool=base;if(!pool.length)return null;
-    return toG(near(pool.map(c=>({...c,c:c.c+ov*pc(c.mask&fm)})).sort((x,y)=>x.c-y.c)))}
+    const PL=pool.map(c=>({...c,c:c.c+ov*pc(c.mask&fm)})).sort((x,y)=>x.c-y.c);if(opt.band){const lim=PL[0].c+opt.band,tp=PL.filter(x=>x.c<=lim);return toG(tp[Math.floor(rnd()*tp.length)])}   // 다시 짜기: 횟수가 늘수록 범위를 넓혀 안 나온 조합도 나오게
+    return toG(near(PL))}
   const K=Math.min(cands.length,150),res=[];
   for(let i=0;i<K;i++){const a=cands[i];let best=null;
     for(let j=0;j<cands.length;j++){const b=cands[j];if(best&&a.c+b.c>=best.c)break;if(b.key===a.key)continue;const tc=a.c+b.c+OV*pc(a.mask&b.mask);if(!best||tc<best.c)best={c:tc,a,b}}
@@ -2637,7 +2638,7 @@ function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 �
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
   if(!S.recoRedoK)S.recoRedoK={};const seen=((S.recoRedoK[ds]=S.recoRedoK[ds]||{})[i]=S.recoRedoK[ds][i]||[]);if(!seen.includes(recoGKey(cur[i])))seen.push(recoGKey(cur[i]));   // 이미 나왔던 조합은 다시 안 나오게
   const exAll=()=>{const R=S.recoRedoK[ds]||{};return [...new Set([...seen,...Object.keys(R).filter(k=>+k!==i).reduce((t,k)=>t.concat(R[k]||[]),[]),...oth.map(recoGKey)])]};   // 두 게임 모두 이미 나왔던 조합은 제외
-  let pk=recoGender(c.ps,c.rate,base,{fix:oth,ex:exAll(),str:recoStrength(),edge:recoEdge()});
+  let pk=recoGender(c.ps,c.rate,base,{fix:oth,ex:exAll(),band:.1+.15*Math.min(n,10),str:recoStrength(),edge:recoEdge()});
   if(pk&&exAll().includes(recoGKey(pk))){seen.length=0;seen.push(recoGKey(cur[i]));pk=recoGender(c.ps,c.rate,base+"r",{fix:oth,ex:[...seen,...oth.map(recoGKey)],str:recoStrength(),edge:recoEdge()})||pk;alert("이 인원으로 나올 수 있는 조합을 한 번씩 다 봤어요.\n이제부터 처음 나온 조합부터 다시 돌아요.")}
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
@@ -2656,7 +2657,7 @@ function recoRedoT(i,sd){const side=sd?"B":"A";if(!isAdmin())return;const c=reco
   if(!pool.length)pool=R.cands.filter(x=>(tk(x.A)===kid||tk(x.B)===kid)&&x.key!==recoGKey(g));
   if(!pool.length){alert("이 팀과 맞붙을 다른 상대 조합을 찾지 못했어요.");return}
   pool=pool.map(x=>({x,c:x.c+(c.ps.length>=8?5:.12)*[...x.A,...x.B].filter(m=>om.has(m.id)).length})).sort((a,b)=>a.c-b.c);
-  const top=pool.filter(y=>y.c<=pool[0].c+.03),pk=top[Math.floor(R.rnd()*R.rnd()*top.length)].x;
+  const top=pool.filter(y=>y.c<=pool[0].c+.1+.15*Math.min(n,10)),pk=top[Math.floor(R.rnd()*top.length)].x;
   const kp=tk(pk.A)===kid?pk.A:pk.B,op=kp===pk.A?pk.B:pk.A,ng=side==="A"?{A:kp,B:op,diff:pk.diff}:{A:op,B:kp,diff:pk.diff};
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([ng])[0];seen.push(recoGKey(ng));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
