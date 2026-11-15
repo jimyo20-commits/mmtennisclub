@@ -324,11 +324,13 @@ function anStats(l){
   return {n:l.length,W,U,net:W-U,contrib:l.length?Math.round(avg*100):null,inf:!U&&W>0,p1:anPct(pick("s1",0),pick("s1",1)),p2:anPct(pick("s2",0),pick("s2",1))};
 }
 /* 승리기여도 색: 150% 이상(범실 없음 ∞ 포함) 파랑 · 100% 이상 짙은 녹색 · 30% 이하 짙은 붉은색 · 사이는 붉은색→노랑→녹색 그라데이션 */
+const anBlueL=c=>Math.round(52-22*Math.min(1,Math.max(0,((c==null?200:c)-150)/50)));   /* 150%는 밝은 파랑 → 200% 이상은 진한 파랑 */
 const anCStyle=s=>{
-  if(s.inf||(s.contrib!==null&&s.contrib>=150))return "background:#1d4ed8;color:#fff;border-color:#1d4ed8";
-  if(s.contrib!==null&&s.contrib>=100)return "background:#14633a;color:#fff;border-color:#14633a";
+  const sol=(bg,bd)=>`background:${bg};color:#fff;border-color:${bd};box-shadow:inset 0 0 0 1px rgba(255,255,255,.38)`;
+  if(s.inf||(s.contrib!==null&&s.contrib>=150)){const L=anBlueL(s.inf?null:s.contrib);return sol(`hsl(217 88% ${L}%)`,`hsl(217 85% ${Math.min(70,L+20)}%)`)}
+  if(s.contrib!==null&&s.contrib>=100)return sol("#14633a","#4aa57a");
   if(s.contrib===null)return "";
-  if(s.contrib<=30)return "background:#a31919;color:#fff;border-color:#a31919";
+  if(s.contrib<=30)return sol("#a31919","#d96a6a");
   const h=Math.round(Math.min(1,(s.contrib-30)/50)*120);
   return `background:hsl(${h} 65% 85%);color:hsl(${h} 70% 22%);border-color:hsl(${h} 50% 55%)`;
 };
@@ -1335,7 +1337,7 @@ function anPhaseView(p){
   if(!p)return "";
   const nm=k=>AN_PH.find(x=>x[0]===k)[1];
   const cell=([k,l,r])=>{const [w,u]=p.t[k],s={contrib:u?Math.round(w/u*100):null,inf:!u&&w>0};
-    const bc=(s.inf||(s.contrib!==null&&s.contrib>=150))?"#1d4ed8":(s.contrib!==null&&s.contrib>=100)?"#14633a":s.contrib===null?"":s.contrib<=30?"#a31919":`hsl(${Math.round(Math.min(1,(s.contrib-30)/50)*120)} 55% 48%)`;   /* 구간 승리기여도에 따른 테두리색(배지 색과 같은 기준) */
+    const bc=(s.inf||(s.contrib!==null&&s.contrib>=150))?`hsl(217 88% ${anBlueL(s.inf?null:s.contrib)}%)`:(s.contrib!==null&&s.contrib>=100)?"#14633a":s.contrib===null?"":s.contrib<=30?"#a31919":`hsl(${Math.round(Math.min(1,(s.contrib-30)/50)*120)} 55% 48%)`;   /* 구간 승리기여도에 따른 테두리색(배지 색과 같은 기준) */
     return `<div class="stat"${bc?` style="border:2.5px solid ${bc}"`:""}><b style="font-size:15px">${w+u?`<span class="tag" style="font-weight:800;border:1px solid transparent;${anCStyle(s)}">${anC(s)}</span>`:"-"}</b><span>${l}<br><small style="font-size:10px">${r}</small></span><span style="font-size:11px">W ${w} · U ${u}</span></div>`};
   const act=AN_PH.map(x=>p.t[x[0]]).filter(t=>t[0]+t[1]>0),allG=act.length>1&&act.every(t=>t[1]?t[0]/t[1]>=1:true);   /* 기록 있는 구간이 모두 초록(기여도 100%↑)이면 약세 구간도 사실은 높은 편 → '상대적으로' */
   const PR=["구간별 기복 없이 안정적이에요 👏","초반부터 후반까지 꾸준한 플레이예요 👍","어느 구간에서도 흔들리지 않는 든든한 경기력이에요 💪","시작부터 끝까지 페이스를 잘 유지했어요 ✨","구간마다 득점이 범실보다 많은 탄탄한 경기였어요 🎾","처음부터 끝까지 안정감이 돋보여요 😊"];
