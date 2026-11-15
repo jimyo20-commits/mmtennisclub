@@ -2641,8 +2641,25 @@ function recoRedoG(i){if(!isAdmin())return;if(!confirm((i+1)+"게임을 다시 �
   if(!pk){alert("다른 조합을 찾지 못했어요.");render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
+function recoRedoT(i,sd){const side=sd?"B":"A";if(!isAdmin())return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds,cur=c.games,g=cur[i];
+  if(recoDone(ds,g)){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
+  const keep=side==="A"?g.A:g.B,kn=keep.map(m=>m.name).join("·");
+  if(!confirm(kn+" 팀은 그대로 두고, 상대팀만 다시 짤까요?\n지금 상대팀은 바뀌고 되돌릴 수 없어요."))return;
+  const oth=cur.filter((_,k)=>k!==i),kid=keep.map(m=>m.id).sort().join(),tk=t=>t.map(m=>m.id).sort().join();
+  const n=recoRedoCnt(ds,i)+1;if(!S.recoRedoK)S.recoRedoK={};const seen=((S.recoRedoK[ds]=S.recoRedoK[ds]||{})[i]=S.recoRedoK[ds][i]||[]);if(!seen.includes(recoGKey(g)))seen.push(recoGKey(g));
+  const R=recoGender(c.ps,c.rate,ds+"|"+c.ps.map(m=>m.id).sort().join()+"|t"+i+"|n"+n+"|"+Date.now(),{raw:1,str:recoStrength(),edge:recoEdge()});if(!R){alert("다른 조합을 찾지 못했어요.");return}
+  const om=new Set(oth.reduce((t,x)=>t.concat(x.A.concat(x.B).map(m=>m.id)),[]));
+  const ex=[...new Set([...seen,...Object.values(S.recoRedoK[ds]||{}).reduce((t,a)=>t.concat(a||[]),[]),...oth.map(recoGKey)])];
+  let pool=R.cands.filter(x=>(tk(x.A)===kid||tk(x.B)===kid)&&!ex.includes(x.key));
+  if(!pool.length)pool=R.cands.filter(x=>(tk(x.A)===kid||tk(x.B)===kid)&&x.key!==recoGKey(g));
+  if(!pool.length){alert("이 팀과 맞붙을 다른 상대 조합을 찾지 못했어요.");return}
+  pool=pool.map(x=>({x,c:x.c+(c.ps.length>=8?5:.12)*[...x.A,...x.B].filter(m=>om.has(m.id)).length})).sort((a,b)=>a.c-b.c);
+  const top=pool.filter(y=>y.c<=pool[0].c+.03),pk=top[Math.floor(R.rnd()*R.rnd()*top.length)].x;
+  const kp=tk(pk.A)===kid?pk.A:pk.B,op=kp===pk.A?pk.B:pk.A,ng=side==="A"?{A:kp,B:op,diff:pk.diff}:{A:op,B:kp,diff:pk.diff};
+  if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([ng])[0];seen.push(recoGKey(ng));
+  if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
 const recoGBtn=(u,i,g)=>{if(!isAdmin()||recoTest.on||recoDone(u.ds,g))return"";
-  const n=recoRedoCnt(u.ds,i);return `<button class="btn ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">🔄 ${i+1}게임 다시 짜기 (운영자 · 횟수 제한 없음${n?" · "+n+"번 다시 짬":""})</button>`};
+  const n=recoRedoCnt(u.ds,i);return `<button class="btn ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">🔄 ${i+1}게임 다시 짜기 (운영자 · 횟수 제한 없음${n?" · "+n+"번 다시 짬":""})</button><div style="display:flex;gap:6px;margin-top:6px"><button class="btn ghost" style="flex:1;font-size:12px;padding:6px 4px" onclick="recoRedoT(${i},0)">${g.A.map(m=>m.name).join("·")} 유지<br>상대팀만 다시</button><button class="btn ghost" style="flex:1;font-size:12px;padding:6px 4px" onclick="recoRedoT(${i},1)">${g.B.map(m=>m.name).join("·")} 유지<br>상대팀만 다시</button></div>`};
 function recoPanel(){
   const c=(recoTest.on&&isAdmin())?recoCalc0(true):recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
