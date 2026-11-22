@@ -87,15 +87,13 @@ input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid
 .list li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
 .list li.anCard{border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px;margin:10px 0;background:var(--surface,#fff);box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative;transition:transform .12s,box-shadow .12s}
 .list li.anCard:active{transform:scale(.985);box-shadow:none;filter:brightness(.96)}
-/* 눌러서 따로(크게) 화면이 뜨는 그래프 칸은 오른쪽 위에 책갈피 모양 + 표시를 달아 눌러볼 수 있다는 걸 알려줘요 */
+/* 눌러서 크게 보는 그래프 칸(눌림 반응만) */
 .anTapB{position:relative;cursor:pointer;transition:transform .12s}
-.anTapB::after{content:"+";position:absolute;top:-2px;right:6px;width:15px;height:19px;background:var(--court,#16a34a);color:#fff;font-size:12px;font-weight:800;line-height:15px;text-align:center;clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);pointer-events:none}
 .anTapB:active{transform:scale(.97)}
 .anTapI{cursor:pointer;transition:transform .12s;outline:2px solid #f59e0b!important;outline-offset:1px!important;border-radius:9px!important}   /* 작은 아이콘(스킬 1위·내 샷 위치)은 주황 테두리 */
 .anTapI:active{transform:scale(.92)}
 /* 분석 탭 글자 줄바꿈: 한글을 글자 중간이 아니라 띄어쓰기에서 줄바꿈해요(세로 화면 휴대폰에서 "되/었어요"처럼 끊기던 것 정리) */
 .anKA{word-break:keep-all;overflow-wrap:break-word}
-.anTapB:has(.anNoTr)::after{display:none}
 .anChev{position:absolute;right:10px;top:8px;font-size:22px;line-height:1;font-weight:800;color:var(--court,#16a34a);opacity:.85;pointer-events:none}
 .anGo{display:inline-flex;align-items:center;gap:3px;padding:4px 11px;border-radius:99px;background:var(--court,#16a34a);color:#fff;font-size:12px;font-weight:800;white-space:nowrap}
 .anGo.anNew{animation:anPulse 1.6s ease-in-out infinite}
