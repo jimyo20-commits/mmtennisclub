@@ -497,15 +497,20 @@ function anParsePoints(aoa,rows,opt){
   const cellSrv=r=>{const k=opt.fills&&opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];return (k&&hcol[k])||null};   // 서브 칸 셀 하나하나의 색 = 그 서브를 넣은 선수 (게임 경계에 걸쳐 적힌 더블폴트도 정확히 배정)
   const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
   const serveOk=srvOf.every(Boolean);
+  /* 서브 칸 어시스트: 다른 스킬과 같은 규칙 — 서브 칸의 Sp가 초록 글씨이면 "서브 어시스트"(서브가 만든 기회를 전위가 마무리). 서브득점(W)·요약 Winning에는 넣지 않고 서버의 ast.Sp로만 기록.
+     서브 칸의 Sp 전부가 초록 글씨이면 원래 그렇게 적는 파일이라고 보고 어시스트로 읽지 않아요 */
+  const svGreen=r=>!!(opt.fills&&txt((aoa[r]||[])[sc])==="Sp"&&anGreenFont(opt.fills["~"+anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)]));
+  let spAll=0,spGr=0;segs.forEach(([s,e])=>{for(let r=s;r<e;r++)if(txt((aoa[r]||[])[sc])==="Sp"){spAll++;if(svGreen(r))spGr++}});
+  const svAst=r=>spGr>0&&spGr<spAll&&svGreen(r);
   const so={};srvOf.forEach((n,gi)=>{if(n&&so[n]===undefined&&gi<names.length)so[n]=gi+1});
   segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv0=srvOf[gi];for(let r=s;r<e;r++){
     // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
-    const sk=txt((aoa[r]||[])[sc]).replace(/^f\s*\/\s*sp$/i,"Sp"),srv=cellSrv(r)||srv0;if(srv&&sk){if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W";pts.push([gn,r-s+1,srv,sk,"W"])}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U";pts.push([gn,r-s+1,srv,"D","U"])}}
+    const sk=txt((aoa[r]||[])[sc]).replace(/^f\s*\/\s*sp$/i,"Sp"),srv=cellSrv(r)||srv0;if(srv&&sk){if(sk==="Sp"&&svAst(r)){inc(ast[srv],"Sp")}else if(sk==="Sp"||sk==="A"){ph[srv][pk][0]++;sq[srv]+="W";pts.push([gn,r-s+1,srv,sk,"W"])}else if(sk==="D"){ph[srv][pk][1]++;sq[srv]+="U";pts.push([gn,r-s+1,srv,"D","U"])}}
     pcols.forEach((c,i)=>{
     const k=anCanon(txt((aoa[r]||[])[c]));if(!k)return;inc(codes[names[i]],k);   // FS·fs 같은 대소문자 오타도 같은 코드로
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
       if(col&&anSameCol(col,opt.wKey)){pts.push([gn,r-s+1,names[i],k,"W"]);inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W";phc[names[i]][pk][0]++;sqc[names[i]]+="W"}else if(col&&anSameCol(col,opt.uKey)){pts.push([gn,r-s+1,names[i],k,"U"]);inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U";phc[names[i]][pk][1]++;sqc[names[i]]+="U"}else if(anGreenFont(opt.fills["~"+anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)]))inc(ast[names[i]],k)}})}});
-  segs.forEach(([s,e],g)=>{const srv0=srvOf[g];for(let r=s;r<e;r++){const k0=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0,fsp=/^f\s*\/\s*sp$/i.test(k0);if(k0&&srv){if(fsp){inc(sv[srv],"F");inc(sv[srv],"Sp")}else inc(sv[srv],k0)}}});   /* F/Sp = 1서브 폴트 후 2서브 득점 → 폴트 1 + 서브득점 1 */
+  segs.forEach(([s,e],g)=>{const srv0=srvOf[g];for(let r=s;r<e;r++){const k0=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0,fsp=/^f\s*\/\s*sp$/i.test(k0);if(k0&&srv){if(fsp){inc(sv[srv],"F");inc(sv[srv],"Sp")}else if(svAst(r)){}else inc(sv[srv],k0)}}});   /* F/Sp = 1서브 폴트 후 2서브 득점 → 폴트 1 + 서브득점 1 */
   /* 서브게임 세이브: 굵은 글씨 = 이긴 팀(얇은 글씨 = 진 팀). 게임별 승패가 위 스코어(예: 3 VS 6)와 맞을 때만 계산 → 서버(본인) 팀이 이긴 게임 수 / 본인 서브게임 수 */
   const sg={};
   if(opt.fills&&names.length===4&&pcols.length===4&&serveOk){
@@ -545,7 +550,7 @@ function anParseSheet(aoa,fname,opt){
       const x=pp.wu[r.name];  // 색으로 구분한 Winning/Unforced 코드: 요약표 숫자와 같을 때만 사용
       const sv_=pp.sv[r.name]||{},sW=pp.serve?(sv_.A||0)+(sv_.Sp||0):0,sU=pp.serve?(sv_.D||0):0;
       if(x&&wKey&&uKey&&(r.W||r.U)){const cw=anCsum(x.w),cu=anCsum(x.u);
-        if(pp.serve&&(cw+sW===r.W||cw+sW-(sv_.A||0)===r.W)&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name];r.so=pp.so[r.name]||0}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
+        if(pp.serve&&(cw+sW===r.W||cw+sW-(sv_.A||0)===r.W||cw+sW+(((pp.ast||{})[r.name]||{}).Sp||0)===r.W)&&cu+sU===r.U){r.w=x.w;r.u=x.u;r.svp=1;r.ph=pp.ph[r.name];r.sq=pp.sq[r.name];r.so=pp.so[r.name]||0}  // 요약표 = 색 구분 샷 + 서브 득점(A/Sp) / 더블폴트(D)
         else if(cw===r.W&&cu===r.U){r.w=x.w;r.u=x.u;r.ph=pp.phc[r.name];r.sq=pp.sqc[r.name]}}
       if(r.w&&pp.ast&&pp.ast[r.name]&&Object.keys(pp.ast[r.name]).length)r.ast=pp.ast[r.name];if(pp.sg&&pp.sg[r.name]&&pp.sg[r.name][1])r.sg=pp.sg[r.name]});
     if(pp&&pp.pts&&pp.pts.length&&(opt.keepPts||rows.every(r=>r.w)))ptsOut=pp.pts
