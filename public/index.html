@@ -497,11 +497,9 @@ function anParsePoints(aoa,rows,opt){
   const cellSrv=r=>{const k=opt.fills&&opt.fills[anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)];return (k&&hcol[k])||null};   // 서브 칸 셀 하나하나의 색 = 그 서브를 넣은 선수 (게임 경계에 걸쳐 적힌 더블폴트도 정확히 배정)
   const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
   const serveOk=srvOf.every(Boolean);
-  /* 서브 칸 어시스트: 다른 스킬과 같은 규칙 — 서브 칸의 Sp가 초록 글씨이면 "서브 어시스트"(서브가 만든 기회를 전위가 마무리). 서브득점(W)·요약 Winning에는 넣지 않고 서버의 ast.Sp로만 기록.
-     서브 칸의 Sp 전부가 초록 글씨이면 원래 그렇게 적는 파일이라고 보고 어시스트로 읽지 않아요 */
+  /* 서브 칸 어시스트: 다른 스킬과 같은 규칙 — 서브 칸의 Sp가 초록 글씨이면 "서브 어시스트"(서브가 만든 기회를 전위가 마무리). 서브득점(W)·요약 Winning에는 넣지 않고 서버의 ast.Sp로만 기록. */
   const svGreen=r=>!!(opt.fills&&txt((aoa[r]||[])[sc])==="Sp"&&anGreenFont(opt.fills["~"+anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)]));
-  let spAll=0,spGr=0;segs.forEach(([s,e])=>{for(let r=s;r<e;r++)if(txt((aoa[r]||[])[sc])==="Sp"){spAll++;if(svGreen(r))spGr++}});
-  const svAst=r=>spGr>0&&spGr<spAll&&svGreen(r);
+  const svAst=r=>svGreen(r);
   const so={};srvOf.forEach((n,gi)=>{if(n&&so[n]===undefined&&gi<names.length)so[n]=gi+1});
   segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv0=srvOf[gi];for(let r=s;r<e;r++){
     // 서브 칸: Sp/A = 서버의 득점(W), D = 서버의 실점(U) — 시간순 맨 앞에 기록
