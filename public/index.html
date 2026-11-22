@@ -622,6 +622,13 @@ function anRetConn(e){const g=e.g||{},rows=g.rows||[];if(rows.length<4)return nu
 /* 서브·리턴 공통 점수틀: 6.5점에서 시작 · 위너(에이스·서브득점/리턴 위너)는 완만하게 올리고(최대 +3), 공짜 에러(더블폴트/리턴 에러)는 조금 더 크게 내리며(최대 −2.5), 연결(1st 서브 성공/무난한 리턴)은 최대 +1.
    기록이 적은 선수는 시작점(6.5점) 쪽으로 당겨서(경기 수 n/(n+0.7)) 한 경기 잘했다고 점수가 확 오르지 않게 해요 */
 function anRS(w,u,q,n,uc){return Math.round(Math.max(1,Math.min(10,6.5+n/(n+.7)*(3*(1-Math.exp(-w/2.5))-(uc||2.5)*(1-Math.exp(-u/1.2))+q)))*10)/10}
+/* 상대 수준 반영: 같은 경기에서 만난 상대가 강할수록 내 위너는 조금 더(최대 ×1.25), 에러는 조금 덜(최소 ×0.75) 쳐줘요. 상대가 약하면 반대.
+   리턴 → 상대 서브 수준(1st 서브 성공률 65% 기준 · 에이스+서브득점 경기당 1개 기준), 서브 → 상대 리턴 수준(리턴 위너−에러) */
+function anOppF(e,kind){try{const rows=(e.g||{}).rows||[];if(rows.length<4)return 1;const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return 1;
+  const opp=(mi<2?[rows[2],rows[3]]:[rows[0],rows[1]]).filter(Boolean),cl=v=>Math.max(-1,Math.min(1,v));let d=0;
+  if(kind==="R"){const sp=opp.filter(r=>r.svp&&(r.s1||[])[1]>0);if(!sp.length)return 1;const i1=sp.reduce((t,r)=>t+r.s1[0],0),t1=sp.reduce((t,r)=>t+r.s1[1],0),aw=sp.reduce((t,r)=>t+((r.sv||{}).A||0)+((r.sv||{}).Sp||0),0)/sp.length;d=(cl((i1/t1-.65)/.3)+cl((aw-1)/2))/2}
+  else{const rc=opp.filter(r=>Object.keys(r.w||{}).length||Object.keys(r.u||{}).length);if(!rc.length)return 1;d=cl(rc.reduce((t,r)=>t+(((r.w||{}).R||0)+((r.ast||{}).R||0)-((r.u||{}).R||0)),0)/rc.length/2)}
+  return 1+.25*d}catch(x){return 1}}
 function anHexLv(list,N){N=N||5;
   const rec=[...list].sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g)).slice(0,N),cm=rec.filter(e=>e.hasC);
   const sum=(k,c)=>cm.reduce((t,e)=>t+(+((e[k]||{})[c])||0),0),nrm=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
@@ -629,15 +636,16 @@ function anHexLv(list,N){N=N||5;
   ["Fs","Bs","V","O","R"].forEach(c=>{const w=sum("w",c)+sum("ast",c),u=sum("u",c);lv[c]=w+u?1+Math.round(90*(w+.5)/(w+u+1))/10:Math.min(5,Math.max(1,cm.length))});   /* 위닝·에러가 하나도 없는 스킬 = 무난한 스킬: 경기 수만큼 1→5점까지 올라감(최대 5점) */   /* 위닝 비율(+0.5 보정)로 1~5단계. 기록이 없으면 0 */
   if(cm.length){   /* 리턴 점수: 5점에서 시작 · 리턴 위너(어시스트 포함)가 많을수록 크게 오르고, 에러에 노출될수록 꽤 크게 내려가며(에러 1개도 체감되게), 에러 없이 넘긴 리턴은 작게(최대 +1) 올려요. 경기당 평균 기준이라 위너가 있어도 에러가 더 많으면 5점 아래로 내려갈 수 있어요 */
     let C=0,UR=0;cm.forEach(e=>{const r=anRetConn(e);if(r){C+=r.conn;UR+=r.u}});const n=cm.length,
-      rw=(sum("w","R")+sum("ast","R"))/n,ru=sum("u","R")/n,WR=sum("w","R")+sum("ast","R"),OP=C+UR+WR,cq=OP>0?Math.max(0,Math.min(1,(C/OP-.6)/.4))*Math.min(1,OP/12):0;   /* 무난하게 넘긴 리턴 비중(넘긴 ÷ 받은 리턴)이 60%→100%로 늘수록 최대 +1까지 조금씩 · 받은 횟수가 12개 미만이면 그만큼 덜 반영 */
+      fR=cm.map(e=>anOppF(e,"R")),rw=cm.reduce((t,e,i)=>t+fR[i]*(((e.w||{}).R||0)+((e.ast||{}).R||0)),0)/n,ru=cm.reduce((t,e,i)=>t+(2-fR[i])*((e.u||{}).R||0),0)/n,WR=sum("w","R")+sum("ast","R"),OP=C+UR+WR,cq=OP>0?Math.max(0,Math.min(1,(C/OP-.6)/.4))*Math.min(1,OP/12):0;   /* 무난하게 넘긴 리턴 비중(넘긴 ÷ 받은 리턴)이 60%→100%로 늘수록 최대 +1까지 조금씩 · 받은 횟수가 12개 미만이면 그만큼 덜 반영 */
     
     lv.R=anRS(rw,ru,cq,n,1.8)}
   const a1=rec.reduce((t,e)=>t+((e.s1||[])[0]||0),0),b1=rec.reduce((t,e)=>t+((e.s1||[])[1]||0),0),a2=rec.reduce((t,e)=>t+((e.s2||[])[0]||0),0),b2=rec.reduce((t,e)=>t+((e.s2||[])[1]||0),0);
   const aA=rec.reduce((t,e)=>t+(e.svp?((e.sv||{}).A||0):0),0),aS=rec.reduce((t,e)=>t+(e.svp?((e.sv||{}).Sp||0)+((e.ast||{}).Sp||0):0),0),sg=Math.max(1,rec.filter(e=>e.svp).length),adv=Math.min(1,(aA*2+aS*1.5)/sg/3),df=rec.reduce((t,e)=>t+(e.svp?((e.sv||{}).D||0):0),0);
-  lv.sv=b1?anRS((aA*1.3+aS)/sg,df/sg,nrm(a1/b1,.6,.95)*Math.min(1,b1/12),sg):1;   /* 서브: 리턴과 같은 틀 · 위너=에이스×1.3+서브득점(경기당) · 에러=더블폴트(경기당) · 연결=1st 서브 성공 비중(60%→0, 95%→+1, 서브 12개 미만이면 덜 반영). 기록이 없으면 1점 */
+  const fS=e=>anOppF(e,"S"),sw=rec.reduce((t,e)=>t+(e.svp?fS(e)*(((e.sv||{}).A||0)*1.3+((e.sv||{}).Sp||0)+((e.ast||{}).Sp||0)):0),0),su=rec.reduce((t,e)=>t+(e.svp?(2-fS(e))*((e.sv||{}).D||0):0),0);
+  lv.sv=b1?anRS(sw/sg,su/sg,nrm(a1/b1,.6,.95)*Math.min(1,b1/12),sg):1;   /* 서브: 리턴과 같은 틀 · 위너=에이스×1.3+서브득점(경기당) · 에러=더블폴트(경기당) · 연결=1st 서브 성공 비중(60%→0, 95%→+1, 서브 12개 미만이면 덜 반영). 기록이 없으면 1점 */
   return {lv,n:rec.length}}
 let anZoom=null;
-const AN_HEX_TIP={Fs:"포핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",Bs:"백핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",V:"발리로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",O:"스매싱으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",R:"리턴 점수는 서브와 같은 틀이에요. 6.5점에서 시작해 리턴 위너(어시스트 포함)가 있으면 완만하게 오르고(경기당 1개면 약 +0.9), 리턴 에러는 위너와 비슷하게 내려가요(경기당 1개면 약 −0.9). 에러 없이 넘긴 리턴의 비중이 60%를 넘으면 조금씩 올라 최대 +1. 기록이 적을수록 6.5점 쪽으로 당겨져서 한 경기 잘했다고 확 오르지 않아요.",sv:"서브 점수는 리턴과 같은 틀이에요. 6.5점에서 시작해 에이스·서브득점이 있으면 완만하게 오르고(에이스는 서브득점보다 1.3배 더 쳐줘요 · 경기당 1개면 약 +0.9), 더블폴트는 조금 더 크게 내려가요(경기당 1개면 약 −1.2). 1st 서브가 들어간 비중이 60%를 넘으면 조금씩 올라 최대 +1(95%면 만점 가산). 기록이 적을수록 6.5점 쪽으로 당겨져요."};
+const AN_HEX_TIP={Fs:"포핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",Bs:"백핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",V:"발리로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",O:"스매싱으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",R:"리턴 점수는 서브와 같은 틀이에요. 6.5점에서 시작해 리턴 위너(어시스트 포함)가 있으면 완만하게 오르고(상대 서브가 강했던 경기는 위너를 최대 25% 더, 에러를 최대 25% 덜 쳐줘요)(경기당 1개면 약 +0.9), 리턴 에러는 위너와 비슷하게 내려가요(경기당 1개면 약 −0.9). 에러 없이 넘긴 리턴의 비중이 60%를 넘으면 조금씩 올라 최대 +1. 기록이 적을수록 6.5점 쪽으로 당겨져서 한 경기 잘했다고 확 오르지 않아요.",sv:"서브 점수는 리턴과 같은 틀이에요. 6.5점에서 시작해 에이스·서브득점이 있으면 완만하게 오르고(에이스는 서브득점보다 1.3배 더 쳐줘요 · 경기당 1개면 약 +0.9). 상대 리턴이 강했던 경기는 위너를 최대 25% 더, 더블폴트를 최대 25% 덜 쳐줘요, 더블폴트는 조금 더 크게 내려가요(경기당 1개면 약 −1.2). 1st 서브가 들어간 비중이 60%를 넘으면 조금씩 올라 최대 +1(95%면 만점 가산). 기록이 적을수록 6.5점 쪽으로 당겨져요."};
 let anZoomSkill=null;
 function anZoomOpen(id,kind){anZoom={id,kind};anZoomSkill=null;render()}
 function anZoomClose(){anZoom=null;render()}
