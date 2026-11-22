@@ -467,6 +467,11 @@ async function anFills(buf,sheetNo){
   const fbold=(fb2.match(/<font>[\s\S]*?<\/font>|<font\/>/g)||[]).map(f=>{const m=f.match(/<b(\s[^>]*)?\/>/);return !!m&&!/val="(0|false)"/.test(m[1]||"")});
   const xfbd=(xb.match(/<xf\b[^>]*>/g)||[]).map(x=>!!fbold[+anAttrs(x).fontId]);
   const map={};(sh.match(/<c\b[^>]*>/g)||[]).forEach(c=>{const a=anAttrs(c);if(a.r&&a.s!==undefined){if(xfs[+a.s])map[a.r]=xfs[+a.s];if(xff[+a.s])map["~"+a.r]=xff[+a.s];if(xfbd[+a.s])map["^"+a.r]="1"}});   // "^셀주소" = 굵은 글씨   // "~셀주소" = 글자색
+  /* 한 칸 안에서 글자마다 색이 다른 서식 있는 글자(예: F/Sp 중 "F"는 검정, "Sp"는 초록) → "#셀주소" = Sp 부분의 글자색 */
+  try{const runCol=si=>{if(si.indexOf("<r>")<0)return "";let col="";(si.match(/<r>[\s\S]*?<\/r>/g)||[]).forEach(r=>{const t=((r.match(/<t[^>]*>([\s\S]*?)<\/t>/)||[])[1]||"").trim();if(/^sp$/i.test(t)){const a=anAttrs((r.match(/<color[^>]*\/?>/)||[""])[0]);if(a.rgb)col="rgb:"+a.rgb}});return col};
+    const ss=z["xl/sharedStrings.xml"],rc=ss?(ss.match(/<si>[\s\S]*?<\/si>|<si\/>/g)||[]).map(runCol):[];
+    (sh.match(/<c\b[^>]*\bt="s"[^>]*>\s*<v>\d+<\/v>/g)||[]).forEach(c=>{const a=anAttrs(c.match(/<c\b[^>]*>/)[0]),v=+(c.match(/<v>(\d+)<\/v>/)||[])[1];if(a.r&&rc[v])map["#"+a.r]=rc[v]});
+    (sh.match(/<c\b[^>]*\bt="inlineStr"[^>]*>[\s\S]*?<\/c>/g)||[]).forEach(c=>{const a=anAttrs(c.match(/<c\b[^>]*>/)[0]),col=runCol(c);if(a.r&&col)map["#"+a.r]=col})}catch(e){}
   return map;
 }
 const anCanon=k=>["Fs","Bs","V","O","P","L","R","S","A","Sp","F","D"].find(c=>c.toLowerCase()===String(k).toLowerCase())||k;
@@ -498,7 +503,7 @@ function anParsePoints(aoa,rows,opt){
   const srvOf=segs.map((sg,gi)=>colSrv(sg)||(ok?ok[gi%ok.length]:null));
   const serveOk=srvOf.every(Boolean);
   /* 서브 칸 어시스트: 다른 스킬과 같은 규칙 — 서브 칸의 Sp가 초록 글씨이면 "서브 어시스트"(서브가 만든 기회를 전위가 마무리). 서브득점(W)·요약 Winning에는 넣지 않고 서버의 ast.Sp로만 기록. */
-  const svGreen=r=>!!(opt.fills&&txt((aoa[r]||[])[sc])==="Sp"&&anGreenFont(opt.fills["~"+anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1)]));
+  const svGreen=r=>{if(!opt.fills)return false;const raw=txt((aoa[r]||[])[sc]),ad=anColL(sc+(opt.c0||0))+(r+(opt.r0||0)+1);return raw==="Sp"?anGreenFont(opt.fills["~"+ad]):/^f\s*\/\s*sp$/i.test(raw)?anGreenFont(opt.fills["#"+ad]):false};   /* "Sp"는 칸 글자색, "F/Sp"는 뒤의 Sp 글자만 초록(앞 F는 검정 = 1서브 폴트 후 2서브 어시스트) */
   const svAst=r=>svGreen(r);
   const so={};srvOf.forEach((n,gi)=>{if(n&&so[n]===undefined&&gi<names.length)so[n]=gi+1});
   segs.forEach(([s,e],gi)=>{const gn=+aoa[s][0]||gi+1,pk=gn<=4?"e":gn<=8?"m":"l",srv0=srvOf[gi];for(let r=s;r<e;r++){
@@ -508,7 +513,7 @@ function anParsePoints(aoa,rows,opt){
     const k=anCanon(txt((aoa[r]||[])[c]));if(!k)return;inc(codes[names[i]],k);   // FS·fs 같은 대소문자 오타도 같은 코드로
     if(opt.fills){const col=opt.fills[anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)];
       if(col&&anSameCol(col,opt.wKey)){pts.push([gn,r-s+1,names[i],k,"W"]);inc(wu[names[i]].w,k);ph[names[i]][pk][0]++;sq[names[i]]+="W";phc[names[i]][pk][0]++;sqc[names[i]]+="W"}else if(col&&anSameCol(col,opt.uKey)){pts.push([gn,r-s+1,names[i],k,"U"]);inc(wu[names[i]].u,k);ph[names[i]][pk][1]++;sq[names[i]]+="U";phc[names[i]][pk][1]++;sqc[names[i]]+="U"}else if(anGreenFont(opt.fills["~"+anColL(c+(opt.c0||0))+(r+(opt.r0||0)+1)]))inc(ast[names[i]],k)}})}});
-  segs.forEach(([s,e],g)=>{const srv0=srvOf[g];for(let r=s;r<e;r++){const k0=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0,fsp=/^f\s*\/\s*sp$/i.test(k0);if(k0&&srv){if(fsp){inc(sv[srv],"F");inc(sv[srv],"Sp")}else if(svAst(r)){}else inc(sv[srv],k0)}}});   /* F/Sp = 1서브 폴트 후 2서브 득점 → 폴트 1 + 서브득점 1 */
+  segs.forEach(([s,e],g)=>{const srv0=srvOf[g];for(let r=s;r<e;r++){const k0=txt((aoa[r]||[])[sc]),srv=cellSrv(r)||srv0,fsp=/^f\s*\/\s*sp$/i.test(k0);if(k0&&srv){if(fsp){inc(sv[srv],"F");if(!svAst(r))inc(sv[srv],"Sp")}else if(svAst(r)){}else inc(sv[srv],k0)}}});   /* F/Sp = 1서브 폴트 후 2서브 득점 → 폴트 1 + 서브득점 1 */
   /* 서브게임 세이브: 굵은 글씨 = 이긴 팀(얇은 글씨 = 진 팀). 게임별 승패가 위 스코어(예: 3 VS 6)와 맞을 때만 계산 → 서버(본인) 팀이 이긴 게임 수 / 본인 서브게임 수 */
   const sg={};
   if(opt.fills&&names.length===4&&pcols.length===4&&serveOk){
