@@ -87,11 +87,12 @@ input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid
 .list li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
 .list li.anCard{border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px;margin:10px 0;background:var(--surface,#fff);box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative;transition:transform .12s,box-shadow .12s}
 .list li.anCard:active{transform:scale(.985);box-shadow:none;filter:brightness(.96)}
-/* 눌러서 따로 화면이 뜨는 칸(선수 카드 안의 6각형·추이 그래프·1위 아이콘·위치 아이콘)은 그림자로 띄워서 눌러볼 수 있다는 걸 알려줘요 */
-.anTapB{border-radius:12px;box-shadow:0 0 0 1px rgba(128,128,128,.3),0 3px 9px rgba(0,0,0,.24);background:var(--surface,#fff);cursor:pointer;transition:transform .12s,box-shadow .12s}
-.anTapB:active{transform:scale(.97);box-shadow:0 0 0 1px rgba(128,128,128,.3)}
-.anTapI{filter:drop-shadow(0 2px 2.5px rgba(0,0,0,.4)) drop-shadow(0 0 1px rgba(128,128,128,.7))!important;cursor:pointer;transition:transform .12s}
-.anTapI:active{transform:scale(.92);filter:none!important}
+/* 눌러서 따로(크게) 화면이 뜨는 그래프 칸은 오른쪽 위에 책갈피 모양 + 표시를 달아 눌러볼 수 있다는 걸 알려줘요 */
+.anTapB{position:relative;cursor:pointer;transition:transform .12s}
+.anTapB::after{content:"+";position:absolute;top:-2px;right:6px;width:15px;height:19px;background:var(--court,#16a34a);color:#fff;font-size:12px;font-weight:800;line-height:15px;text-align:center;clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);pointer-events:none}
+.anTapB:active{transform:scale(.97)}
+.anTapI{cursor:pointer;transition:transform .12s}
+.anTapI:active{transform:scale(.92)}
 .anChev{position:absolute;right:10px;top:8px;font-size:22px;line-height:1;font-weight:800;color:var(--court,#16a34a);opacity:.85;pointer-events:none}
 .anGo{display:inline-flex;align-items:center;gap:3px;padding:4px 11px;border-radius:99px;background:var(--court,#16a34a);color:#fff;font-size:12px;font-weight:800;white-space:nowrap}
 .anGo.anNew{animation:anPulse 1.6s ease-in-out infinite}
