@@ -600,11 +600,25 @@ function anFoldBtn(){const b=document.getElementById("anAllBtn");if(b)b.textCont
 function anSecAll(){const op=!(anSec.s||anSec.b||anSec.l);anSec={s:op?1:0,b:op?1:0,l:op?1:0};render()}
 /* 선수 특징 6각형(포핸드·백핸드·발리·스매싱·서브·리턴) — 최근 5경기 기준, 각 축 1~10단계 */
 const AN_HEX=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매싱"],["sv","서브"],["R","리턴"]];
-/* 리턴 "무난하게 넘긴 것": 상대 서브(들어온 서브 − 에이스·서브득점)를 파트너와 반씩 받았다고 보고, 거기서 내 리턴 위닝·범실을 뺀 나머지를 "넘긴 리턴"으로 추정 */
-function anRetConn(e){const rows=(e.g&&e.g.rows)||[];if(rows.length<4)return null;const me=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(me<0)return null;
-  const opp=me<2?[rows[2],rows[3]]:[rows[0],rows[1]];if(opp.some(r=>!r||!((r.s1||[])[1]>0)))return null;
-  const inP=opp.reduce((t,r)=>t+((r.s1||[])[0]||0)+((r.s2||[])[0]||0),0),ace=opp.reduce((t,r)=>t+(r.svp?((r.sv||{}).A||0)+((r.sv||{}).Sp||0):0),0),
-    share=Math.max(0,inP-ace)/2,wR=((e.w||{}).R||0)+((e.ast||{}).R||0),uR=(e.u||{}).R||0;return {conn:Math.max(0,share-wR-uR),u:uR}}
+/* 리턴 "무난하게 넘긴 것" 추정: 게임마다 받는 팀은 "듀스코트 선수가 홀수 번째 포인트, 애드코트 선수가 짝수 번째 포인트"를 받아요.
+   받는 선수의 리턴 기록(R)이 몇 번째 포인트였는지로 누가 듀스·애드인지 알아내고(홀수 번째면 듀스), 에이스·서브득점·더블폴트를 뺀 포인트 중 내 코트 몫에서 리턴 위닝·범실을 뺀 나머지를 "넘긴 리턴"으로 센다.
+   포인트 기록(pts)이 없거나 듀스·애드를 알 수 없는 게임은 상대 서브(에이스 제외)의 절반을 받았다고 본다. */
+function anRetConn(e){const g=e.g||{},rows=g.rows||[];if(rows.length<4)return null;const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return null;
+  const myT=mi<2?[0,1]:[2,3],opp=mi<2?[rows[2],rows[3]]:[rows[0],rows[1]],wR=((e.w||{}).R||0),uR=(e.u||{}).R||0,aR=((e.ast||{}).R||0);
+  const half=()=>{if(opp.some(r=>!r||!((r.s1||[])[1]>0)))return null;
+    const inP=opp.reduce((t,r)=>t+((r.s1||[])[0]||0)+((r.s2||[])[0]||0),0),ace=opp.reduce((t,r)=>t+(r.svp?((r.sv||{}).A||0)+((r.sv||{}).Sp||0):0),0);
+    return {conn:Math.max(0,Math.max(0,inP-ace)/2-wR-uR-aR),u:uR,m:"half"}};
+  const pts=g.pts;if(!Array.isArray(pts)||!pts.length||!rows.every(r=>r.so>0))return half();
+  const byG={};pts.forEach(p=>{(byG[p[0]]=byG[p[0]]||[]).push(p)});
+  const my=rows[mi].name,nm=myT.map(i=>rows[i].name);let conn=0,gm=0,exact=0;
+  Object.keys(byG).forEach(k=>{const gn=+k,ev=byG[k],si=rows.findIndex(r=>r.so===((gn-1)%4)+1);if(si<0||myT.includes(si))return;   /* 내가 속한 팀이 서브하는 게임은 리턴이 없음 */
+    const L=Math.max(...ev.map(p=>p[1])),no=new Set(ev.filter(p=>p[3]==="A"||p[3]==="Sp"||p[3]==="D").map(p=>p[1])),
+      rv=ev.filter(p=>p[3]==="R"&&nm.includes(p[2])),dp=new Set(rv.map(p=>p[1]%2===1?p[2]:nm.find(n=>n!==p[2])));
+    let n=0;for(let q=1;q<=L;q++)if(!no.has(q))n++;
+    let mine;if(dp.size===1){const dn=[...dp][0],myDeuce=dn===my;mine=0;for(let q=1;q<=L;q++)if(!no.has(q)&&((q%2===1)===myDeuce))mine++;exact++}else mine=n/2;
+    const wg=rv.filter(p=>p[2]===my&&p[4]==="W").length,ug=rv.filter(p=>p[2]===my&&p[4]==="U").length;conn+=Math.max(0,mine-wg-ug);gm++});
+  if(!gm)return half();
+  return {conn:Math.max(0,conn-aR),u:uR,m:"pts",gm,exact}}
 function anHexLv(list,N){N=N||5;
   const rec=[...list].sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")||(S.analysis||[]).indexOf(b.g)-(S.analysis||[]).indexOf(a.g)).slice(0,N),cm=rec.filter(e=>e.hasC);
   const sum=(k,c)=>cm.reduce((t,e)=>t+(+((e[k]||{})[c])||0),0),nrm=(v,a,b)=>Math.max(0,Math.min(1,(v-a)/(b-a)));
@@ -616,7 +630,7 @@ function anHexLv(list,N){N=N||5;
   lv.sv=b1?Math.max(1,Math.min(10,Math.round(10*(1+9*Math.max(0,.55*nrm(a1/b1*100,40,90)+.25*(b2?nrm(a2/b2*100,50,100):(a1>=b1?1:.5))+.20*adv-.1*Math.min(1,df/2))+.3*aA))/10)):1;   /* 1st 서브가 100% 들어가 2nd 서브를 안 넣었다면 2nd 서브도 만점으로 계산 · 서브는 기록이 없을 수 없으므로 경기 수 가점 없이 최저 1점 */   /* 서브: 1st 성공률 55% + 2nd 성공률 25% + 위력 가산 20%(에이스 1개 = 2점, 서브포인트 1개 = 1.5점, 경기당 3점이면 만점) − 더블폴트 */
   return {lv,n:rec.length}}
 let anZoom=null;
-const AN_HEX_TIP={Fs:"포핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",Bs:"백핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",V:"발리로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",O:"스매싱으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",R:"리턴으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 여기에 상대 서브를 에러 없이 무난하게 넘긴 리턴도 약간(최대 +2점) 더해져요. (상대 서브 중 에이스를 뺀 나머지의 절반을 내가 받았다고 보고 추정해요)",sv:"1st 서브 성공률 55% + 2nd 서브 성공률 25% + 서브 위력 20%로 평가해요. 에이스는 2배, 서브포인트는 1.5배로 계산하고 더블폴트는 감점이에요. 여기에 에이스 1개당 +0.3점이 더 더해져요."};
+const AN_HEX_TIP={Fs:"포핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",Bs:"백핸드로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",V:"발리로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",O:"스매싱으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 위닝샷을 이끈 어시스트도 위닝처럼 점수에 더해져요.",R:"리턴으로 딴 위닝샷 ÷ (위닝샷 + 에러) 비율로 평가해요. 위닝이 많고 에러가 적을수록 높아요. 여기에 상대 서브를 에러 없이 무난하게 넘긴 리턴도 약간(최대 +2점) 더해져요. (받는 팀은 듀스코트 선수부터 번갈아 받으니, 내가 받은 포인트를 세어 리턴 위닝·에러를 뺀 만큼을 넘긴 리턴으로 추정해요)",sv:"1st 서브 성공률 55% + 2nd 서브 성공률 25% + 서브 위력 20%로 평가해요. 에이스는 2배, 서브포인트는 1.5배로 계산하고 더블폴트는 감점이에요. 여기에 에이스 1개당 +0.3점이 더 더해져요."};
 let anZoomSkill=null;
 function anZoomOpen(id,kind){anZoom={id,kind};anZoomSkill=null;render()}
 function anZoomClose(){anZoom=null;render()}
