@@ -358,9 +358,12 @@ function anImportPreset(){
 }
 /* 분석 대상 = 회원 + 등록된 게스트 */
 const anAll=()=>[...S.members,...(S.guests||[])];
+/* 혼합복식(남여 vs 남여) 경기에서는 남자 선수의 기록을 분석 스탯에서 빼요(남자가 유리하게 나와 균형이 무너져서). 여자 선수 기록은 그대로 */
+function anMixedMen(g,gmap){const rows=g.rows||[];if(rows.length!==4)return new Set();const gd=rows.map(r=>{const id=r.pid||(r.name&&gmap[r.name])||"",m=anAll().find(x=>x.id===id||(r.name&&x.name===r.name));return m?gdOf(m):""});
+  if([[0,1],[2,3]].every(t=>t.map(i=>gd[i]).sort().join()==="남,여"))return new Set(rows.filter((r,i)=>gd[i]==="남"));return new Set()}
 function anFlat(){const out=[];const gmap={};anAll().forEach(g=>{if(g.name&&!gmap[g.name])gmap[g.name]=g.id});(S.analysis||[]).forEach(g=>{
-  const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}];
-  rows.forEach(r=>{const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
+  const rows=g.rows||[{pid:g.pid,s1:g.s1,s2:g.s2,w:g.w,u:g.u}],mixM=anMixedMen(g,gmap);
+  rows.forEach(r=>{if(mixM.has(r))return;const w=r.w||{},u=r.u||{},hasC=!!(Object.keys(w).length||Object.keys(u).length),sv0=r.sv||{},aW=r.svp?(sv0.A||0)+(sv0.Sp||0):0,aU=r.svp?(sv0.D||0):0;
     out.push({g,pid:r.pid||(r.name&&gmap[r.name])||"",name:r.name||"",svp:!!r.svp,ph:r.ph||null,sq:r.sq||"",so:r.so||0,c:r.c||{},sv:r.sv||{},s1:r.s1||[0,0],s2:r.s2||[0,0],w,u,ast:r.ast||{},sg:r.sg||null,hasC,W:hasC?anCsum(w)+aW:(+r.W||0),U:hasC?anCsum(u)+aU:(+r.U||0)})})});return out}
 const anGr=e=>e.U?e.W/e.U:(e.W?2:1);   /* 한 경기의 승리기여도 비율 */
 function anStats(l){
