@@ -1082,7 +1082,7 @@ const anGrp=(main,subs,col)=>`<div style="display:grid;grid-template-columns:1fr
   const sum=`<div class="panel"><h2>${nameR(m)}${drillRingChips(m.id)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${gSel==="ALL"||!gSel||gAll.length<2?st.n+"경기":mdl((gAll.find(g=>g.id===gSel)||{}).date)+" 경기"}</span></h2>
   ${anGrp(`<b>${anC(st)}</b><span>승리기여도</span>`,[["위닝(Winning)",st.W],["언포스트 에러",st.U],["순기여(위너−범실)",(st.net>0?"+":"")+st.net]],"")}
   ${anGrp(`<b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span>`,[["2nd 서브",st.p2===null?"-":st.p2+"%"]].concat(svP===null?[]:[["서비스 득점율",svP+"%"]]),st.p1===null?"":anP1Col(st.p1))}${svP===null?"":`<p style="margin:6px 0 0;font-size:11px;color:var(--muted)">🎯 서비스 득점율 = (에이스 + 서브포인트) ÷ 내가 서브한 포인트 ${svN}개 → ${svA}점</p>`}${sgBox}
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anDistView(anDist(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anDistView(anDist(mine),anTL(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 모두 닫기 (선수별 비교로 돌아가기)</button>`;
@@ -1480,7 +1480,44 @@ function anDist(list){
   else msg="위닝과 에러가 경기 내내 고르게 나와요";
   return {b,W,U,maxW,maxU,msg,n:seqs.length};
 }
-function anDistView(d){
+/* 경기 한 판을 포인트 순서대로 가로로 쭉 펼친 타임라인: 위 줄=우리팀 득점, 아래 줄=상대팀 득점, 그 위에 내 위닝(초록)·에러(주황) 위치. 엑셀 한 줄=한 포인트, 이긴 팀은 위닝(W)한 선수의 팀 또는 에러(U)한 선수의 상대팀으로 판단 */
+function anTL(list){
+  const out=[];
+  list.forEach(e=>{const g=e.g||{},rows=g.rows||[],pts=g.pts;if(rows.length<4||!Array.isArray(pts)||!pts.length)return;
+    const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return;
+    const my=rows[mi].name,me=mi<2?0:1,tm={};rows.forEach((r,i)=>{if(r.name)tm[r.name]=i<2?0:1});
+    const byG={};pts.forEach(p=>{const G=byG[p[0]]||(byG[p[0]]=[]);(G[p[1]]=G[p[1]]||[]).push(p)});
+    const slots=[],bounds=[];let mw=0,mu=0,us=0,them=0;
+    Object.keys(byG).map(Number).sort((a,b)=>a-b).forEach(gn=>{const G=byG[gn],st=slots.length;
+      for(let q=1;q<G.length;q++){const ev=G[q]||[];let t=-1,m="";
+        const w=ev.find(p=>p[4]==="W"&&tm[p[2]]!==undefined);if(w)t=tm[w[2]];else{const u=ev.find(p=>p[4]==="U"&&tm[p[2]]!==undefined);if(u)t=1-tm[u[2]]}
+        const mm=ev.find(p=>p[2]===my&&(p[4]==="W"||p[4]==="U"));if(mm)m=mm[4];
+        const side=t<0?-1:(t===me?0:1);if(side===0)us++;else if(side===1)them++;if(m==="W")mw++;else if(m==="U")mu++;
+        slots.push({t:side,m})}
+      bounds.push({gn,s:st,e:slots.length})});
+    if(slots.length<10)return;
+    const sc=Array.isArray(g.sc)?(me===0?[g.sc[0],g.sc[1]]:[g.sc[1],g.sc[0]]):null;
+    out.push({date:g.date||"",sc,slots,bounds,mw,mu,us,them})});
+  return out.sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0);
+}
+function anTLView(t){
+  const W=300,top=10,LH=14,mid=11,bot=top+LH+mid,H=bot+LH+9,n=t.slots.length,sw=W/n,gap=sw>2.4?.5:0;
+  const X=i=>(i*sw).toFixed(2),R=(i,y,c,o)=>`<rect x="${X(i)}" y="${y}" width="${Math.max(.9,sw-gap).toFixed(2)}" height="${LH}" fill="${c}"${o<1?` fill-opacity="${o}"`:""}/>`;
+  let body="",mk="";
+  t.slots.forEach((s,i)=>{if(s.t===0)body+=R(i,top,s.m==="W"?"#1d9a5b":"#3b82f6",s.m==="W"?1:.45);else if(s.t===1)body+=R(i,bot,s.m==="U"?"#e07b00":"#94a3b8",s.m==="U"?1:.45);
+    const cx=(i*sw+sw/2).toFixed(2);if(s.m==="W")mk+=`<circle cx="${cx}" cy="${top-4.5}" r="2.6" fill="#1d9a5b"/>`;else if(s.m==="U")mk+=`<circle cx="${cx}" cy="${bot+LH+4.5}" r="2.6" fill="#e07b00"/>`});
+  const my=top+LH+mid/2+3;let ln="",lb="";
+  t.bounds.forEach((b,k)=>{if(k)ln+=`<line x1="${X(b.s)}" x2="${X(b.s)}" y1="${top}" y2="${bot+LH}" stroke="currentColor" stroke-opacity=".35" stroke-width=".7"/>`;
+    const wd=(b.e-b.s)*sw;if(wd>=9)lb+=`<text x="${((b.s+b.e)/2*sw).toFixed(2)}" y="${my}" text-anchor="middle" font-size="8" fill="currentColor" fill-opacity=".6">${b.gn}</text>`});
+  const d=t.date?(+t.date.slice(5,7))+"/"+(+t.date.slice(8,10)):"",res=t.sc?(t.sc[0]>t.sc[1]?"승":t.sc[0]<t.sc[1]?"패":"무"):"";
+  return `<div style="margin-top:8px"><div style="font-size:12px;font-weight:700;margin-bottom:2px">${d}${t.sc?` · <span style="color:${res==="승"?"#1d9a5b":res==="패"?"#c0392b":"var(--muted)"}">${t.sc[0]}:${t.sc[1]} ${res}</span>`:""} <span style="font-weight:400;font-size:11px;color:var(--muted);white-space:nowrap">· 득점 ${t.us} : ${t.them}</span> <span style="font-weight:400;font-size:11px;white-space:nowrap">· <span style="color:#1d9a5b">내 위닝 ${t.mw}</span> <span style="color:#e07b00">에러 ${t.mu}</span></span></div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${d} 경기 포인트 흐름: 위 줄 우리팀 득점, 아래 줄 상대팀 득점, 초록 점은 내 위닝, 주황 점은 내 에러" style="display:block;color:inherit">${body}${ln}${lb}${mk}</svg></div>`;
+}
+function anDistView(d,tl){
+  tl=(tl||[]).slice(0,4);
+  if(tl.length){
+    const lg=`<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted);margin:0 0 2px"><span><span style="color:#3b82f6">■</span> 우리팀 득점(위)</span><span><span style="color:#94a3b8">■</span> 상대팀 득점(아래)</span><span><span style="color:#1d9a5b">●</span> 내 위닝</span><span><span style="color:#e07b00">●</span> 내 에러</span></div>`;
+    return `<div style="margin-top:12px;word-break:keep-all"><div style="font-size:13px;font-weight:700;margin-bottom:2px">📊 경기 진행별 위닝·에러 분포 <span style="font-weight:400;font-size:11px;color:var(--muted)">(최근 ${tl.length}경기)</span></div><p style="margin:0 0 4px;font-size:11px;color:var(--muted)">왼쪽→오른쪽이 경기 진행 순서예요. 점수를 낸 팀 쪽 줄에 한 칸씩 채워지고, 가운데 숫자는 게임 번호, 빈 칸은 승부가 기록되지 않은 포인트예요.</p>${lg}<div style="padding:4px 8px 8px;border-radius:12px;background:rgba(128,128,128,.07)">${tl.map(anTLView).join("")}</div>${d?`<p style="margin:6px 0 0;font-size:13px">${d.msg}${d.W&&d.U?` <span style="color:var(--muted);font-size:12px">(위닝은 ${AN_DB[d.maxW]}, 에러는 ${AN_DB[d.maxU]}에 가장 많았어요)</span>`:""}</p>`:""}</div>`;
+  }
   if(!d)return "";
   const mx=Math.max(1,...d.b.map(x=>Math.max(x[0],x[1]))),H=54;
   const col=(x,i)=>`<div style="flex:1 1 0;min-width:0;text-align:center"><div style="display:flex;justify-content:center;align-items:flex-end;gap:3px;height:${H+16}px">${[[x[0],"#1d9a5b"],[x[1],"#e07b00"]].map(([v,c])=>`<div style="width:42%;max-width:20px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><span style="font-size:10px;font-weight:800;color:${c};line-height:1.1">${v}</span><div style="width:100%;height:${Math.max(v?3:1,Math.round(v/mx*H))}px;background:${c};border-radius:3px 3px 0 0;opacity:${v?1:.25}"></div></div>`).join("")}</div><div style="font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap">${AN_DB[i]}</div></div>`;
