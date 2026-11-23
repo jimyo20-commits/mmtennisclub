@@ -633,7 +633,7 @@ const AN_HEX=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매�
    받는 선수의 리턴 기록(R)이 몇 번째 포인트였는지로 누가 듀스·애드인지 알아내고(홀수 번째면 듀스), 에이스·서브득점·더블폴트를 뺀 포인트 중 내 코트 몫에서 리턴 위닝·범실을 뺀 나머지를 "넘긴 리턴"으로 센다.
    포인트 기록(pts)이 없거나 듀스·애드를 알 수 없는 게임은 상대 서브(에이스 제외)의 절반을 받았다고 본다. */
 /* 저장된 경기 기록의 회원 행에는 이름이 없고 pid만 있어서(게스트만 이름 보관), 포인트 기록(pts)의 이름과 맞추려면 회원 이름을 찾아와야 해요 */
-const anRN=r=>(r&&(r.name||(anAll().find(x=>x.id===r.pid)||{}).name))||"";
+const anRN=r=>(r&&(r.name||(anAll(true).find(x=>x.id===r.pid)||{}).name))||"";   /* 고수 선수(ex:이름)도 이름을 찾도록 anAll(true) */
 function anRetConn(e){const g=e.g||{},rows=g.rows||[];if(rows.length<4)return null;const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return null;
   const myT=mi<2?[0,1]:[2,3],opp=mi<2?[rows[2],rows[3]]:[rows[0],rows[1]],wR=((e.w||{}).R||0),uR=(e.u||{}).R||0,aR=((e.ast||{}).R||0);
   const half=()=>{if(opp.some(r=>!r||!((r.s1||[])[1]>0)))return null;
