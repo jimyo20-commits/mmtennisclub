@@ -1082,7 +1082,7 @@ const anGrp=(main,subs,col)=>`<div style="display:grid;grid-template-columns:1fr
   const sum=`<div class="panel"><h2>${nameR(m)}${drillRingChips(m.id)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${gSel==="ALL"||!gSel||gAll.length<2?st.n+"경기":mdl((gAll.find(g=>g.id===gSel)||{}).date)+" 경기"}</span></h2>
   ${anGrp(`<b>${anC(st)}</b><span>승리기여도</span>`,[["위닝(Winning)",st.W],["언포스트 에러",st.U],["순기여(위너−범실)",(st.net>0?"+":"")+st.net]],"")}
   ${anGrp(`<b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span>`,[["2nd 서브",st.p2===null?"-":st.p2+"%"]].concat(svP===null?[]:[["서비스 득점율",svP+"%"]]),st.p1===null?"":anP1Col(st.p1))}${svP===null?"":`<p style="margin:6px 0 0;font-size:11px;color:var(--muted)">🎯 서비스 득점율 = (에이스 + 서브포인트) ÷ 내가 서브한 포인트 ${svN}개 → ${svA}점</p>`}${sgBox}
-  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+  <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)</p>${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anDistView(anDist(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 모두 닫기 (선수별 비교로 돌아가기)</button>`;
@@ -1463,6 +1463,28 @@ function anFlow(list){
   else if(mu>=3){msg=`주황 범실이 최대 ${mu}번 연속 몰려 심리적으로 위축된 모습이 보여요`;short=`범실이 ${mu}번 연속 몰려 심리적으로 위축된 모습`}
   else if(mw>=3){msg=`초록 위닝샷이 최대 ${mw}번 연속 몰려 심리적 안정감과 기술 숙련도가 높아요`;short=`위닝샷이 ${mw}번 연속 몰려 안정감·숙련도 높음`}
   return {seqs,mw,mu,cw,cu,msg,short};
+}
+/* 경기 진행별 위닝·에러 분포(누적): 경기마다 시간순(위→아래) 기록을 5등분해서 위닝(W)·에러(U)가 어느 시점에 많이 나왔는지 여러 경기를 합쳐 보여줘요. 기록이 2경기 이상·합계 10개 이상일 때만 */
+const AN_DB=["초반","초중반","중반","중후반","막판"];
+function anDist(list){
+  const seqs=list.filter(x=>x.sq&&x.sq.length>=2).map(x=>x.sq);if(seqs.length<2)return null;
+  const b=AN_DB.map(()=>[0,0]);let tot=0;
+  seqs.forEach(q=>{const n=q.length;[...q].forEach((c,i)=>{const k=Math.min(4,Math.floor(i*5/n));b[k][c==="W"?0:1]++;tot++})});
+  if(tot<10)return null;
+  const W=b.reduce((t,x)=>t+x[0],0),U=b.reduce((t,x)=>t+x[1],0),maxW=b.reduce((m,x,i)=>x[0]>b[m][0]?i:m,0),maxU=b.reduce((m,x,i)=>x[1]>b[m][1]?i:m,0);
+  let msg="";
+  if(U>=3&&(b[3][1]+b[4][1])/U>=.5)msg="에러가 경기 후반에 몰리는 편이에요 — 체력·집중력 관리가 포인트예요";
+  else if(U>=3&&(b[0][1]+b[1][1])/U>=.5)msg="에러가 경기 초반에 몰리는 편이에요 — 몸 풀기와 초반 적응을 신경 써 보세요";
+  else if(W>=3&&(b[3][0]+b[4][0])/W>=.5)msg="위닝이 후반에 더 많이 나와요 — 갈수록 살아나는 타입이에요";
+  else if(W>=3&&(b[0][0]+b[1][0])/W>=.5)msg="위닝이 초반에 더 많이 나와요 — 후반에도 같은 페이스를 이어가 보세요";
+  else msg="위닝과 에러가 경기 내내 고르게 나와요";
+  return {b,W,U,maxW,maxU,msg,n:seqs.length};
+}
+function anDistView(d){
+  if(!d)return "";
+  const mx=Math.max(1,...d.b.map(x=>Math.max(x[0],x[1]))),H=54;
+  const col=(x,i)=>`<div style="flex:1 1 0;min-width:0;text-align:center"><div style="display:flex;justify-content:center;align-items:flex-end;gap:3px;height:${H+16}px">${[[x[0],"#1d9a5b"],[x[1],"#e07b00"]].map(([v,c])=>`<div style="width:42%;max-width:20px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><span style="font-size:10px;font-weight:800;color:${c};line-height:1.1">${v}</span><div style="width:100%;height:${Math.max(v?3:1,Math.round(v/mx*H))}px;background:${c};border-radius:3px 3px 0 0;opacity:${v?1:.25}"></div></div>`).join("")}</div><div style="font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap">${AN_DB[i]}</div></div>`;
+  return `<div style="margin-top:12px;word-break:keep-all"><div style="font-size:13px;font-weight:700;margin-bottom:2px">📊 경기 진행별 위닝·에러 분포 <span style="font-weight:400;font-size:11px;color:var(--muted)">(<span style="color:#1d9a5b">■</span> 위닝 <span style="color:#e07b00">■</span> 에러 · ${d.n}경기 누적)</span></div><p style="margin:0 0 6px;font-size:11px;color:var(--muted)">경기마다 시간 순서를 5등분해서, 위닝과 에러가 경기 어느 시점에 많이 나왔는지 합쳤어요.</p><div style="display:flex;gap:4px;padding:8px 6px 6px;border-radius:12px;background:rgba(128,128,128,.07)">${d.b.map(col).join("")}</div><p style="margin:6px 0 0;font-size:13px">${d.msg}${d.W&&d.U?` <span style="color:var(--muted);font-size:12px">(위닝은 ${AN_DB[d.maxW]}, 에러는 ${AN_DB[d.maxU]}에 가장 많았어요)</span>`:""}</p></div>`;
 }
 function anFlowView(f){
   if(!f)return "";
