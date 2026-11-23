@@ -1490,36 +1490,39 @@ function anTL(list){
     const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return;
     const my=anRN(rows[mi]),me=mi<2?0:1,tm={};rows.forEach((r,i)=>{const nn=anRN(r);if(nn)tm[nn]=i<2?0:1});
     const byG={};pts.forEach(p=>{const G=byG[p[0]]||(byG[p[0]]=[]);(G[p[1]]=G[p[1]]||[]).push(p)});
-    const slots=[],bounds=[];let mw=0,mu=0,us=0,them=0;
+    const slots=[],bounds=[];let mw=0,mu=0,us=0,them=0,ub=0,ua=0,wb=0,wa=0;
     Object.keys(byG).map(Number).sort((a,b)=>a-b).forEach(gn=>{const G=byG[gn],st=slots.length;
       for(let q=1;q<G.length;q++){const ev=G[q]||[];let t=-1,m="";
         const w=ev.find(p=>p[4]==="W"&&tm[p[2]]!==undefined);if(w)t=tm[w[2]];else{const u=ev.find(p=>p[4]==="U"&&tm[p[2]]!==undefined);if(u)t=1-tm[u[2]]}
         const mm=ev.find(p=>p[2]===my&&(p[4]==="W"||p[4]==="U"));if(mm)m=mm[4];
-        const side=t<0?-1:(t===me?0:1);if(side===0)us++;else if(side===1)them++;if(m==="W")mw++;else if(m==="U")mu++;
+        const side=t<0?-1:(t===me?0:1),df=us-them;if(m==="U"){if(df<0)ub++;else ua++}else if(m==="W"){if(df<0)wb++;else wa++}if(side===0)us++;else if(side===1)them++;if(m==="W")mw++;else if(m==="U")mu++;
         slots.push({t:side,m})}
       bounds.push({gn,s:st,e:slots.length})});
     if(slots.length<10)return;
     const sc=Array.isArray(g.sc)?(me===0?[g.sc[0],g.sc[1]]:[g.sc[1],g.sc[0]]):null;
-    out.push({date:g.date||"",sc,slots,bounds,mw,mu,us,them})});
+    out.push({date:g.date||"",sc,slots,bounds,mw,mu,us,them,ub,ua,wb,wa})});
   return out.sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0);
 }
+let anTLn=0;
 function anTLView(t){
-  const W=300,top=10,LH=14,mid=11,bot=top+LH+mid,H=bot+LH+9,n=t.slots.length,sw=W/n,gap=sw>2.4?.5:0;
-  const X=i=>(i*sw).toFixed(2),R=(i,y,c,o)=>`<rect x="${X(i)}" y="${y}" width="${Math.max(.9,sw-gap).toFixed(2)}" height="${LH}" fill="${c}"${o<1?` fill-opacity="${o}"`:""}/>`;
-  let body="",mk="";
-  t.slots.forEach((s,i)=>{if(s.t===0)body+=R(i,top,s.m==="W"?"#1d9a5b":"#3b82f6",s.m==="W"?1:.45);else if(s.t===1)body+=R(i,bot,s.m==="U"?"#e07b00":"#94a3b8",s.m==="U"?1:.45);
-    const cx=(i*sw+sw/2).toFixed(2);if(s.m==="W")mk+=`<circle cx="${cx}" cy="${top-4.5}" r="2.6" fill="#1d9a5b"/>`;else if(s.m==="U")mk+=`<circle cx="${cx}" cy="${bot+LH+4.5}" r="2.6" fill="#e07b00"/>`});
-  const my=top+LH+mid/2+3;let ln="",lb="";
-  t.bounds.forEach((b,k)=>{if(k)ln+=`<line x1="${X(b.s)}" x2="${X(b.s)}" y1="${top}" y2="${bot+LH}" stroke="currentColor" stroke-opacity=".35" stroke-width=".7"/>`;
-    const wd=(b.e-b.s)*sw;if(wd>=9)lb+=`<text x="${((b.s+b.e)/2*sw).toFixed(2)}" y="${my}" text-anchor="middle" font-size="8" fill="currentColor" fill-opacity=".6">${b.gn}</text>`});
+  const W=300,top=8,H=96,bot=H-14,mid=(top+bot)/2,n=t.slots.length,X=i=>n>1?4+i*(W-8)/(n-1):W/2;
+  let df=0;const D=t.slots.map(s=>(s.t===0?df++:s.t===1?df--:0,df)),mx=Math.max(4,...D.map(Math.abs)),Y=v=>mid-v/mx*(mid-top-3);
+  const id="tl"+(++anTLn),pts=[[X(0),mid],...D.map((v,i)=>[X(i),Y(v)])],pl=pts.map(q=>q[0].toFixed(1)+","+q[1].toFixed(1)).join(" "),area=`M${pts[0][0]},${mid} L${pl.replace(/ /g," L")} L${pts[pts.length-1][0]},${mid} Z`;
+  let ln="",lb="",mk="";
+  t.bounds.forEach((b,k)=>{if(k)ln+=`<line x1="${X(b.s-.5).toFixed(1)}" x2="${X(b.s-.5).toFixed(1)}" y1="${top}" y2="${bot}" stroke="currentColor" stroke-opacity=".18" stroke-width=".7"/>`;
+    if((b.e-b.s)*(W-8)/n>=9)lb+=`<text x="${X((b.s+b.e-1)/2).toFixed(1)}" y="${H-3}" text-anchor="middle" font-size="8" fill="currentColor" fill-opacity=".55">${b.gn}</text>`});
+  t.slots.forEach((s,i)=>{if(s.m)mk+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(D[i]).toFixed(1)}" r="3.6" fill="${s.m==="W"?"#1d9a5b":"#e07b00"}" stroke="#fff" stroke-width="1"/>`});
   const d=t.date?(+t.date.slice(5,7))+"/"+(+t.date.slice(8,10)):"",res=t.sc?(t.sc[0]>t.sc[1]?"승":t.sc[0]<t.sc[1]?"패":"무"):"";
-  return `<div style="margin-top:8px"><div style="font-size:12px;font-weight:700;margin-bottom:2px">${d}${t.sc?` · <span style="color:${res==="승"?"#1d9a5b":res==="패"?"#c0392b":"var(--muted)"}">${t.sc[0]}:${t.sc[1]} ${res}</span>`:""} <span style="font-weight:400;font-size:11px;color:var(--muted);white-space:nowrap">· 득점 ${t.us} : ${t.them}</span> <span style="font-weight:400;font-size:11px;white-space:nowrap">· <span style="color:#1d9a5b">내 위닝 ${t.mw}</span> <span style="color:#e07b00">에러 ${t.mu}</span></span></div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${d} 경기 포인트 흐름: 위 줄 우리팀 득점, 아래 줄 상대팀 득점, 초록 점은 내 위닝, 주황 점은 내 에러" style="display:block;color:inherit">${body}${ln}${lb}${mk}</svg></div>`;
+  return `<div style="margin-top:10px"><div style="font-size:12px;font-weight:700;margin-bottom:2px">${d}${t.sc?` · <span style="color:${res==="승"?"#1d9a5b":res==="패"?"#c0392b":"var(--muted)"}">${t.sc[0]}:${t.sc[1]} ${res}</span>`:""} <span style="font-weight:400;font-size:11px;white-space:nowrap">· <span style="color:#1d9a5b">내 위닝 ${t.mw}</span> <span style="color:#e07b00">에러 ${t.mu}</span></span></div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${d} 경기 점수차 흐름: 선이 위로 가면 우리팀이 앞서고 아래로 가면 뒤져요. 초록 점은 내 위닝, 주황 점은 내 에러" style="display:block;color:inherit"><defs><clipPath id="${id}u"><rect x="0" y="0" width="${W}" height="${mid}"/></clipPath><clipPath id="${id}d"><rect x="0" y="${mid}" width="${W}" height="${H}"/></clipPath></defs><path d="${area}" fill="#3b82f6" fill-opacity=".22" clip-path="url(#${id}u)"/><path d="${area}" fill="#ef4444" fill-opacity=".2" clip-path="url(#${id}d)"/>${ln}<line x1="0" x2="${W}" y1="${mid}" y2="${mid}" stroke="currentColor" stroke-opacity=".45" stroke-width=".8" stroke-dasharray="3 2"/><text x="2" y="${top+6}" font-size="8" fill="#3b82f6">앞섬</text><text x="2" y="${bot-2}" font-size="8" fill="#ef4444">뒤짐</text><polyline points="${pl}" fill="none" stroke="currentColor" stroke-opacity=".75" stroke-width="1.6" stroke-linejoin="round"/>${mk}${lb}</svg></div>`;
 }
 function anDistView(d,tl){
   tl=(tl||[]).slice(0,4);
   if(tl.length){
-    const lg=`<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted);margin:0 0 2px"><span><span style="color:#3b82f6">■</span> 우리팀 득점(위)</span><span><span style="color:#94a3b8">■</span> 상대팀 득점(아래)</span><span><span style="color:#1d9a5b">●</span> 내 위닝</span><span><span style="color:#e07b00">●</span> 내 에러</span></div>`;
-    return `<div style="margin-top:12px;word-break:keep-all"><div style="font-size:13px;font-weight:700;margin-bottom:2px">📊 경기 진행별 위닝·에러 분포 <span style="font-weight:400;font-size:11px;color:var(--muted)">(최근 ${tl.length}경기)</span></div><p style="margin:0 0 4px;font-size:11px;color:var(--muted)">왼쪽→오른쪽이 경기 진행 순서예요. 점수를 낸 팀 쪽 줄에 한 칸씩 채워지고, 가운데 숫자는 게임 번호, 빈 칸은 승부가 기록되지 않은 포인트예요.</p>${lg}<div style="padding:4px 8px 8px;border-radius:12px;background:rgba(128,128,128,.07)">${tl.map(anTLView).join("")}</div>${d?`<p style="margin:6px 0 0;font-size:13px">${d.msg}${d.W&&d.U?` <span style="color:var(--muted);font-size:12px">(위닝은 ${AN_DB[d.maxW]}, 에러는 ${AN_DB[d.maxU]}에 가장 많았어요)</span>`:""}</p>`:""}</div>`;
+    const UB=tl.reduce((t,x)=>t+x.ub,0),UA=tl.reduce((t,x)=>t+x.ua,0),WB=tl.reduce((t,x)=>t+x.wb,0),WA=tl.reduce((t,x)=>t+x.wa,0),
+      bm=UB+UA>=3?(UB/(UB+UA)>=.6?`내 에러의 ${Math.round(UB/(UB+UA)*100)}%가 <b>뒤지고 있을 때</b> 나왔어요 — 점수가 밀릴 때 조급해지는 편이에요`:UA/(UB+UA)>=.6?`내 에러의 ${Math.round(UA/(UB+UA)*100)}%가 <b>앞서거나 비길 때</b> 나왔어요 — 앞설 때 집중이 풀리는 편이에요`:"에러가 앞서든 뒤지든 비슷하게 나와요 — 점수 상황에 크게 흔들리지 않아요"):"",
+      wm=WB+WA>=3&&WB/(WB+WA)>=.5?` 위닝은 뒤질 때 ${Math.round(WB/(WB+WA)*100)}%가 나와서 위기에 강해요.`:"";
+    const lg=`<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted);margin:0 0 2px"><span><span style="color:#3b82f6">■</span> 위 = 우리팀이 앞섬</span><span><span style="color:#ef4444">■</span> 아래 = 뒤짐</span><span><span style="color:#1d9a5b">●</span> 내 위닝</span><span><span style="color:#e07b00">●</span> 내 에러</span></div>`;
+    return `<div style="margin-top:12px;word-break:keep-all"><div style="font-size:13px;font-weight:700;margin-bottom:2px">📊 경기 진행별 위닝·에러 분포 <span style="font-weight:400;font-size:11px;color:var(--muted)">(최근 ${tl.length}경기)</span></div><p style="margin:0 0 4px;font-size:11px;color:var(--muted)">경기가 진행될수록(왼쪽→오른쪽) 점수차가 어떻게 변했는지 선으로 보여줘요. 점 위치가 내 위닝·에러가 나온 순간이에요. 숫자는 게임 번호예요.</p>${lg}<div style="padding:2px 8px 8px;border-radius:12px;background:rgba(128,128,128,.07)">${tl.map(anTLView).join("")}</div>${bm?`<p style="margin:8px 0 0;font-size:13px;font-weight:600">${bm}.${wm}</p>`:""}${d?`<p style="margin:6px 0 0;font-size:13px">${d.msg}${d.W&&d.U?` <span style="color:var(--muted);font-size:12px">(위닝은 ${AN_DB[d.maxW]}, 에러는 ${AN_DB[d.maxU]}에 가장 많았어요)</span>`:""}</p>`:""}</div>`;
   }
   if(!d)return "";
   const mx=Math.max(1,...d.b.map(x=>Math.max(x[0],x[1]))),H=54;
