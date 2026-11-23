@@ -623,6 +623,8 @@ const AN_HEX=[["Fs","포핸드"],["Bs","백핸드"],["V","발리"],["O","스매�
 /* 리턴 "무난하게 넘긴 것" 추정: 게임마다 받는 팀은 "듀스코트 선수가 홀수 번째 포인트, 애드코트 선수가 짝수 번째 포인트"를 받아요.
    받는 선수의 리턴 기록(R)이 몇 번째 포인트였는지로 누가 듀스·애드인지 알아내고(홀수 번째면 듀스), 에이스·서브득점·더블폴트를 뺀 포인트 중 내 코트 몫에서 리턴 위닝·범실을 뺀 나머지를 "넘긴 리턴"으로 센다.
    포인트 기록(pts)이 없거나 듀스·애드를 알 수 없는 게임은 상대 서브(에이스 제외)의 절반을 받았다고 본다. */
+/* 저장된 경기 기록의 회원 행에는 이름이 없고 pid만 있어서(게스트만 이름 보관), 포인트 기록(pts)의 이름과 맞추려면 회원 이름을 찾아와야 해요 */
+const anRN=r=>(r&&(r.name||(anAll().find(x=>x.id===r.pid)||{}).name))||"";
 function anRetConn(e){const g=e.g||{},rows=g.rows||[];if(rows.length<4)return null;const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return null;
   const myT=mi<2?[0,1]:[2,3],opp=mi<2?[rows[2],rows[3]]:[rows[0],rows[1]],wR=((e.w||{}).R||0),uR=(e.u||{}).R||0,aR=((e.ast||{}).R||0);
   const half=()=>{if(opp.some(r=>!r||!((r.s1||[])[1]>0)))return null;
@@ -630,7 +632,7 @@ function anRetConn(e){const g=e.g||{},rows=g.rows||[];if(rows.length<4)return nu
     return {conn:Math.max(0,Math.max(0,inP-ace)/2-wR-uR-aR),u:uR,m:"half"}};
   const pts=g.pts;if(!Array.isArray(pts)||!pts.length||!rows.every(r=>r.so>0))return half();
   const byG={};pts.forEach(p=>{(byG[p[0]]=byG[p[0]]||[]).push(p)});
-  const my=rows[mi].name,nm=myT.map(i=>rows[i].name);let conn=0,gm=0,exact=0;
+  const my=anRN(rows[mi]),nm=myT.map(i=>anRN(rows[i]));let conn=0,gm=0,exact=0;
   Object.keys(byG).forEach(k=>{const gn=+k,ev=byG[k],si=rows.findIndex(r=>r.so===((gn-1)%4)+1);if(si<0||myT.includes(si))return;   /* 내가 속한 팀이 서브하는 게임은 리턴이 없음 */
     const L=Math.max(...ev.map(p=>p[1])),no=new Set(ev.filter(p=>p[3]==="A"||p[3]==="Sp"||p[3]==="D").map(p=>p[1])),
       rv=ev.filter(p=>p[3]==="R"&&nm.includes(p[2])),dp=new Set(rv.map(p=>p[1]%2===1?p[2]:nm.find(n=>n!==p[2])));
@@ -1485,7 +1487,7 @@ function anTL(list){
   const out=[];
   list.forEach(e=>{const g=e.g||{},rows=g.rows||[],pts=g.pts;if(rows.length<4||!Array.isArray(pts)||!pts.length)return;
     const mi=rows.findIndex(r=>(e.name&&r.name===e.name)||(!e.name&&e.pid&&r.pid===e.pid));if(mi<0)return;
-    const my=rows[mi].name,me=mi<2?0:1,tm={};rows.forEach((r,i)=>{if(r.name)tm[r.name]=i<2?0:1});
+    const my=anRN(rows[mi]),me=mi<2?0:1,tm={};rows.forEach((r,i)=>{const nn=anRN(r);if(nn)tm[nn]=i<2?0:1});
     const byG={};pts.forEach(p=>{const G=byG[p[0]]||(byG[p[0]]=[]);(G[p[1]]=G[p[1]]||[]).push(p)});
     const slots=[],bounds=[];let mw=0,mu=0,us=0,them=0;
     Object.keys(byG).map(Number).sort((a,b)=>a-b).forEach(gn=>{const G=byG[gn],st=slots.length;
