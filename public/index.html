@@ -228,7 +228,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
-if(!S.attend)S.attend={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={};
+if(!S.attend)S.attend={}; if(!S.drillBuddy)S.drillBuddy={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
 S.members.forEach(m=>{if(!LEVELS.includes(m.level))m.level="";if(!STATUSES.includes(m.status))m.status="정회원"});
@@ -1094,7 +1094,7 @@ const anGrp=(main,subs,col)=>`<div style="display:grid;grid-template-columns:1fr
   const sum=`<div class="panel"><h2>${nameR(m)}${drillRingChips(m.id)} 님 분석 요약 <span class="tag" style="font-size:11px;vertical-align:middle">${gSel==="ALL"||!gSel||gAll.length<2?st.n+"경기":mdl((gAll.find(g=>g.id===gSel)||{}).date)+" 경기"}</span></h2>
   ${anGrp(`<b>${anC(st)}</b><span>승리기여도</span>`,[["위닝(Winning)",st.W],["언포스트 에러",st.U],["순기여(위너−범실)",(st.net>0?"+":"")+st.net]],"")}${anDet("승리기여도란?","승리기여도 = 경기별 Winning ÷ Unforced의 평균 (100%를 넘으면 득점이 범실보다 많다는 뜻 · 위닝·범실 모두 0인 경기는 100%, 범실 없이 위닝만 있는 경기는 200%로 계산)")}
   ${anGrp(`<b${st.p1===null?"":` style="color:${anP1Col(st.p1)}"`}>${st.p1===null?"-":st.p1+"%"}</b><span>1st 서브</span>`,[["2nd 서브",st.p2===null?"-":st.p2+"%"]].concat(svP===null?[]:[["서비스 득점율",svP+"%"]]),st.p1===null?"":anP1Col(st.p1))}${svP===null?"":`${anDet("서비스 득점율이란?",`🎯 서비스 득점율 = (에이스 + 서브포인트) ÷ 내가 서브한 포인트 ${svN}개 → ${svA}점`)}`}${sgBox}
-${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anDistView(anDist(mine),anTL(mine))}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+${anPhaseView(anPhase(mine))}${anFlowView(anFlow(mine))}${anDistView(anDist(mine),anTL(mine))}${drillRecView(sel)}${anCourtView(anCourt(mine))}${anSvOrderView(anSvOrder(mine))}${tips.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
   const games=[...new Set(mine.map(e=>e.g))];
   const list=`<div class="panel"><h2>경기별 기록</h2><ul class="list">${games.map(g=>anGameCard(g,sel)).join("")}</ul></div>`;
   if(anTop){const back=`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="anClose()">▲ 모두 닫기 (선수별 비교로 돌아가기)</button>`;
@@ -2993,6 +2993,43 @@ function attCalc(m,start){const s=new Date(start+"T00:00");if(isNaN(s))return nu
 function attStart(){const ks=Object.keys(S.attend).filter(k=>Object.keys(S.attend[k]||{}).length).concat(Object.keys(S.attDone||{}).filter(k=>S.attDone[k])).sort();return ks[0]||null}   /* 가입일은 참고용: 출석률은 모든 회원 같은 기준(출석 기록이 시작된 날부터)으로 계산 */
 function totalRate(m){const st=attStart();return st?attCalc(m,st):null}
 function attRate(m){return totalRate(m)}
+/* ── 드릴 이용 늘리기 ① 분석 점수가 가장 낮은 스킬의 드릴 추천 ② 홈 '이번 주 드릴 미션' 카드 ③ 클럽 드릴 현황(이달 TOP3·같이 연습할 사람) ── */
+function drillRec(mid){
+  try{drillMig();
+    const done=k=>{const x=AN_DRILL.find(y=>y.k===k);return !x||drillCnt(mid,k)>=x.d.length};
+    const L=anFlat().filter(e=>e.pid===mid);let pick=null;
+    if(L.length){const rc=[...L].sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")).slice(0,5),h=anHexLv(L).lv,has=c=>c==="sv"?rc.some(e=>e.svp):c==="R"?rc.some(e=>e.hasC):rc.reduce((t,e)=>t+(((e.w||{})[c])||0)+(((e.u||{})[c])||0),0)>=3;
+      AN_HEX.forEach(([hk,hl])=>{const dk=hk==="sv"?"Sv":hk,v=h[hk];if(typeof v==="number"&&has(hk)&&drillVis(dk)&&!done(dk)&&(!pick||v<pick.v))pick={k:dk,l:hl,v,src:"an"}})}
+    if(!pick){const mk=drillMainOf(drillYM(0)),c=[mk,...drillVisList().map(x=>x.k)].find(k=>k&&drillVis(k)&&!done(k));if(c)pick={k:c,l:AN_DRILL.find(y=>y.k===c).l,v:null,src:"main"}}
+    if(!pick)return null;
+    const x=AN_DRILL.find(y=>y.k===pick.k),ok=(S.drillOk||{})[mid]||{},sf=(S.drills||{})[mid]||{};
+    let i=x.d.findIndex((_,j)=>!ok[pick.k+":"+j]&&!sf[pick.k+":"+j]);if(i<0)i=x.d.findIndex((_,j)=>!ok[pick.k+":"+j]);
+    return i<0?null:{...pick,i,t:x.d[i][0],c:x.d[i][2],n:drillCnt(mid,pick.k),T:x.d.length}
+  }catch(e){return null}}
+function drillGo(k){drillK=k;drillOn=false;tab="drill";anTop=false;render()}
+const drillMBar=(n,T,col)=>`<div style="height:8px;border-radius:99px;background:rgba(128,128,128,.18);overflow:hidden"><div style="height:100%;width:${Math.round(Math.min(1,n/Math.max(1,T))*100)}%;background:${col||"linear-gradient(90deg,#22c55e,#16a34a)"};border-radius:99px"></div></div>`;
+/* 분석탭(내 상세)에 넣는 추천 카드 */
+function drillRecView(mid){
+  if(isGuest()||!me||mid!==me)return "";
+  const r=drillRec(mid);if(!r)return "";
+  return `<div style="margin-top:12px;padding:10px 12px;border-radius:14px;border:2px solid #0ea5e9;background:linear-gradient(135deg,rgba(14,165,233,.10),rgba(34,197,94,.08));word-break:keep-all"><div style="font-size:13px;font-weight:800">🎯 이 스킬 드릴을 해보세요</div><div style="margin-top:4px;font-size:13px;line-height:1.55">${r.src==="an"?`내 <b>${r.l}</b> 점수가 <b>${r.v}점</b>으로 가장 낮아요.`:`이달의 연습 스킬 <b>${r.l}</b> 드릴이에요.`}<br><b>${esc(r.t)}</b> <span style="color:var(--muted)">· 합격 ${esc(r.c)}</span></div><button class="btn" style="width:100%;margin-top:8px" onclick="drillGo('${r.k}')">🎾 ${r.l} 드릴 하러 가기</button></div>`}
+/* 홈 맨 위: 이번 주 드릴 미션 */
+function drillMissionCard(){
+  if(isGuest()||!me||!S.members.some(m=>m.id===me))return "";
+  const r=drillRec(me),n=drillAll(me),L=DRILL_LIC,T=drillTotal();
+  if(!r)return "";
+  return `<div class="panel" style="border:2px solid #16a34a;background:linear-gradient(135deg,rgba(187,247,208,.45),rgba(254,240,138,.22));word-break:keep-all"><h2 style="margin:0 0 6px">🎯 이번 주 드릴 미션</h2><div style="font-size:14px;line-height:1.55"><span style="display:inline-block;padding:1px 8px;border-radius:99px;background:#16a34a;color:#fff;font-size:12px;font-weight:800">${r.l}</span> <b>${esc(r.t)}</b></div><div style="margin-top:2px;font-size:12px;color:var(--muted)">합격 기준 · ${esc(r.c)}${r.src==="an"?` · 내 ${r.l} ${r.v}점(가장 낮은 스킬)`:" · 이달의 연습 스킬"}</div><div style="display:flex;justify-content:space-between;font-size:12px;margin:10px 0 3px"><span>${r.l} 드릴 <b>${r.n}</b>/${r.T}</span><span>${n>=L?"🪪 경기면허증 발급 완료":`🪪 경기면허증까지 <b>${L-n}</b>개`}</span></div>${drillMBar(n>=L?1:n,n>=L?1:L)}<button class="btn" style="width:100%;margin-top:10px" onclick="drillGo('${r.k}')">🎾 드릴 하러 가기</button></div>`}
+/* 홈: 클럽 드릴 현황(이달 TOP3, 같이 연습할 사람) */
+const drillMonthCnt=ym=>{const o=S.drillOk||{},r=[];Object.keys(o).forEach(mid=>{const m=S.members.find(x=>x.id===mid);if(!m)return;const n=Object.values(o[mid]||{}).filter(d=>String(d).startsWith(ym)).length;if(n)r.push({m,n})});return r.sort((a,b)=>b.n-a.n)};
+function drillBuddyAct(k){if(isGuest()||!me)return;if(!S.drillBuddy)S.drillBuddy={};if(k)S.drillBuddy[me]={k,ts:today()};else delete S.drillBuddy[me];save();render()}
+function drillClubCard(){
+  const ym=today().slice(0,7),R=drillMonthCnt(ym),tot=R.reduce((t,x)=>t+x.n,0),mo=+ym.slice(5),g=isGuest()||!me;
+  const cut=new Date(Date.now()-7*864e5).toISOString().slice(0,10),B=Object.entries(S.drillBuddy||{}).filter(([id,b])=>b&&b.ts>=cut&&S.members.some(m=>m.id===id)).map(([id,b])=>({m:S.members.find(m=>m.id===id),b}));
+  const medal=["🥇","🥈","🥉"],r=g?null:drillRec(me),mine=(S.drillBuddy||{})[me],mineOn=!g&&mine&&mine.ts>=cut;
+  const sk=k=>(AN_DRILL.find(x=>x.k===k)||{}).l||"";
+  if(!R.length&&!B.length&&g)return "";
+  return `<div class="panel" style="word-break:keep-all"><h2 style="margin:0 0 6px">🏃 클럽 드릴 현황</h2><div style="font-size:13px;color:var(--muted)">${mo}월 완료 <b style="color:#16a34a">${tot}개</b> · 참여 <b style="color:#16a34a">${R.length}명</b></div>${R.length?`<div style="display:flex;gap:6px;margin-top:8px">${R.slice(0,3).map((x,i)=>`<div style="flex:1 1 0;min-width:0;text-align:center;padding:8px 4px;border-radius:12px;background:rgba(250,204,21,${i?".12":".25"});border:1px solid rgba(202,138,4,.35)"><div style="font-size:18px">${medal[i]}</div><div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.m.name)}</div><div style="font-size:12px;color:var(--muted)">${x.n}개</div></div>`).join("")}</div>`:`<p style="margin:8px 0 0;font-size:12px;color:var(--muted)">이번 달 완료한 회원이 아직 없어요. 첫 번째 주인공이 되어 보세요!</p>`}
+  <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)"><div style="font-size:13px;font-weight:800;margin-bottom:6px">🙋 같이 연습할 사람 구해요</div>${B.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${B.map(x=>`<button type="button" onclick="openProfile('${x.m.id}')" style="cursor:pointer;font:inherit;padding:4px 10px;border-radius:99px;border:1px solid #16a34a;background:rgba(34,197,94,.10);font-size:12px"><b>${esc(x.m.name)}</b> · ${sk(x.b.k)}</button>`).join("")}</div>`:`<p style="margin:0;font-size:12px;color:var(--muted)">지금 파트너를 구하는 회원이 없어요.</p>`}${g?"":(mineOn?`<button class="btn ghost" style="width:100%;margin-top:8px" onclick="drillBuddyAct('')">🙅 구하기 취소 (${sk(mine.k)})</button>`:r?`<button class="btn" style="width:100%;margin-top:8px" onclick="drillBuddyAct('${r.k}')">🙋 ${r.l} 같이 연습할 사람 구하기</button><div style="margin-top:4px;font-size:11px;color:var(--muted)">7일 동안 목록에 보여요. 이름을 누르면 프로필을 볼 수 있어요.</div>`:"")}</div></div>`}
 function newPanel(){
   drillMig();
   const ns=S.members.filter(isNew).sort((a,b)=>b.joined.localeCompare(a.joined));
@@ -3000,8 +3037,8 @@ function newPanel(){
   const dmP=dm.length?`<div class="panel" style="border:2px solid #ca8a04;background:linear-gradient(135deg,rgba(254,240,138,.35),rgba(250,204,21,.12))"><h2>👑 스킬 드릴 왕관·경기면허증을 축하합니다 (${dm.length}명)</h2><div style="display:flex;gap:16px;overflow-x:auto;padding:14px 8px 4px">${dm.map(r=>`<button onclick="openProfile('${r.m.id}')" aria-label="${esc(r.m.name)} 프로필 보기" style="flex:none;text-align:center;min-width:96px;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0"><div style="display:inline-block;position:relative;border-radius:50%;box-shadow:0 0 0 3px ${r.t?DRILL_TIER[r.t].c:"#2dd4bf"},0 0 12px ${r.t?DRILL_TIER[r.t].c:"#2dd4bf"}">${av(r.m,64)}<span style="position:absolute;right:-14px;top:-16px">${r.t?drillGrand(r.t,34):`<span class="dcrown" style="--gc:#2dd4bf;font-size:30px">🪪</span>`}</span></div><div style="font-weight:700;margin-top:8px">${esc(r.m.name)}</div><div style="font-size:12px;color:${r.t?"#92400e":"#0f766e"};font-weight:700">${r.t?DRILL_TIER[r.t].n+(r.t===3?" 드릴 마스터":" 왕관"):"테니스 경기면허증 발급"} · ${r.n}/${T}</div></button>`).join("")}</div><p style="margin:8px 0 0;font-size:12px;color:var(--muted)">운영자 확인 기준 · 🪪 경기면허증 ${DRILL_LIC}개 · 브론즈 ${DRILL_CUT[1]}개 · 실버 ${DRILL_CUT[2]}개 · 골드 ${DRILL_CUT[3]}개 이상 완성. 박수 👏👏</p></div>`:"";
   const sm0=drillSkillMasters(),sm=sm0.slice(0,6),smP=sm.length?`<div class="panel"><h2>${drillRingI(3,22)} 스킬 마스터가 탄생했어요 (${sm0.length}건${sm0.length>sm.length?", 최근 "+sm.length+"건 표시":""})</h2><ul class="list">${sm.map(e=>`<li style="gap:8px"><span style="flex:none">${drillRingI(3,24)}</span><div class="grow"><b>${esc(e.m.name)}</b> 님 <b style="color:#92400e">${e.x.l} 마스터</b><small>${e.d?e.d.slice(5).replace("-","/")+" 달성":""}</small></div></li>`).join("")}</ul></div>`:"";
   const mmP=drillMonthDone()||"";
-  if(!ns.length)return drillMainCard()+mmP+dmP+smP;
-  return drillMainCard()+mmP+dmP+smP+`<div class="panel"><h2>🎉 신입회원을 환영합니다 (${ns.length}명)</h2><div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px">${ns.map(m=>`<button onclick="openProfile('${m.id}')" aria-label="${esc(m.name)} 프로필 보기" style="flex:none;text-align:center;min-width:96px;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0">${av(m,64)}<div style="font-weight:700;margin-top:6px">${esc(m.name)} ${(r=>`<span class="tag" style="font-size:11px;font-weight:700;${r?rateColor(r.pct):""}">${r?`출석률 ${r.pct}%`:"출석률 -"}</span>`)(attRate(m))}</div><div style="font-size:12px;color:var(--muted)">${m.joined.slice(5).replace("-","/")} 가입</div></button>`).join("")}</div><p style="margin:8px 0 0;font-size:12px;color:var(--muted)">신입회원은 3개월간 출석률 70% 이상 달성이 필수입니다.</p></div>`}
+  if(!ns.length)return drillMissionCard()+drillMainCard()+drillClubCard()+mmP+dmP+smP;
+  return drillMissionCard()+drillMainCard()+drillClubCard()+mmP+dmP+smP+`<div class="panel"><h2>🎉 신입회원을 환영합니다 (${ns.length}명)</h2><div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px">${ns.map(m=>`<button onclick="openProfile('${m.id}')" aria-label="${esc(m.name)} 프로필 보기" style="flex:none;text-align:center;min-width:96px;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:0">${av(m,64)}<div style="font-weight:700;margin-top:6px">${esc(m.name)} ${(r=>`<span class="tag" style="font-size:11px;font-weight:700;${r?rateColor(r.pct):""}">${r?`출석률 ${r.pct}%`:"출석률 -"}</span>`)(attRate(m))}</div><div style="font-size:12px;color:var(--muted)">${m.joined.slice(5).replace("-","/")} 가입</div></button>`).join("")}</div><p style="margin:8px 0 0;font-size:12px;color:var(--muted)">신입회원은 3개월간 출석률 70% 이상 달성이 필수입니다.</p></div>`}
 function lastPast(){const n=new Date();n.setHours(0,0,0,0);for(let i=1;i<=21;i++){const d=new Date(n);d.setDate(n.getDate()-i);const ds=iso(d);const s=sessOn(ds)[0];if(s)return{ds,d,s}}return null}
 const attEnd=u=>new Date(u.ds+"T"+((u.s&&u.s.end)||"23:59"));
 const attOpen=(ds,st)=>new Date()>=new Date(ds+"T"+(st||"00:00"));
