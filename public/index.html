@@ -3357,8 +3357,12 @@ function upcoming(){const out=[];const n=new Date();n.setHours(0,0,0,0);for(let 
 let noteOpen={};
 const voteNoteOf=(ds,id)=>{const t=((S.voteNote||{})[ds]||{})[id];const v=(S.votes[ds]||{})[id];return t&&(v==="maybe"||v==="no")?t:""};
 const noteMark=(ds,id)=>voteNoteOf(ds,id)?`<span role="button" tabindex="0" aria-label="이유 보기" onclick="event.stopPropagation();toggleNote('${ds}|${id}')" style="margin-left:4px;font-size:13px;cursor:pointer;flex:none">💬</span>`:"";
-const noteBubble=(ds,m)=>noteOpen[ds+"|"+m.id]&&voteNoteOf(ds,m.id)?`<div style="grid-column:1/-1;position:relative;margin:4px 0 8px;padding:7px 11px;border-radius:12px;background:#fff7e6;border:1px solid #f5c26b;color:#7c4a03;font-size:12px;line-height:1.5;white-space:normal;word-break:keep-all"><span style="position:absolute;top:-5px;left:20px;width:8px;height:8px;background:#fff7e6;border-left:1px solid #f5c26b;border-top:1px solid #f5c26b;transform:rotate(45deg)"></span><b>${esc(m.name)}</b> · ${esc(voteNoteOf(ds,m.id))}</div>`:"";
+const noteBubble=(ds,m)=>noteOpen[ds+"|"+m.id]&&voteNoteOf(ds,m.id)?`<div style="grid-column:1/-1;position:relative;margin:4px 0 8px;padding:7px 11px;border-radius:12px;background:#fff7e6;border:1px solid #f5c26b;color:#7c4a03;font-size:12px;line-height:1.5;white-space:normal;word-break:keep-all"><span class="ntail" style="position:absolute;top:-5px;left:20px;width:8px;height:8px;background:#fff7e6;border-left:1px solid #f5c26b;border-top:1px solid #f5c26b;transform:rotate(45deg)"></span><b>${esc(m.name)}</b> · ${esc(voteNoteOf(ds,m.id))}</div>`:"";
 function toggleNote(k){noteOpen[k]=!noteOpen[k];render()}
+/* 말풍선 꼬리를 말풍선 바로 앞 칸(= 이유를 남긴 사람)의 위치로 맞춰요 */
+function noteTails(){document.querySelectorAll(".ntail").forEach(t=>{const b=t.parentElement,c=b&&b.previousElementSibling;if(!c)return;const br=b.getBoundingClientRect(),cr=c.getBoundingClientRect();const x=Math.max(10,Math.min(br.width-22,cr.left-br.left+16));t.style.left=x+"px"})}
+try{const _nm=new MutationObserver(()=>{requestAnimationFrame(noteTails)});_nm.observe(document.body,{childList:true,subtree:true})}catch(e){}
+window.addEventListener("resize",()=>{try{noteTails()}catch(e){}});
 function saveNote(ds){if(voteLocked(ds)){alert("투표가 마감되었습니다. (경기 시작 1시간 전 마감)");return}
   const el=document.getElementById("vn_"+ds),t=(el?el.value:"").trim().slice(0,30),v=(S.votes[ds]||{})[voter];if(!voter||(v!=="maybe"&&v!=="no"))return;
   if(!S.voteNote)S.voteNote={};const o=S.voteNote[ds]=S.voteNote[ds]||{};if(t)o[voter]=t;else delete o[voter];save();render()}
