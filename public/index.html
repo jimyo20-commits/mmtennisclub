@@ -1549,8 +1549,8 @@ function anDistView(d,tl){
 }
 /* 경기 흐름: 한 줄에 다 안 들어가면 줄마다 칸 수를 같게(반반) 나눠요. 첫 줄 앞에 ▶, 마지막 줄 끝에 ◀ */
 function flowRows(q,per){const n=q.length,rows=Math.max(1,Math.ceil(n/Math.max(1,per))),sz=Math.ceil(n/rows),slot=t=>`<span style="flex:none;width:12px;text-align:center;font-size:9px;font-weight:800;color:var(--muted);line-height:12px">${t}</span>`;
-  return Array.from({length:rows},(_,r)=>{const c=[...q].slice(r*sz,(r+1)*sz);return `<div style="display:flex;align-items:center;gap:2px;margin:2px 0">${slot(r===0?"▶":"")}${c.map(ch=>`<span style="flex:none;width:12px;height:12px;border-radius:3px;background:${ch==="W"?"#1d9a5b":"#e07b00"}"></span>`).join("")}${slot(r===rows-1?"◀":"")}</div>`}).join("")}
-function flowFit(){document.querySelectorAll(".flowg").forEach(el=>{const w=el.clientWidth;if(!w||el.dataset.fw==w)return;el.dataset.fw=w;const per=Math.max(6,Math.floor((w-6-2*14)/14));el.innerHTML=flowRows(el.dataset.q||"",per)})}
+  return Array.from({length:rows},(_,r)=>{const c=[...q].slice(r*sz,(r+1)*sz);return `<div style="display:flex;align-items:center;gap:2px;margin:2px 0 2px ${r?7:0}px">${slot(r===0?"▶":"")}${c.map(ch=>`<span style="flex:none;width:12px;height:12px;border-radius:3px;background:${ch==="W"?"#1d9a5b":"#e07b00"}"></span>`).join("")}${slot(r===rows-1?"◀":"")}</div>`}).join("")}
+function flowFit(){document.querySelectorAll(".flowg").forEach(el=>{const w=el.clientWidth;if(!w||el.dataset.fw==w)return;el.dataset.fw=w;const per=Math.max(6,Math.floor((w-6-7-2*14)/14));el.innerHTML=flowRows(el.dataset.q||"",per)})}
 function anFlowView(f){
   if(!f)return "";
   const dots=f.seqs.map(q=>`<div class="flowg" data-q="${q}" style="margin:7px 0;padding:2px 0 2px 6px;border-left:3px solid rgba(128,128,128,.4)">${flowRows(q,20)}</div>`).join("");
