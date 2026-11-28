@@ -3001,7 +3001,9 @@ function drillRec(mid){
   try{drillMig();
     const okM=(S.drillOk||{})[mid]||{},sfM=(S.drills||{})[mid]||{},left=k=>{const x=AN_DRILL.find(y=>y.k===k);return x?x.d.findIndex((_,j)=>drillPracI(k,j)&&!okM[k+":"+j]):-1},done=k=>left(k)<0;
     const L=anFlat().filter(e=>e.pid===mid);let pick=null;
-    if(L.length){const rc=[...L].sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")).slice(0,5),h=anHexLv(L).lv,has=c=>c==="sv"?rc.some(e=>e.svp):c==="R"?rc.some(e=>e.hasC):rc.reduce((t,e)=>t+(((e.w||{})[c])||0)+(((e.u||{})[c])||0),0)>=3;
+    const mk0=drillMainOf(drillYM(0));
+    if(mk0&&drillVis(mk0)&&!done(mk0))pick={k:mk0,l:AN_DRILL.find(y=>y.k===mk0).l,v:null,src:"main"};   /* 이달의 메인 스킬 드릴이 남아 있으면 그걸 먼저 */
+    if(!pick&&L.length){const rc=[...L].sort((a,b)=>(b.g.date||"").localeCompare(a.g.date||"")).slice(0,5),h=anHexLv(L).lv,has=c=>c==="sv"?rc.some(e=>e.svp):c==="R"?rc.some(e=>e.hasC):rc.reduce((t,e)=>t+(((e.w||{})[c])||0)+(((e.u||{})[c])||0),0)>=3;
       AN_HEX.forEach(([hk,hl])=>{const dk=hk==="sv"?"Sv":hk,v=h[hk];if(typeof v==="number"&&has(hk)&&drillVis(dk)&&!done(dk)&&(!pick||v<pick.v))pick={k:dk,l:hl,v,src:"an"}})}
     if(!pick){const mk=drillMainOf(drillYM(0)),c=[mk,...drillVisList().map(x=>x.k)].find(k=>k&&drillVis(k)&&!done(k));if(c)pick={k:c,l:AN_DRILL.find(y=>y.k===c).l,v:null,src:"main"}}
     if(!pick)return null;
@@ -3307,7 +3309,7 @@ function render(){
   if(!u){$("#nav").innerHTML="";$("#view").innerHTML=loginView();showVote=false;$("#modal").innerHTML="";return}
   const tabs=isGuest()?TABS.filter(([k])=>["home","club","drill","matches","analysis"].includes(k)):TABS.filter(([k])=>k!=="tourney"&&(isAdmin()||!["members","dues"].includes(k)));
   if(!tabs.some(([k])=>k===tab)&&!(tab==="tourney"&&!isGuest()))tab=tabs[0][0];
-  $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}${k==="report"?" gold":""}" onclick="${k==="votes"?"showVote=true":"tab='"+k+"'"};render()">${l}</button>`).join("");
+  $("#nav").innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?"on":""}${k==="report"?" gold":""}" onclick="${k==="votes"?"showVote=true":k==="drill"?"tab='drill';drillK=drillMainOf(drillYM(0))||drillK":"tab='"+k+"'"};render()">${l}</button>`).join("");
   setTimeout(navUpd,0);setTimeout(fitRq,0);
   $("#view").innerHTML=V[tab]();
   const sc=document.querySelector(".sheet");const st=sc?sc.scrollTop:0;
