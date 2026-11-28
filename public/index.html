@@ -228,8 +228,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
-if(!S.drillMain)S.drillMain={}; if(!S.drillSeed2){S.drillSeed2=1;S.drillMain["2026-12"]="V";S.drillMain["2027-01"]="R"}
-if(!S.drillSeed1){S.drillSeed1=1;if(!S.drillMain["2026-12"])S.drillMain["2026-12"]="V";if(!S.drillMain["2027-01"])S.drillMain["2027-01"]="R"}   /* 12월=발리, 1월=리턴 (운영자가 이미 지정한 달은 그대로) */
+if(!S.drillMain)S.drillMain={}; if(!S.drillSeed3){S.drillSeed3=1;S.drillMain["2026-12"]="V";S.drillMain["2027-01"]="R"}
 if(!S.attend)S.attend={}; if(!S.drillBuddy)S.drillBuddy={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={}; if(!S.recoOk)S.recoOk={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
@@ -3384,6 +3383,8 @@ function applyOpsS(st,ops){for(const op of ops){
 function ensureS(){
   ["sponsors","teamAwards","bookings","matches","awards","guests","purchases","members","analysis"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
   ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg","recoLock","recoOk"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
+  if(!S.drillMain||typeof S.drillMain!=="object")S.drillMain={};
+  if(!S.drillSeed3){S.drillSeed3=1;S.drillMain["2026-12"]="V";S.drillMain["2027-01"]="R";setTimeout(()=>{try{save()}catch(e){}},400)}   /* 12월=발리, 1월=리턴 (서버 데이터에도 한 번 반영·저장) */
   if(!Array.isArray(S.schedule)||!S.schedule.length)S.schedule=[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}];
 }
 function adoptS(st){S=jclone(st);ensureS()}
