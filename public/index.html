@@ -229,7 +229,7 @@ if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
 if(!S.drillMain)S.drillMain={}; if(!S.drillSeed1){S.drillSeed1=1;if(!S.drillMain["2026-12"])S.drillMain["2026-12"]="V";if(!S.drillMain["2027-01"])S.drillMain["2027-01"]="R"}   /* 12월=발리, 1월=리턴 (운영자가 이미 지정한 달은 그대로) */
-if(!S.attend)S.attend={}; if(!S.drillBuddy)S.drillBuddy={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={};
+if(!S.attend)S.attend={}; if(!S.drillBuddy)S.drillBuddy={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={}; if(!S.recoOk)S.recoOk={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
 S.members.forEach(m=>{if(!LEVELS.includes(m.level))m.level="";if(!STATUSES.includes(m.status))m.status="정회원"});
@@ -2549,7 +2549,7 @@ function askDelMatch(id){delMatchId=id;render()}   /* 확인창(confirm)은 미�
 function cancelDelMatch(){delMatchId=null;render()}
 function delMatch(id){const g=S.matches.find(x=>x.id===id);delMatchId=null;if(!g||!canEditMatch(g)){render();return}
   S.matches=S.matches.filter(x=>x.id!==id);
-  if(S.recoFix&&S.recoFix[g.date]&&!S.matches.some(x=>x.bonus&&x.date===g.date))delete S.recoFix[g.date],delete (S.recoLock||{})[g.date];
+  if(S.recoFix&&S.recoFix[g.date]&&!(S.recoOk&&S.recoOk[g.date])&&!S.matches.some(x=>x.bonus&&x.date===g.date))delete S.recoFix[g.date],delete (S.recoLock||{})[g.date];
   if(editMatchId===id)editMatchId=null;save();render()}
 function delMatchView(){const g=S.matches.find(x=>x.id===delMatchId);if(!g){delMatchId=null;return""}
   const [A,B]=teams(g),nm=a=>a.map(id=>esc(mname(id))).join("·");
@@ -2801,7 +2801,7 @@ function recoCalc0(T){
   if(!closed&&!isAdmin())return{u,ps,games:null,rate,shown,pending:true};   // 운영진은 마감 전에도 미리 보고 조율(일반 회원은 마감 시각에 공개)
   const fx=S.recoFix&&S.recoFix[u.ds];   // 당일 추천게임 경기가 입력되면 그날 추천 2게임을 고정
   if(fx){const mm=id=>S.members.find(x=>x.id===id)||(S.guests||[]).find(x=>x.id===id);const gm=fx.map(g=>({A:g.A.map(mm),B:g.B.map(mm),diff:g.diff||0}));
-    const lk=closed&&S.recoLock&&S.recoLock[u.ds];if(gm.every(g=>g.A.concat(g.B).every(m=>m&&(lk||ps.some(x=>x.id===m.id)))))return{u,ps,games:gm,rate,shown,pre:!closed}}
+    const lk=(S.recoOk&&S.recoOk[u.ds])||(closed&&S.recoLock&&S.recoLock[u.ds]);if(gm.every(g=>g.A.concat(g.B).every(m=>m&&(lk||ps.some(x=>x.id===m.id)))))return{u,ps,games:gm,rate,shown,pre:!closed}}
   if(ps.length<4)return{u,ps,games:null,rate,shown};
   {const gg=recoMulti(ps,rate,u.ds+"|"+ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[u.ds]||0));if(gg)return{u,ps,games:gg,rate,shown,gender:ps.some(gdOf),pre:!closed}}
   const sorted=[...ps].sort((x,y)=>rate(x)-rate(y)||x.name.localeCompare(y.name,"ko"));
@@ -2852,11 +2852,20 @@ function recoTestBar(){if(!isAdmin())return"";
   return `<div style="margin-top:10px;border:1.5px dashed #6366f1;border-radius:12px;padding:10px"><div style="font-size:12px;font-weight:700;color:#4338ca;margin-bottom:6px">🧪 시험 참석자 ${n}명 · 누르면 무작위로 다시 뽑아요</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${[4,8,12,16].map(k=>bt(k+"명","recoTN("+k+")")).join("")}${bt("전체","recoTN(999)")}${bt("🔀 다시 뽑기","recoTRe()")}${bt("끄기","recoTOff()")}</div><details ${recoTest.open?"open":""} ontoggle="recoTest.open=this.open"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">이름으로 직접 선택</summary><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${recoTPool().map(m=>{const on=recoTest.ids.includes(m.id);return `<button onclick="recoTTog('${m.id}')" style="border:1.5px solid ${on?"#6366f1":"var(--line)"};background:${on?"#eef2ff":"transparent"};color:${on?"#4338ca":"inherit"};border-radius:14px;padding:2px 9px;font-size:12px;font:inherit;font-size:12px;cursor:pointer">${esc(m.name)}</button>`}).join("")}</div></details></div>`}
 const recoStartMs=u=>new Date(u.ds+"T"+u.s.start+":00").getTime();
 const RECO_EPOCH=3;   /* 올리면 이전에 쓴 다시 짜기 기록이 초기화되어 게임당 한 번씩 다시 가능 */
+const recoOkD=ds=>!!(S.recoOk&&S.recoOk[ds]);
+const recoLockMsg=()=>alert("확정된 추천매치예요.\n다시 짜려면 먼저 '확정 취소'를 눌러 주세요.");
+function recoConfirm(){if(!isAdmin()||recoTest.on)return;const c=recoCalc();if(!c||!c.games)return;const ds=c.u.ds;
+  if(!confirm("지금 추천매치를 확정할까요?\n확정하면 참석 변동이나 다시 짜기로 바뀌지 않고, 이 화면과 경기 결과 입력 등 추천매치를 쓰는 모든 곳에 같은 조합이 쓰여요."))return;
+  if(!S.recoFix)S.recoFix={};if(!S.recoLock)S.recoLock={};if(!S.recoOk)S.recoOk={};
+  S.recoFix[ds]=recoSnap(c.games);S.recoLock[ds]=1;S.recoOk[ds]=1;_rmC=null;save();render()}
+function recoUnconfirm(){if(!isAdmin())return;const c=recoCalc();if(!c)return;const ds=c.u.ds;
+  if(!confirm("확정을 취소할까요?\n취소하면 다시 짜기가 가능해져요. (지금 조합은 그대로 유지돼요)"))return;
+  if(S.recoOk)delete S.recoOk[ds];if(!voteClosed(ds)&&S.recoLock)delete S.recoLock[ds];save();render()}
 const recoRedoCnt=(ds,i)=>{const v=((S.recoRedoG||{})[ds]||{})[i]||0;return Math.floor(v/100)===RECO_EPOCH?v%100:0};   /* 값 = 규칙번호*100 + 사용 횟수 */
 const recoRedoOkG=(u,i)=>true;   // 운영자는 투표 마감 전에도 경기 시작 전까지 횟수 제한 없이 다시 짤 수 있음
 const recoGKey=g=>recoKey(g.A.map(m=>m.id),g.B.map(m=>m.id));
 const recoDone=(ds,g)=>(S.matches||[]).some(x=>x.bonus&&x.date===ds&&recoKey(...teams(x))===recoGKey(g));
-function recoRedoG(i,all){if(!isAdmin())return;if(!all&&!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
+function recoRedoG(i,all){if(!isAdmin())return;if(recoOkD((upcoming()[0]||{}).ds)){if(!all)recoLockMsg();return}if(!all&&!confirm((i+1)+"게임을 다시 짤까요?\n지금 배정은 바뀌고 되돌릴 수 없어요."))return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds;if(!recoRedoOkG(u,i))return;
   const cur=c.games,oth=cur.filter((_,k)=>k!==i);
   if(recoDone(ds,cur[i])){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
   const n=recoRedoCnt(ds,i)+1,base=ds+"|"+c.ps.map(m=>m.id).sort().join()+"|"+((S.recoSeed||{})[ds]||0)+"|g"+i+"|n"+n;
@@ -2867,18 +2876,18 @@ function recoRedoG(i,all){if(!isAdmin())return;if(!all&&!confirm((i+1)+"게임�
   if(!pk){alert("다른 조합을 찾지 못했어요.");if(!all)render();return}
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([pk])[0];seen.push(recoGKey(pk));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();if(!all)render()}
-function recoRedoFresh(){if(!isAdmin())return;const c=recoCalc();if(!c||!c.games)return;const ds=c.u.ds,dn=c.games.filter(g=>recoDone(ds,g)).length;
+function recoRedoFresh(){if(!isAdmin())return;if(recoOkD((upcoming()[0]||{}).ds)){recoLockMsg();return}const c=recoCalc();if(!c||!c.games)return;const ds=c.u.ds,dn=c.games.filter(g=>recoDone(ds,g)).length;
   if(!confirm("추천매치를 처음부터 완전히 새로 짤까요?\n선수 구성·게임 종류·실력 차이까지 전부 새로 뽑고, 이전에 나온 조합 기록도 지워요."+(dn?"\n(이미 입력된 "+dn+"게임의 '완료' 표시는 같은 조합이 다시 나올 때만 유지돼요)":"")+"\n지금 배정은 되돌릴 수 없어요."))return;
   S.recoSeed=S.recoSeed||{};S.recoSeed[ds]=1+Math.floor(Math.random()*900000);
   if(S.recoFix)delete S.recoFix[ds];if(S.recoRedoG)delete S.recoRedoG[ds];if(S.recoRedoK)delete S.recoRedoK[ds];if(S.recoLock)delete S.recoLock[ds];
   _rmC=null;const c2=recoCalc0();
   if(c2&&c2.games){if(!S.recoFix)S.recoFix={};S.recoFix[ds]=recoSnap(c2.games);if(voteClosed(ds)){if(!S.recoLock)S.recoLock={};S.recoLock[ds]=1}}
   save();render()}
-function recoRedoAll(){if(!isAdmin())return;const c=recoCalc();if(!c||!c.games)return;const ds=c.u.ds,idx=c.games.map((g,i)=>i).filter(i=>!recoDone(ds,c.games[i]));
+function recoRedoAll(){if(!isAdmin())return;if(recoOkD((upcoming()[0]||{}).ds)){recoLockMsg();return}const c=recoCalc();if(!c||!c.games)return;const ds=c.u.ds,idx=c.games.map((g,i)=>i).filter(i=>!recoDone(ds,c.games[i]));
   if(!idx.length){alert("다시 짤 수 있는 게임이 없어요.\n(이미 추천매치로 입력된 경기는 제외돼요)");return}
   if(!confirm("추천 "+idx.length+"게임을 전부 다시 짤까요?\n이미 결과가 입력된 게임은 그대로 두고, 지금 배정은 바뀌고 되돌릴 수 없어요."))return;
   idx.forEach(i=>recoRedoG(i,1));render()}
-function recoRedoT(i,sd){const side=sd?"B":"A";if(!isAdmin())return;const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds,cur=c.games,g=cur[i];
+function recoRedoT(i,sd){const side=sd?"B":"A";if(!isAdmin())return;if(recoOkD((upcoming()[0]||{}).ds)){recoLockMsg();return}const c=recoCalc();if(!c||!c.games||!c.games[i])return;const u=c.u,ds=u.ds,cur=c.games,g=cur[i];
   if(recoDone(ds,g)){alert("이미 추천매치로 입력된 경기라서 다시 짤 수 없어요.");return}
   const keep=side==="A"?g.A:g.B,kn=keep.map(m=>m.name).join("·");
   if(!confirm(kn+" 팀은 그대로 두고, 상대팀만 다시 짤까요?\n지금 상대팀은 바뀌고 되돌릴 수 없어요."))return;
@@ -2896,14 +2905,14 @@ function recoRedoT(i,sd){const side=sd?"B":"A";if(!isAdmin())return;const c=reco
   const kp=tk(pk.A)===kid?pk.A:pk.B,op=kp===pk.A?pk.B:pk.A,ng=side==="A"?{A:kp,B:op,diff:pk.diff}:{A:op,B:kp,diff:pk.diff};
   if(!S.recoFix)S.recoFix={};const fx=S.recoFix[ds]=S.recoFix[ds]||recoSnap(cur);fx[i]=recoSnap([ng])[0];seen.push(recoGKey(ng));
   if(!S.recoRedoG)S.recoRedoG={};(S.recoRedoG[ds]=S.recoRedoG[ds]||{})[i]=RECO_EPOCH*100+Math.min(99,n);save();render()}
-const recoGBtn=(u,i,g)=>{if(!isAdmin()||recoTest.on||recoDone(u.ds,g))return"";
+const recoGBtn=(u,i,g)=>{if(!isAdmin()||recoTest.on||recoDone(u.ds,g)||recoOkD(u.ds))return"";
   const n=recoRedoCnt(u.ds,i);return `<button class="btn ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="recoRedoG(${i})">🔄 ${i+1}게임 다시 짜기 (운영자 · 횟수 제한 없음${n?" · "+n+"번 다시 짬":""})</button><div style="display:flex;gap:6px;margin-top:6px"><button class="btn ghost" style="flex:1;font-size:12px;padding:6px 4px" onclick="recoRedoT(${i},0)">${g.A.map(m=>m.name).join("·")} 유지<br>상대팀만 다시</button><button class="btn ghost" style="flex:1;font-size:12px;padding:6px 4px" onclick="recoRedoT(${i},1)">${g.B.map(m=>m.name).join("·")} 유지<br>상대팀만 다시</button></div>`};
 function recoPanel(){
   const c=(recoTest.on&&isAdmin())?recoCalc0(true):recoCalc();if(!c)return"";const {u,ps,games,rate,shown}=c;
   const when=`${u.d.getMonth()+1}/${u.d.getDate()} (${DAYS[u.d.getDay()]}) ${fmtT(u.s.start)}`;
   if(c.pending){const od=deadline(u.ds),ot=`${od.getMonth()+1}/${od.getDate()} (${DAYS[od.getDay()]}) ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))}`;
    return `<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 경기</p><div style="text-align:center;padding:14px 8px 10px"><div style="font-size:34px;line-height:1">🎁</div><div style="font-weight:800;margin-top:8px">대진표는 아직 비밀이에요!</div><div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7">누구랑 붙을지 궁금하죠? 🎾<br>경기 1시간 전, 출석 투표가 마감되는<br><b style="color:#16a34a">${ot}</b>에 출석한 인원으로<br>짠~ 하고 공개됩니다.<br>그 전에 참석 투표 먼저 해두세요 😉</div></div></div>`}
-  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 4점 · 패 2점${voteClosed(u.ds)&&!recoTest.on?" · 투표 마감으로 고정":""}</p>${recoTest.on&&isAdmin()?`<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;line-height:1.5">🧪 시험 모드 · 아래는 가짜 참석자 ${ps.length}명 기준이에요. 실제 투표·기록·고정에는 반영되지 않고 운영자에게만 보여요.</div>`:voteClosed(u.ds)?"":(()=>{const od=deadline(u.ds);return `<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700;line-height:1.5">👀 운영진 미리보기 · 일반 회원에게는 투표 마감(${od.getMonth()+1}/${od.getDate()} ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))})에 공개돼요. 그 전까지 참석 변동에 따라 바뀌고, 다시 짜기로 조율할 수 있어요.</div>`})()}${b}${recoTestBar()}</div>`;
+  const wrap=b=>`<div class="panel"><h2>오늘의 추천매치 <span style="display:inline-block;transform:rotate(-4deg);margin-left:6px;vertical-align:middle;font-family:'Nanum Pen Script','Gaegu',cursive;font-size:19px;font-weight:400;line-height:1.1;color:#16a34a;white-space:nowrap">실제로 경기 하면 승점이 2배!</span></h2><p style="margin:-6px 0 8px;font-size:12px;color:var(--muted)">${when} 참석자 ${ps.length}명 기준 · 승 10점 · 무 4점 · 패 2점${recoOkD(u.ds)&&!recoTest.on?" · 운영자 확정":voteClosed(u.ds)&&!recoTest.on?" · 투표 마감으로 고정":""}</p>${recoOkD(u.ds)&&!recoTest.on?`<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#dcfce7;color:#166534;font-size:12px;font-weight:800;line-height:1.5;display:flex;align-items:center;gap:8px"><span style="flex:1">✅ 확정된 추천매치예요. 참석이 바뀌어도 이 조합 그대로 진행해요.</span>${isAdmin()?`<button class="btn ghost" style="flex:none;padding:3px 9px;font-size:12px" onclick="recoUnconfirm()">확정 취소</button>`:""}</div>`:""}${recoTest.on&&isAdmin()?`<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;line-height:1.5">🧪 시험 모드 · 아래는 가짜 참석자 ${ps.length}명 기준이에요. 실제 투표·기록·고정에는 반영되지 않고 운영자에게만 보여요.</div>`:voteClosed(u.ds)||recoOkD(u.ds)?"":(()=>{const od=deadline(u.ds);return `<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700;line-height:1.5">👀 운영진 미리보기 · 일반 회원에게는 투표 마감(${od.getMonth()+1}/${od.getDate()} ${fmtT(String(od.getHours()).padStart(2,"0")+":"+String(od.getMinutes()).padStart(2,"0"))})에 공개돼요. 그 전까지 참석 변동에 따라 바뀌고, 다시 짜기로 조율할 수 있어요.</div>`})()}${b}${recoTestBar()}</div>`;
   if(!games)return wrap(`<p class="empty">참석자가 4명 이상 모이면 참석 인원 안에서 가장 재미있을 게임을 추천해요.</p>`);
   const rkSt=stats(),rkPl=x=>{const s=rkSt[x.id];return !!s&&s.w+s.l+s.d>0},rkNo=m=>rkPl(m)?(1+S.members.filter(x=>rkPl(x)&&rkBetter(rkSt[x.id],rkSt[m.id])).length)+"위":"랭킹 없음";   // 랭킹탭과 같은 순위
   const pl=m=>`<span style="display:flex;align-items:center;gap:3px;margin:2px 0;white-space:nowrap">${av(m,20)}<span>${nameR(m)}</span><small style="color:var(--muted);font-size:10px">${(S.guests||[]).some(x=>x.id===m.id)?"게스트":rkNo(m)}</small></span>`;
@@ -2914,7 +2923,7 @@ function recoPanel(){
       if(best){const r=H.opp[best.b.id+"|"+best.a.id];parts.push(`<span style="white-space:nowrap">상대전적 · <b>${esc(best.a.name)}</b> ${best.o.w}승 ${r?r.w:0}패 <b>${esc(best.b.name)}</b></span>`)}
       if(!(H.par[g.A[0].id+"|"+g.A[1].id])||!(H.par[g.B[0].id+"|"+g.B[1].id]))parts.push("처음 호흡을 맞추는 조합 포함");
       return parts.length?`<div style="margin-top:6px;font-size:11px;color:var(--muted);line-height:1.7">${parts.map(x=>`<div>💡 ${x}</div>`).join("")}</div>`:""})()}${recoGBtn(u,i,g)}</li>`}).join("");
-  return wrap(`${isAdmin()&&!recoTest.on&&games.some(g=>!recoDone(u.ds,g))?`<div style="display:flex;gap:6px;margin:0 0 4px"><button class="btn" style="flex:1;font-size:13px" onclick="recoRedoAll()">🔄 전체 다시 짜기<br><small style="font-weight:400">${games.length}게임 한꺼번에</small></button><button class="btn" style="flex:1;font-size:13px" onclick="recoRedoFresh()">🎲 완전 새로 짜기<br><small style="font-weight:400">처음부터 새 조합</small></button></div>`:""}<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">상대 팀끼리 성별 구성을 맞추고, 실력(랭킹·보정 기록)에 최근 5경기 흐름·같이 뛴 성적·서로 맞붙은 전적까지 경기 결과를 함께 보고 참석 인원 안에서 가장 재미있을 조합을 골랐어요. 게임마다 서로 다른 선수로 짜고, 인원이 적으면 추천 게임 수를 줄여요.</p></details>`)}
+  return wrap(`${isAdmin()&&!recoTest.on&&!recoOkD(u.ds)?`<button class="btn" style="width:100%;margin:0 0 6px;font-size:14px;background:#16a34a;border-color:#16a34a;color:#fff" onclick="recoConfirm()">✅ 이 추천매치로 확정<br><small style="font-weight:400">확정하면 참석이 바뀌어도, 다시 짜기를 해도 바뀌지 않아요</small></button>`:""}${isAdmin()&&!recoTest.on&&!recoOkD(u.ds)&&games.some(g=>!recoDone(u.ds,g))?`<div style="display:flex;gap:6px;margin:0 0 4px"><button class="btn" style="flex:1;font-size:13px" onclick="recoRedoAll()">🔄 전체 다시 짜기<br><small style="font-weight:400">${games.length}게임 한꺼번에</small></button><button class="btn" style="flex:1;font-size:13px" onclick="recoRedoFresh()">🎲 완전 새로 짜기<br><small style="font-weight:400">처음부터 새 조합</small></button></div>`:""}<ul class="list">${rows}</ul><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0">매칭 설명 보기</summary><p style="margin:4px 0 0;font-size:12px;color:var(--muted)">상대 팀끼리 성별 구성을 맞추고, 실력(랭킹·보정 기록)에 최근 5경기 흐름·같이 뛴 성적·서로 맞붙은 전적까지 경기 결과를 함께 보고 참석 인원 안에서 가장 재미있을 조합을 골랐어요. 게임마다 서로 다른 선수로 짜고, 인원이 적으면 추천 게임 수를 줄여요.</p></details>`)}
 function offPanel(){
   const rows=OFFICES.filter(o=>o!=="운영자").map(o=>{const ms=S.members.filter(m=>m.role===o);
     const people=ms.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;margin:3px 14px 3px 0">${av(m,36)}<b>${esc(m.name)}</b></span>`).join("");
@@ -3370,7 +3379,7 @@ function applyOpsS(st,ops){for(const op of ops){
 }return st}
 function ensureS(){
   ["sponsors","teamAwards","bookings","matches","awards","guests","purchases","members","analysis"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
-  ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg","recoLock"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
+  ["invites","tips","attend","votes","officers","imports","recoFix","attDone","recoChg","recoLock","recoOk"].forEach(k=>{if(!isObjC(S[k]))S[k]={}});
   if(!Array.isArray(S.schedule)||!S.schedule.length)S.schedule=[{day:6,start:"20:00",end:"23:00"},{day:0,start:"18:00",end:"21:00"}];
 }
 function adoptS(st){S=jclone(st);ensureS()}
