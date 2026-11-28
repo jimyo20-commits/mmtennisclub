@@ -1549,7 +1549,7 @@ function anDistView(d,tl){
 }
 function anFlowView(f){
   if(!f)return "";
-  const dots=f.seqs.map((q,gi)=>`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:7px 0;padding:2px 0 2px 6px;border-left:3px solid rgba(128,128,128,.4)"><span style="flex:none;margin-right:3px;font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap">${gi+1}경기▸</span>${[...q].map(c=>`<span style="width:12px;height:12px;border-radius:3px;background:${c==="W"?"#1d9a5b":"#e07b00"}"></span>`).join("")}<span style="flex:none;margin-left:3px;font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap">◂끝</span></div>`).join("");
+  const dots=f.seqs.map((q,gi)=>`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin:7px 0;padding:2px 0 2px 6px;border-left:3px solid rgba(128,128,128,.4)"><span style="flex:none;margin-right:3px;font-size:9px;font-weight:800;color:var(--muted);white-space:nowrap">▶</span>${[...q].map(c=>`<span style="width:12px;height:12px;border-radius:3px;background:${c==="W"?"#1d9a5b":"#e07b00"}"></span>`).join("")}<span style="flex:none;margin-left:3px;font-size:9px;font-weight:700;color:var(--muted);white-space:nowrap">◀</span></div>`).join("");
   return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:4px">경기 흐름 <span style="font-weight:400;font-size:11px;color:var(--muted)">(<span style="color:#1d9a5b">■</span> 위닝 <span style="color:#e07b00">■</span> 범실 · 왼쪽→오른쪽 시간순)</span></div>${dots}${f.msg?`<p style="margin:6px 0 0;font-size:13px">${f.msg}</p>`:`<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">같은 결과가 3번 이상 연달아 몰린 구간은 없어요</p>`}</div>`;
 }
 /* 코트(COURT)별 성적: 전체 5경기 이상이고 코트가 2곳 이상(각 2경기 이상)일 때만 */
