@@ -228,6 +228,7 @@ if(!S.guests)S.guests=[];
 if(!S.officers)S.officers={};
 S.members.forEach(m=>{if(m.role===undefined)m.role=m.name==="윤준식"?"운영자":"";if(m.role==="운영자"){m.admin=true;m.role=""}});   // 운영자는 직책과 별도 권한(admin)으로 분리
 Object.keys(S.officers).forEach(o=>{(S.officers[o]||[]).forEach(id=>{const m=S.members.find(x=>x.id===id);if(m&&!m.role)m.role=o});delete S.officers[o]});
+if(!S.drillMain)S.drillMain={}; if(!S.drillSeed1){S.drillSeed1=1;if(!S.drillMain["2026-12"])S.drillMain["2026-12"]="V";if(!S.drillMain["2027-01"])S.drillMain["2027-01"]="R"}   /* 12월=발리, 1월=리턴 (운영자가 이미 지정한 달은 그대로) */
 if(!S.attend)S.attend={}; if(!S.drillBuddy)S.drillBuddy={}; if(!S.recoFix)S.recoFix={}; if(!S.attDone)S.attDone={}; if(!S.recoChg)S.recoChg={}; if(!S.recoLock)S.recoLock={};
 if(!S.awards)S.awards=[];
 S.awards.forEach(x=>{if(x.rank===undefined){if(AW_RANKS.includes(x.grade)){x.rank=x.grade;x.grade=""}else x.rank=""}});
@@ -1116,10 +1117,10 @@ const AN_DRILL=[
 ["슬라이스 랠리 15개 연속","백핸드 슬라이스로만 크로스 랠리를 해요. 네트 위로 낮게 넘겨 코트 안에 떨어지면 1개로 세요.","15개 연속 성공 1회"],
 ["다운 더 라인 10개","백핸드 다운 더 라인만 세요. 사이드라인 안에 떨어지면 성공이에요.","10개 중 5개 성공"]]},
 {k:"V",l:"발리",why:"발리 범실이 많다면 '급한 네트 진입·큰 스윙'이 원인인 경우가 많아요. 짧게, 전진은 천천히. 파트너가 세어 주세요.",d:[
-["근접 발리 랠리 20개 연속","서로 네트 앞 서비스라인 근처에 서서 발리로만 주고받아요. 땅에 두 번 튀기거나 실수하면 0부터 다시 세요.","20개 연속 성공 1회"],
-["피딩 발리 10개","파트너가 서비스라인에서 쳐 주는 공을 포핸드·백핸드 발리로 상대 코트 안에 넣어요.","10개 중 8개 성공"],
-["하프 발리 10개","발밑으로 떨어지는 공을 낮게 받아 네트 위로 넘겨 코트 안에 넣어요.","10개 중 6개 성공"],
-["어프로치 → 발리 마무리 10회","베이스라인 샷 후 앞으로 들어가 멈춰서 발리로 마무리해요. 발리가 코트 안에 들어가면 성공이에요.","10회 중 6회 성공"]]},
+["맞발리 20개 (바운드 1번 허용)","파트너와 서로 네트 앞 서비스라인 근처에 서서 발리로 주고받아요. 공이 땅에 한 번 튀는 건 괜찮아요. 두 번 튀기거나 실수하면 0부터 다시 세요.","20개 연속 성공"],
+["맞발리 50개 (바운드 2번 허용)","같은 자리에서 발리로 주고받되 공이 땅에 두 번까지 튀는 건 허용해요. 그보다 많이 튀거나 실수하면 0부터 다시 세요.","50개 연속 성공"],
+["하프 발리 좌우 컨트롤 10개","발밑으로 떨어지는 공을 낮게 받아 네트 위로 넘겨요. 상대 코트의 좌·우 코너를 번갈아 노려요.","10개 성공"],
+["드라이브 발리 좌우 컨트롤 10개","높게 올라오는 공을 짧고 단단한 스윙으로 앞으로 밀어 쳐요. 상대 코트의 좌·우 코너를 번갈아 노려요.","10개 성공"]]},
 {k:"O",l:"스매싱",why:"스매싱 범실이 많다면 '뒤로 빠르게 이동 → 옆으로 서기 → 타점은 머리 위 앞'을 확인해요. 파트너가 세어 주세요.",d:[
 ["정지 스매싱 10개","네트 앞에서 파트너가 올려 주는 로브를 제자리에서 스매싱해요. 상대 코트 안에 떨어지면 성공이에요.","10개 중 8개 성공"],
 ["이동 스매싱 10개","파트너가 조금 깊게 올려 주는 로브를 뒤로 이동해서 스매싱해요. 상대 코트 안에 떨어지면 성공이에요.","10개 중 6개 성공"],
@@ -1152,7 +1153,7 @@ const AN_DRILL=[
 ["서브 → 크로스 랠리 → 어프로치 → 발리 풀 시퀀스 10회","서브 인 → 파트너 리턴 → 크로스 랠리 4번 → 파트너가 짧은 공을 주면 어프로치 → 발리로 마무리해요. 중간에 한 번도 실수하지 않고 마지막 발리까지 코트 안에 넣으면 1회 성공이에요. (서브 + 스트로크 + 어프로치 + 발리)","10회 중 4회 성공"]]}
 ];
 /* 난이도 오름차순(1번이 가장 쉬움). AN_ORD[j]=원래 배열의 몇 번째 드릴이 j번째가 되는지 */
-const AN_ORD={Fs:[0,2,1,3],Bs:[0,2,1,3],V:[1,0,2,3],O:[0,2,1],P:[0,2,1],S:[2,0,1],Sv:[0,1,3,2]};
+const AN_ORD={Fs:[0,2,1,3],Bs:[0,2,1,3],V:[0,1,2,3],O:[0,2,1],P:[0,2,1],S:[2,0,1],Sv:[0,1,3,2]};
 AN_DRILL.forEach(x=>{const o=AN_ORD[x.k];if(o)x.d=o.map(i=>x.d[i])});
 function drillMine(){try{const t={};anFlat().filter(e=>e.pid===me).forEach(e=>{Object.keys(e.u||{}).forEach(c=>{t[c]=(t[c]||0)+(+e.u[c]||0)})});t.Sv=(t.F||0)+(t.D||0);let b=null,n=2;["Fs","Bs","V","O","P","L","R","S","Sv"].forEach(c=>{if(drillVis(c)&&(t[c]||0)>n){n=t[c];b=c}});return b}catch(e){return null}}
 const DRILL_TIER=[null,{n:"브론즈",c:"#cd7f32",f:"sepia(1) saturate(2.5) hue-rotate(-15deg) brightness(.8)"},{n:"실버",c:"#94a3b8",f:"grayscale(1) contrast(1.4) brightness(1.1)"},{n:"골드",c:"#facc15",f:""}];
